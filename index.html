@@ -1,1 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Chrono — Routine Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
+<!-- Firebase v10 SDK (Compat version for single-file browser usage) -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+<style>
+  :root{
+    --paper:#F4F3EC;
+    --surface:#FFFFFF;
+    --ink:#1C1E1B;
+    --ink-soft:#63655D;
+    --ink-faint:#9A9C92;
+    --border:#E1DFD2;
+    --border-strong:#CFCDBD;
+    --study-h:208; --study-s:62%;
+    --social-h:16; --social-s:72%;
+    --essential-h:150; --essential-s:32%;
+    --danger:#B3492F;
+    --radius:14px;
+    --radius-sm:9px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    -webkit-tap-highlight-color:transparent;
+    padding-bottom:84px;
+  }
+  .mono{font-family:"JetBrains Mono",ui-monospace,monospace;}
+  h1,h2,h3,.display{font-family:"Space Grotesk",-apple-system,sans-serif;}
+  button{font-family:inherit;cursor:pointer;}
+  .wrap{max-width:560px;margin:0 auto;padding:0 14px;}
+
+  /* ---- Top bar ---- */
+  .topbar{
+    position:sticky;top:0;z-index:20;
+    background:var(--paper);
+    padding-top:14px;padding-bottom:8px;
+    border-bottom:1px solid transparent;
+  }
+  .topbar.scrolled{border-bottom-color:var(--border);}
+  .topbar-row{display:flex;align-items:center;justify-content:space-between;}
+  .brand{display:flex;align-items:baseline;gap:7px;}
+  .brand-mark{width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,hsl(var(--study-h) var(--study-s) 50%),hsl(var(--social-h) var(--social-s) 55%));display:inline-block;}
+  .brand h1{font-size:19px;font-weight:700;margin:0;letter-spacing:-0.01em;}
+  .authchip{
+    display:flex;align-items:center;gap:6px;
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:999px;padding:6px 12px 6px 6px;font-size:12.5px;color:var(--ink-soft);
+  }
+  .authchip .av{width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;}
+  .cloud-badge{width:6px;height:6px;border-radius:50%;background:var(--ink-faint);}
+  .cloud-badge.on{background:#3E8E5A;}
+  .cloud-badge.busy{background:#D3A227;animation:pulse 1s infinite;}
+
+  /* ---- Status / pulse strip ---- */
+  .status-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:14px 14px 12px;margin-top:12px;
+  }
+  .status-main{display:flex;align-items:center;gap:11px;}
+  .status-dot{width:13px;height:13px;border-radius:50%;flex:none;box-shadow:0 0 0 4px rgba(0,0,0,0.04);}
+  .status-name{font-family:"Space Grotesk";font-weight:600;font-size:16.5px;line-height:1.2;}
+  .status-since{color:var(--ink-soft);font-size:12.5px;margin-top:1px;}
+  .status-empty{color:var(--ink-soft);font-size:14px;}
+  .status-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .status-undo{background:none;border:none;color:var(--ink-faint);font-size:12px;text-decoration:underline;padding:4px;}
+
+  .strip{
+    display:flex;width:100%;height:20px;border-radius:999px;overflow:hidden;
+    margin-top:12px;background:var(--paper);border:1px solid var(--border);
+  }
+  .strip-seg{min-width:3px;transition:flex-grow .4s ease;}
+  .strip-seg--live{position:relative;}
+  .strip-seg--live::after{
+    content:"";position:absolute;inset:0;background:rgba(255,255,255,0.35);
+    animation:pulse 1.6s ease-in-out infinite;
+  }
+  .strip-empty{font-size:12px;color:var(--ink-faint);display:flex;align-items:center;padding-left:10px;}
+  @keyframes pulse{0%,100%{opacity:0.15;}50%{opacity:0;}}
+  .strip-legend{display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--ink-soft);}
+  .strip-legend span{display:inline-flex;align-items:center;gap:4px;}
+  .strip-legend i{width:7px;height:7px;border-radius:50%;display:inline-block;}
+
+  /* ---- Tabs ---- */
+  .tabs{display:flex;gap:4px;margin-top:16px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:3px;}
+  .tab-btn{flex:1;border:none;background:none;padding:8px 0;border-radius:999px;font-size:13px;font-weight:600;color:var(--ink-soft);font-family:"Space Grotesk";}
+  .tab-btn.active{background:var(--ink);color:#fff;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  /* ---- Quick add ---- */
+  .qa-group{margin-top:18px;}
+  .qa-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;}
+  .qa-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+  .qa-btn{
+    display:flex;align-items:center;gap:9px;
+    background:var(--surface);border:1px solid var(--border);border-left:4px solid #ccc;
+    border-radius:var(--radius-sm);padding:12px 12px;font-size:14px;font-weight:500;color:var(--ink);
+    text-align:left;-webkit-user-select:none;user-select:none;
+  }
+  .qa-btn:active{transform:scale(0.97);background:var(--paper);}
+  .qa-dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .qa-add{
+    margin-top:16px;width:100%;background:none;border:1.5px dashed var(--border-strong);
+    border-radius:var(--radius-sm);padding:12px;font-size:13.5px;color:var(--ink-soft);font-weight:600;font-family:"Space Grotesk";
+  }
+
+  /* ---- Log list ---- */
+  .log-section{margin-top:22px;}
+  .section-title{font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:8px;font-family:"Space Grotesk";}
+  .log-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--border);}
+  .log-row:last-child{border-bottom:none;}
+  .log-dot{width:8px;height:8px;border-radius:50%;flex:none;}
+  .log-name{flex:1;font-size:14px;}
+  .log-time{font-size:12.5px;color:var(--ink-soft);}
+  .log-edit,.log-del{background:none;border:none;font-size:13px;padding:4px 5px;color:var(--ink-faint);}
+  .log-editrow{display:flex;align-items:center;gap:8px;padding:9px 2px;}
+  .log-editrow input[type=time]{font-family:"JetBrains Mono";border:1px solid var(--border-strong);border-radius:7px;padding:5px 7px;font-size:13px;}
+  .log-editrow button{border:none;border-radius:7px;padding:6px 10px;font-size:12.5px;font-weight:600;}
+  .btn-save{background:var(--ink);color:#fff;}
+  .btn-cancel{background:var(--paper);color:var(--ink-soft);}
+  .empty-note{font-size:13px;color:var(--ink-faint);padding:10px 2px;}
+
+  /* ---- History ---- */
+  .hist-day{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 12px;margin-bottom:9px;}
+  .hist-day-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .hist-date{font-weight:600;font-size:13.5px;font-family:"Space Grotesk";}
+  .hist-total{font-size:11.5px;color:var(--ink-soft);}
+  .hist-strip{display:flex;height:14px;border-radius:999px;overflow:hidden;background:var(--paper);}
+  .hist-strip .strip-seg{min-width:2px;}
+  .hist-detail{margin-top:99px;display:none;}
+  .hist-detail.open{display:block;}
+  .load-more{width:100%;background:none;border:1px solid var(--border);border-radius:999px;padding:10px;font-size:13px;color:var(--ink-soft);font-weight:600;font-family:"Space Grotesk";margin-top:4px;}
+
+  /* ---- Stats ---- */
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;}
+  .stat-card h3{font-size:13px;margin:0 0 10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+  .stat-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:12.5px;}
+  .stat-bar-label{width:70px;flex:none;color:var(--ink-soft);}
+  .stat-bar-track{flex:1;height:9px;background:var(--paper);border-radius:999px;overflow:hidden;}
+  .stat-bar-fill{height:100%;border-radius:999px;}
+  .stat-bar-val{width:56px;flex:none;text-align:right;color:var(--ink-soft);}
+  .stat-week-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .stat-week-day{width:34px;flex:none;font-size:11px;color:var(--ink-faint);}
+  .stat-week-strip{flex:1;display:flex;height:16px;border-radius:6px;overflow:hidden;background:var(--paper);}
+
+  /* ---- Toast ---- */
+  #toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;
+    opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;z-index:100;white-space:nowrap;
+    max-width:90vw;overflow:hidden;text-overflow:ellipsis;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ---- Modals ---- */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(20,19,15,0.42);display:none;
+    align-items:flex-end;justify-content:center;z-index:200;
+  }
+  .modal-backdrop.open{display:flex;}
+  .modal{
+    background:var(--surface);width:100%;max-width:560px;border-radius:18px 18px 0 0;
+    padding:20px 18px calc(20px + env(safe-area-inset-bottom));
+    animation:slideUp .22s ease;max-height:86vh;overflow-y:auto;
+  }
+  @keyframes slideUp{from{transform:translateY(24px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .modal h2{font-size:17px;margin:0 0 14px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:6px;font-weight:600;}
+  .field input[type=text],.field input[type=email],.field input[type=password],.field input[type=time]{
+    width:100%;border:1px solid var(--border-strong);border-radius:9px;padding:11px 12px;font-size:15px;font-family:inherit;background:var(--paper);
+  }
+  .pill-row{display:flex;gap:8px;}
+  .pill{flex:1;border:1.5px solid var(--border-strong);border-radius:9px;padding:10px 8px;text-align:center;font-size:12.5px;font-weight:600;background:var(--surface);}
+  .pill.active{border-color:var(--ink);background:var(--paper);}
+  .pill i{display:block;width:10px;height:10px;border-radius:50%;margin:0 auto 5px;}
+  .check-row{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-soft);}
+  .modal-actions{display:flex;gap:8px;margin-top:16px;}
+  .btn{flex:1;border:none;border-radius:10px;padding:13px;font-size:14.5px;font-weight:600;font-family:"Space Grotesk";}
+  .btn-primary{background:var(--ink);color:#fff;}
+  .btn-ghost{background:var(--paper);color:var(--ink-soft);}
+  .btn-outline{background:none;border:1.5px solid var(--border-strong);color:var(--ink);}
+  .divider-line{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--ink-faint);font-size:11.5px;}
+  .divider-line::before,.divider-line::after{content:"";flex:1;height:1px;background:var(--border);}
+  .authtoggle{display:flex;justify-content:center;gap:16px;font-size:12.5px;margin-top:12px;color:var(--ink-soft);}
+  .authtoggle b{color:var(--ink);cursor:pointer;text-decoration:underline;}
+  .auth-msg{font-size:12.5px;color:var(--danger);margin-top:8px;min-height:14px;}
+  .cloud-note{font-size:12px;color:var(--ink-faint);background:var(--paper);border-radius:9px;padding:10px 11px;line-height:1.5;}
+  .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:15px;color:var(--ink-faint);}
+  .modal{position:relative;}
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="topbar" id="topbar">
+    <div class="topbar-row">
+      <div class="brand"><span class="brand-mark"></span><h1>Chrono</h1></div>
+      <button class="authchip" id="authChip">
+        <span class="cloud-badge" id="cloudBadge"></span>
+        <span id="authChipLabel">Guest</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Status + pulse strip -->
+  <div class="status-card">
+    <div class="status-row">
+      <div class="status-main" id="statusCard"><div class="status-empty">Tap an activity below to start tracking today.</div></div>
+      <button class="status-undo" id="undoBtn" style="display:none;">Undo</button>
+    </div>
+    <div class="strip" id="todayStrip"></div>
+    <div class="strip-legend">
+      <span><i style="background:hsl(var(--study-h) var(--study-s) 46%)"></i>Study</span>
+      <span><i style="background:hsl(var(--social-h) var(--social-s) 52%)"></i>Social</span>
+      <span><i style="background:hsl(var(--essential-h) var(--essential-s) 40%)"></i>Essential</span>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="today">Today</button>
+    <button class="tab-btn" data-tab="history">History</button>
+    <button class="tab-btn" data-tab="stats">Stats</button>
+  </div>
+
+  <!-- Today -->
+  <div class="tab-panel active" id="tab-today">
+    <div id="quickAdd"></div>
+    <div class="log-section">
+      <div class="section-title">Today's log</div>
+      <div id="todayLog"></div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="tab-panel" id="tab-history">
+    <div style="margin-top:16px;" id="historyList"></div>
+    <button class="load-more" id="loadMoreBtn">Load earlier days</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="tab-panel" id="tab-stats">
+    <div style="margin-top:16px;" id="statsPanel"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- Add Activity Modal -->
+<div class="modal-backdrop" id="addModal">
+  <div class="modal">
+    <button class="modal-close" data-close="addModal">✕</button>
+    <h2>Add activity</h2>
+    <div class="field">
+      <label>Name</label>
+      <input type="text" id="actName" placeholder="e.g. Call — Sumit" maxlength="40">
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <div class="pill-row" id="catPills">
+        <button class="pill active" data-cat="study"><i style="background:hsl(var(--study-h) var(--study-s) 46%)"></i>Study</button>
+        <button class="pill" data-cat="social"><i style="background:hsl(var(--social-h) var(--social-s) 52%)"></i>Social</button>
+        <button class="pill" data-cat="essential"><i style="background:hsl(var(--essential-h) var(--essential-s) 40%)"></i>Essential</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Time</label>
+      <input type="time" id="actTime">
+    </div>
+    <div class="field check-row">
+      <input type="checkbox" id="actPin" checked style="width:16px;height:16px;">
+      <label style="margin:0;font-weight:400;">Pin to quick-add grid</label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="saveOnlyBtn">Save only</button>
+      <button class="btn btn-primary" id="saveLogBtn">Save & log now</button>
+    </div>
+  </div>
+</div>
+
+<!-- Auth Modal -->
+<div class="modal-backdrop" id="authModal">
+  <div class="modal">
+    <button class="modal-close" data-close="authModal">✕</button>
+    <h2 id="authTitle">Sign in</h2>
+    <div id="authCloudArea">
+      <button class="btn btn-outline" id="googleBtn" style="width:100%;">Continue with Google</button>
+      <div class="divider-line">or</div>
+      <div class="field"><label>Email</label><input type="email" id="authEmail"></div>
+      <div class="field"><label>Password</label><input type="password" id="authPass"></div>
+      <button class="btn btn-primary" id="authSubmitBtn" style="width:100%;">Sign in</button>
+      <div class="auth-msg" id="authMsg"></div>
+      <div class="authtoggle" id="authToggleRow">
+        <span>New here? <b id="toggleToSignup">Create account</b></span>
+      </div>
+    </div>
+    <div class="divider-line">or</div>
+    <button class="btn btn-ghost" id="guestBtn" style="width:100%;">Continue as guest</button>
+    <button class="btn btn-ghost" id="signOutBtn" style="width:100%;display:none;margin-top:8px;">Sign out</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================= CONFIG ============================= */
+// Paste your credentials from Firebase Console (Project Settings -> General -> Your Apps).
+const firebaseConfig = {
+  apiKey: "YOUR_FIREBASE_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const CLOUD_ENABLED = !firebaseConfig.apiKey.includes('YOUR_');
+let auth = null;
+let db = null;
+
+if (CLOUD_ENABLED) {
+  firebase.initializeApp(firebaseConfig);
+  auth = firebase.auth();
+  db = firebase.firestore();
+}
+
+const CATEGORY_LABELS = { study:'Study', social:'Social & Fun', essential:'Essential' };
+const CATEGORY_HUE = { study:208, social:16, essential:150 };
+const CATEGORY_SAT = { study:62, social:72, essential:32 };
+
+const DEFAULT_ACTIVITIES = [
+  {name:'Wake Up', category:'essential'},
+  {name:'Ready', category:'essential'},
+  {name:'Bath', category:'essential'},
+  {name:'Breakfast', category:'essential'},
+  {name:'Lunch', category:'essential'},
+  {name:'Dinner', category:'essential'},
+  {name:'Commute', category:'essential'},
+  {name:'Rest', category:'essential'},
+  {name:'Cooking', category:'essential'},
+  {name:'Sleep', category:'essential'},
+  {name:'Library', category:'study'},
+  {name:'Coaching', category:'study'},
+  {name:'Newspaper', category:'study'},
+  {name:'Website Work', category:'study'},
+  {name:'Call', category:'social'},
+  {name:'Timepass', category:'social'},
+  {name:'Hobby', category:'social'},
+];
+
+const LS = {
+  activities:'chrono_activities_v1',
+  events:'chrono_events_v1',
+  deletes:'chrono_pending_deletes_v1',
+  localId:'chrono_local_id_v1',
+};
+
+/* ============================= UTIL ============================= */
+function uid(){ return (crypto.randomUUID ? crypto.randomUUID() : 'id-'+Date.now()+'-'+Math.random().toString(16).slice(2)); }
+function pad(n){ return String(n).padStart(2,'0'); }
+function localDateStr(d){ d = d || new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function fmt12(d){ let h=d.getHours(), m=d.getMinutes(); const ap=h>=12?'PM':'AM'; h=h%12; if(h===0)h=12; return h+':'+pad(m)+' '+ap; }
+function durationLabel(mins){ mins = Math.max(0,Math.round(mins)); const h=Math.floor(mins/60), m=mins%60; return h ? (h+'h '+m+'m') : (m+'m'); }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function hashStr(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h*31+str.charCodeAt(i))>>>0; } return h; }
+function colorForActivity(name, category){
+  const baseHue = CATEGORY_HUE[category] !== undefined ? CATEGORY_HUE[category] : CATEGORY_HUE.essential;
+  const sat = CATEGORY_SAT[category] !== undefined ? CATEGORY_SAT[category] : CATEGORY_SAT.essential;
+  const h = hashStr((name||'').toLowerCase().trim());
+  const hueOff = (h % 34) - 17;
+  const lightOff = ((h >> 6) % 22) - 11;
+  const hue = (baseHue + hueOff + 360) % 360;
+  const light = Math.min(62, Math.max(30, 46 + lightOff));
+  return 'hsl(' + hue + ' ' + sat + '% ' + light + '%)';
+}
+function categoryColor(cat){ return 'hsl(' + CATEGORY_HUE[cat] + ' ' + CATEGORY_SAT[cat] + '% 46%)'; }
+function loadLS(key, fallback){ try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } }
+function saveLS(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){ console.error('localStorage save failed', e); } }
+function debounce(fn, ms){ let t; return function(){ clearTimeout(t); const a=arguments; t=setTimeout(()=>fn.apply(null,a), ms); }; }
+
+/* ============================= STATE ============================= */
+const state = {
+  user: null,
+  activities: loadLS(LS.activities, null) || DEFAULT_ACTIVITIES.map(a => ({
+    id: uid(), name:a.name, category:a.category, color: colorForActivity(a.name, a.category),
+    is_pinned:true, synced:false, updated_at: new Date().toISOString(),
+  })),
+  events: loadLS(LS.events, []),
+  pendingDeletes: loadLS(LS.deletes, []),
+  editingId: null,
+  historyDaysShown: 7,
+  authMode: 'signin',
+};
+if(!localStorage.getItem(LS.activities)) saveLS(LS.activities, state.activities);
+
+function persistActivities(){ saveLS(LS.activities, state.activities); }
+function persistEvents(){ saveLS(LS.events, state.events); }
+function persistDeletes(){ saveLS(LS.deletes, state.pendingDeletes); }
+
+/* ============================= CORE ACTIONS ============================= */
+function logActivity(activity, atDate){
+  atDate = atDate || new Date();
+  const ev = {
+    id: uid(), client_id: uid(),
+    activity_id: activity.id, activity_name: activity.name,
+    category: activity.category, color: activity.color,
+    start_time: atDate.toISOString(), date: localDateStr(atDate),
+    synced:false,
+  };
+  state.events.push(ev);
+  state.events.sort((a,b)=> new Date(a.start_time) - new Date(b.start_time));
+  persistEvents();
+  renderAll();
+  showToast('Logged ' + activity.name + ' · ' + fmt12(atDate));
+  queueSync();
+}
+
+function updateEventTime(id, hh, mm){
+  const ev = state.events.find(e=>e.id===id);
+  if(!ev) return;
+  const d = new Date(ev.start_time);
+  d.setHours(hh, mm, 0, 0);
+  ev.start_time = d.toISOString();
+  ev.date = localDateStr(d);
+  ev.synced = false;
+  state.events.sort((a,b)=> new Date(a.start_time) - new Date(b.start_time));
+  persistEvents();
+  state.editingId = null;
+  renderAll();
+  queueSync();
+}
+
+function deleteEvent(id){
+  const ev = state.events.find(e=>e.id===id);
+  state.events = state.events.filter(e=>e.id!==id);
+  persistEvents();
+  if(ev && ev.synced){ state.pendingDeletes.push(ev.id); persistDeletes(); }
+  renderAll();
+  queueSync();
+}
+
+function addActivity(opts){
+  const name = (opts.name||'').trim();
+  if(!name) return null;
+  const existing = state.activities.find(a => a.name.toLowerCase() === name.toLowerCase());
+  if(existing){
+    if(opts.pin) existing.is_pinned = true;
+    persistActivities();
+    return existing;
+  }
+  const act = {
+    id: uid(), name, category: opts.category || 'essential',
+    color: colorForActivity(name, opts.category || 'essential'),
+    is_pinned: !!opts.pin, synced:false, updated_at: new Date().toISOString(),
+  };
+  state.activities.push(act);
+  persistActivities();
+  return act;
+}
+
+/* ============================= TIMELINE ============================= */
+function buildSegments(dateStr){
+  const dayEvents = state.events.filter(e=>e.date===dateStr).sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
+  if(!dayEvents.length) return [];
+  const isToday = dateStr === localDateStr();
+  const segs = [];
+  for(let i=0;i<dayEvents.length;i++){
+    const start = new Date(dayEvents[i].start_time);
+    let end;
+    if(i < dayEvents.length-1){ end = new Date(dayEvents[i+1].start_time); }
+    else if(isToday){ end = new Date(); }
+    else { end = new Date(start); end.setHours(23,59,59,999); }
+    const mins = Math.max(1, (end-start)/60000);
+    segs.push(Object.assign({}, dayEvents[i], {start, end, mins}));
+  }
+  return segs;
+}
+
+function renderStripInto(el, segs, live){
+  el.innerHTML = '';
+  if(!segs.length){ el.innerHTML = '<div class="strip-empty">No activity logged yet</div>'; return; }
+  segs.forEach((s,i)=>{
+    const div = document.createElement('div');
+    div.className = 'strip-seg' + (live && i===segs.length-1 ? ' strip-seg--live' : '');
+    div.style.flexGrow = s.mins;
+    div.style.background = s.color;
+    const endLabel = (live && i===segs.length-1) ? 'now' : fmt12(s.end);
+    div.title = s.activity_name + ' · ' + fmt12(s.start) + '–' + endLabel + ' (' + durationLabel(s.mins) + ')';
+    el.appendChild(div);
+  });
+}
+
+/* ============================= RENDER ============================= */
+function currentEvent(){
+  const todays = state.events.filter(e=>e.date===localDateStr()).sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
+  return todays.length ? todays[todays.length-1] : null;
+}
+
+function renderStatus(){
+  const el = document.getElementById('statusCard');
+  const undoBtn = document.getElementById('undoBtn');
+  const ev = currentEvent();
+  if(!ev){
+    el.innerHTML = '<div class="status-empty">Tap an activity below to start tracking today.</div>';
+    undoBtn.style.display = 'none';
+    return;
+  }
+  const start = new Date(ev.start_time);
+  el.innerHTML =
+    '<span class="status-dot" style="background:'+ev.color+'"></span>' +
+    '<div><div class="status-name">'+escapeHtml(ev.activity_name)+'</div>' +
+    '<div class="status-since mono">since '+fmt12(start)+' · <span id="statusElapsed">'+durationLabel((Date.now()-start)/60000)+'</span></div></div>';
+  undoBtn.style.display = 'inline-block';
+}
+
+function renderTodayStrip(){
+  renderStripInto(document.getElementById('todayStrip'), buildSegments(localDateStr()), true);
+}
+
+function renderQuickAdd(){
+  const container = document.getElementById('quickAdd');
+  const groups = { study:[], social:[], essential:[] };
+  state.activities.filter(a=>a.is_pinned).forEach(a=>{ if(groups[a.category]) groups[a.category].push(a); });
+  let html = '';
+  ['study','social','essential'].forEach(cat=>{
+    if(!groups[cat].length) return;
+    html += '<div class="qa-group"><div class="qa-label" style="color:'+categoryColor(cat)+'">'+CATEGORY_LABELS[cat]+'</div><div class="qa-grid">';
+    groups[cat].forEach(a=>{
+      html += '<button class="qa-btn" style="border-left-color:'+a.color+'" data-id="'+a.id+'"><span class="qa-dot" style="background:'+a.color+'"></span>'+escapeHtml(a.name)+'</button>';
+    });
+    html += '</div></div>';
+  });
+  html += '<button class="qa-add" id="addActOpenBtn">+ Add activity</button>';
+  container.innerHTML = html;
+}
+
+function renderTodayLog(){
+  const container = document.getElementById('todayLog');
+  const dayEvents = state.events.filter(e=>e.date===localDateStr()).sort((a,b)=> new Date(b.start_time)-new Date(a.start_time));
+  if(!dayEvents.length){ container.innerHTML = '<div class="empty-note">Nothing logged yet today.</div>'; return; }
+  container.innerHTML = dayEvents.map(e=>{
+    if(state.editingId === e.id){
+      const d = new Date(e.start_time);
+      const val = pad(d.getHours())+':'+pad(d.getMinutes());
+      return '<div class="log-editrow" data-id="'+e.id+'">' +
+        '<input type="time" id="editTimeInput" value="'+val+'">' +
+        '<button class="btn-save" data-action="saveEdit" data-id="'+e.id+'">Save</button>' +
+        '<button class="btn-cancel" data-action="cancelEdit">Cancel</button></div>';
+    }
+    return '<div class="log-row" data-id="'+e.id+'">' +
+      '<span class="log-dot" style="background:'+e.color+'"></span>' +
+      '<span class="log-name">'+escapeHtml(e.activity_name)+'</span>' +
+      '<span class="log-time mono">'+fmt12(new Date(e.start_time))+'</span>' +
+      '<button class="log-edit" data-action="edit" data-id="'+e.id+'">✎</button>' +
+      '<button class="log-del" data-action="del" data-id="'+e.id+'">🗑</button></div>';
+  }).join('');
+}
+
+function allDatesWithData(limit){
+  const set = new Set(state.events.map(e=>e.date));
+  set.add(localDateStr());
+  return Array.from(set).sort().reverse().slice(0, limit);
+}
+
+function renderHistory(){
+  const container = document.getElementById('historyList');
+  const dates = allDatesWithData(state.historyDaysShown);
+  container.innerHTML = dates.map(dateStr=>{
+    const segs = buildSegments(dateStr);
+    const totalMins = segs.reduce((s,x)=>s+x.mins,0);
+    const d = new Date(dateStr+'T00:00:00');
+    const label = dateStr === localDateStr() ? 'Today' : d.toLocaleDateString('en-IN',{weekday:'short', day:'numeric', month:'short'});
+    let stripHtml = '';
+    if(!segs.length){ stripHtml = '<div class="strip-empty">No data</div>'; }
+    else { stripHtml = segs.map(s=> '<div class="strip-seg" style="flex-grow:'+s.mins+';background:'+s.color+'" title="'+escapeHtml(s.activity_name)+' '+fmt12(s.start)+'–'+fmt12(s.end)+'"></div>').join(''); }
+    const detailHtml = segs.map(s=>
+      '<div class="log-row"><span class="log-dot" style="background:'+s.color+'"></span><span class="log-name">'+escapeHtml(s.activity_name)+'</span><span class="log-time mono">'+fmt12(s.start)+' – '+fmt12(s.end)+' ('+durationLabel(s.mins)+')</span></div>'
+    ).join('');
+    return '<div class="hist-day" data-date="'+dateStr+'">' +
+      '<div class="hist-day-head"><span class="hist-date">'+label+'</span><span class="hist-total mono">'+(totalMins?durationLabel(totalMins):'')+'</span></div>' +
+      '<div class="hist-strip">'+stripHtml+'</div>' +
+      '<div class="hist-detail" id="detail-'+dateStr+'">'+(detailHtml||'<div class="empty-note">No entries.</div>')+'</div>' +
+      '</div>';
+  }).join('');
+}
+
+function renderStats(){
+  const container = document.getElementById('statsPanel');
+  const today = localDateStr();
+  const todaySegs = buildSegments(today);
+  const todayTotals = {study:0, social:0, essential:0};
+  todaySegs.forEach(s=>{ todayTotals[s.category] = (todayTotals[s.category]||0) + s.mins; });
+  const todayGrandTotal = Object.values(todayTotals).reduce((a,b)=>a+b,0) || 1;
+
+  let html = '<div class="stat-card"><h3>Today\'s split</h3>';
+  ['study','social','essential'].forEach(cat=>{
+    const mins = todayTotals[cat] || 0;
+    const pct = Math.round((mins/todayGrandTotal)*100);
+    html += '<div class="stat-bar-row"><span class="stat-bar-label">'+CATEGORY_LABELS[cat]+'</span>' +
+      '<span class="stat-bar-track"><span class="stat-bar-fill" style="width:'+pct+'%;background:'+categoryColor(cat)+'"></span></span>' +
+      '<span class="stat-bar-val mono">'+(mins?durationLabel(mins):'0m')+'</span></div>';
+  });
+  html += '</div>';
+
+  html += '<div class="stat-card"><h3>Last 7 days · category totals</h3>';
+  const last7 = [];
+  for(let i=6;i>=0;i--){ const d = new Date(); d.setDate(d.getDate()-i); last7.push(localDateStr(d)); }
+  const dayLabels = last7.map(ds => new Date(ds+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short'}).slice(0,2));
+  last7.forEach((ds,i)=>{
+    const segs = buildSegments(ds);
+    const totals = {study:0, social:0, essential:0};
+    let grand = 0;
+    segs.forEach(s=>{ totals[s.category]=(totals[s.category]||0)+s.mins; grand += s.mins; });
+    let segHtml = '';
+    if(grand > 0){
+      ['study','social','essential'].forEach(cat=>{
+        if(totals[cat] > 0) segHtml += '<div style="flex-grow:'+totals[cat]+';background:'+categoryColor(cat)+'"></div>';
+      });
+    }
+    html += '<div class="stat-week-row"><span class="stat-week-day">'+dayLabels[i]+'</span>' +
+      '<span class="stat-week-strip">'+segHtml+'</span>' +
+      '<span class="hist-total mono" style="width:44px;text-align:right;">'+(grand?durationLabel(grand):'—')+'</span></div>';
+  });
+  html += '</div>';
+
+  container.innerHTML = html;
+}
+
+function renderAuthUI(){
+  const label = document.getElementById('authChipLabel');
+  const badge = document.getElementById('cloudBadge');
+  const signOutBtn = document.getElementById('signOutBtn');
+  const authToggleRow = document.getElementById('authToggleRow');
+  const cloudArea = document.getElementById('authCloudArea');
+  if(state.user){
+    label.textContent = (state.user.email || 'Account').split('@')[0];
+    badge.className = 'cloud-badge on';
+    signOutBtn.style.display = 'block';
+  } else {
+    label.textContent = 'Guest';
+    badge.className = 'cloud-badge';
+    signOutBtn.style.display = 'none';
+  }
+  if(!CLOUD_ENABLED){
+    cloudArea.innerHTML = '<div class="cloud-note">Cloud sync isn\'t set up yet. Add your Firebase credentials at the top of this file to enable Google / email sign-in and cross-device sync. Chrono works fully offline until then — your data stays on this device.</div>';
+    authToggleRow.style.display = 'none';
+  }
+}
+
+function renderAll(){
+  renderStatus();
+  renderTodayStrip();
+  renderQuickAdd();
+  renderTodayLog();
+  renderHistory();
+  renderStats();
+}
+
+/* live elapsed timer, cheap update */
+setInterval(()=>{
+  const ev = currentEvent();
+  const elEl = document.getElementById('statusElapsed');
+  if(ev && elEl){ elEl.textContent = durationLabel((Date.now()-new Date(ev.start_time))/60000); }
+  renderTodayStrip();
+}, 30000);
+
+/* ============================= TOAST ============================= */
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 2200);
+}
+
+/* ============================= MODALS ============================= */
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('[data-close]').forEach(btn=>{
+  btn.addEventListener('click', ()=> closeModal(btn.dataset.close));
+});
+document.querySelectorAll('.modal-backdrop').forEach(bd=>{
+  bd.addEventListener('click', (e)=>{ if(e.target === bd) bd.classList.remove('open'); });
+});
+
+function nowTimeValue(){
+  const d = new Date();
+  return pad(d.getHours())+':'+pad(d.getMinutes());
+}
+
+document.getElementById('quickAdd').addEventListener('click', (e)=>{
+  const openBtn = e.target.closest('#addActOpenBtn');
+  if(openBtn){
+    document.getElementById('actName').value = '';
+    document.getElementById('actTime').value = nowTimeValue();
+    document.getElementById('actPin').checked = true;
+    document.querySelectorAll('#catPills .pill').forEach(p=>p.classList.remove('active'));
+    document.querySelector('#catPills .pill[data-cat="study"]').classList.add('active');
+    openModal('addModal');
+    return;
+  }
+  const qb = e.target.closest('.qa-btn');
+  if(qb){
+    const act = state.activities.find(a=>a.id===qb.dataset.id);
+    if(act) logActivity(act, new Date());
+  }
+});
+
+document.getElementById('catPills').addEventListener('click', (e)=>{
+  const p = e.target.closest('.pill');
+  if(!p) return;
+  document.querySelectorAll('#catPills .pill').forEach(x=>x.classList.remove('active'));
+  p.classList.add('active');
+});
+
+function getSelectedCat(){
+  const active = document.querySelector('#catPills .pill.active');
+  return active ? active.dataset.cat : 'essential';
+}
+function timeInputToDate(val){
+  const d = new Date();
+  const parts = (val || nowTimeValue()).split(':');
+  d.setHours(parseInt(parts[0],10), parseInt(parts[1],10), 0, 0);
+  return d;
+}
+
+document.getElementById('saveOnlyBtn').addEventListener('click', ()=>{
+  const name = document.getElementById('actName').value.trim();
+  if(!name){ return; }
+  addActivity({ name, category:getSelectedCat(), pin: document.getElementById('actPin').checked });
+  renderAll();
+  closeModal('addModal');
+  showToast('Saved ' + name);
+});
+
+document.getElementById('saveLogBtn').addEventListener('click', ()=>{
+  const name = document.getElementById('actName').value.trim();
+  if(!name){ return; }
+  const act = addActivity({ name, category:getSelectedCat(), pin: document.getElementById('actPin').checked });
+  const when = timeInputToDate(document.getElementById('actTime').value);
+  closeModal('addModal');
+  if(act) logActivity(act, when);
+});
+
+document.getElementById('undoBtn').addEventListener('click', ()=>{
+  const ev = currentEvent();
+  if(ev) deleteEvent(ev.id);
+});
+
+document.getElementById('todayLog').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  const action = btn.dataset.action;
+  if(action === 'edit'){ state.editingId = btn.dataset.id; renderTodayLog(); }
+  else if(action === 'del'){ deleteEvent(btn.dataset.id); }
+  else if(action === 'cancelEdit'){ state.editingId = null; renderTodayLog(); }
+  else if(action === 'saveEdit'){
+    const input = document.getElementById('editTimeInput');
+    const parts = input.value.split(':');
+    updateEventTime(btn.dataset.id, parseInt(parts[0],10), parseInt(parts[1],10));
+  }
+});
+
+document.getElementById('historyList').addEventListener('click', (e)=>{
+  const day = e.target.closest('.hist-day');
+  if(!day) return;
+  const detail = document.getElementById('detail-'+day.dataset.date);
+  if(detail) detail.classList.toggle('open');
+});
+
+document.getElementById('loadMoreBtn').addEventListener('click', ()=>{
+  state.historyDaysShown += 14;
+  renderHistory();
+});
+
+/* ---- Tabs ---- */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ---- Scroll shadow on topbar ---- */
+window.addEventListener('scroll', ()=>{
+  document.getElementById('topbar').classList.toggle('scrolled', window.scrollY > 4);
+});
+
+/* ============================= AUTH ============================= */
+document.getElementById('authChip').addEventListener('click', ()=>{
+  state.authMode = 'signin';
+  renderAuthModalMode();
+  openModal('authModal');
+});
+document.getElementById('guestBtn').addEventListener('click', ()=> closeModal('authModal'));
+
+function renderAuthModalMode(){
+  document.getElementById('authTitle').textContent = state.authMode === 'signin' ? 'Sign in' : 'Create account';
+  document.getElementById('authSubmitBtn').textContent = state.authMode === 'signin' ? 'Sign in' : 'Create account';
+  document.getElementById('authMsg').textContent = '';
+  const toggle = document.getElementById('authToggleRow');
+  toggle.innerHTML = state.authMode === 'signin'
+    ? 'New here? <b id="toggleToSignup">Create account</b>'
+    : 'Already have an account? <b id="toggleToSignup">Sign in</b>';
+}
+document.getElementById('authToggleRow').addEventListener('click', (e)=>{
+  if(e.target.id === 'toggleToSignup'){
+    state.authMode = state.authMode === 'signin' ? 'signup' : 'signin';
+    renderAuthModalMode();
+  }
+});
+
+if(CLOUD_ENABLED){
+  // Google Sign-In
+  document.getElementById('googleBtn').addEventListener('click', async ()=>{
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try {
+      await auth.signInWithPopup(provider);
+      closeModal('authModal');
+    } catch(err) {
+      document.getElementById('authMsg').textContent = err.message;
+    }
+  });
+
+  // Email / Password Authentication
+  document.getElementById('authSubmitBtn').addEventListener('click', async ()=>{
+    const email = document.getElementById('authEmail').value.trim();
+    const pass = document.getElementById('authPass').value;
+    const msgEl = document.getElementById('authMsg');
+    if(!email || !pass){ msgEl.textContent = 'Enter both email and password.'; return; }
+    msgEl.textContent = '';
+    
+    try {
+      if(state.authMode === 'signin'){
+        await auth.signInWithEmailAndPassword(email, pass);
+      } else {
+        await auth.createUserWithEmailAndPassword(email, pass);
+      }
+      closeModal('authModal');
+    } catch(err) {
+      msgEl.textContent = err.message;
+    }
+  });
+
+  // Sign Out
+  document.getElementById('signOutBtn').addEventListener('click', async ()=>{
+    await auth.signOut();
+    closeModal('authModal');
+  });
+
+  // Auth Observer
+  auth.onAuthStateChanged(async (user) => {
+    const prevUser = state.user;
+    state.user = user;
+    renderAuthUI();
+
+    if(user && !prevUser){
+      const migratedKey = 'chrono_migrated_' + user.uid;
+      const alreadyMigrated = loadLS(migratedKey, false);
+      if(!alreadyMigrated){
+        state.activities.forEach(a=>a.synced=false);
+        state.events.forEach(e=>e.synced=false);
+        await syncPush();
+        saveLS(migratedKey, true);
+      }
+      await syncPull();
+      await syncPush();
+      renderAll();
+    }
+  });
+}
+
+/* ============================= SYNC ============================= */
+const queueSync = debounce(()=>{ if(CLOUD_ENABLED && state.user) syncPush(); }, 1500);
+
+function setSyncBusy(busy){
+  const badge = document.getElementById('cloudBadge');
+  if(!badge) return;
+  if(busy){ badge.className = 'cloud-badge busy'; }
+  else { badge.className = state.user ? 'cloud-badge on' : 'cloud-badge'; }
+}
+
+async function syncPush(){
+  if(!CLOUD_ENABLED || !state.user) return;
+  setSyncBusy(true);
+  try {
+    const uid = state.user.uid;
+    const batch = db.batch();
+
+    // Activities Sync
+    const unsyncedActs = state.activities.filter(a => !a.synced);
+    unsyncedActs.forEach(a => {
+      const ref = db.collection('users').doc(uid).collection('activities').doc(a.id);
+      batch.set(ref, {
+        id: a.id,
+        name: a.name,
+        category: a.category,
+        color: a.color,
+        is_pinned: a.is_pinned,
+        updated_at: new Date().toISOString()
+      }, { merge: true });
+    });
+
+    // Events Sync
+    const unsyncedEvs = state.events.filter(e => !e.synced);
+    unsyncedEvs.forEach(e => {
+      const ref = db.collection('users').doc(uid).collection('events').doc(e.id);
+      batch.set(ref, {
+        id: e.id,
+        client_id: e.client_id,
+        activity_id: e.activity_id,
+        activity_name: e.activity_name,
+        category: e.category,
+        color: e.color,
+        start_time: e.start_time,
+        date: e.date
+      }, { merge: true });
+    });
+
+    // Pending Deletes Sync
+    if(state.pendingDeletes.length){
+      state.pendingDeletes.forEach(id => {
+        const ref = db.collection('users').doc(uid).collection('events').doc(id);
+        batch.delete(ref);
+      });
+    }
+
+    await batch.commit();
+
+    // Mark items synced locally
+    unsyncedActs.forEach(a => a.synced = true);
+    unsyncedEvs.forEach(e => e.synced = true);
+    state.pendingDeletes = [];
+
+    persistActivities();
+    persistEvents();
+    persistDeletes();
+  } catch(err) {
+    console.error('Firebase sync push failed', err);
+  }
+  setSyncBusy(false);
+}
+
+async function syncPull(){
+  if(!CLOUD_ENABLED || !state.user) return;
+  setSyncBusy(true);
+  try {
+    const uid = state.user.uid;
+    const since = new Date();
+    since.setDate(since.getDate() - 90);
+    const sinceStr = localDateStr(since);
+
+    const [actsSnap, evsSnap] = await Promise.all([
+      db.collection('users').doc(uid).collection('activities').get(),
+      db.collection('users').doc(uid).collection('events').where('date', '>=', sinceStr).get()
+    ]);
+
+    if(!actsSnap.empty){
+      const remoteActs = actsSnap.docs.map(doc => doc.data());
+      mergeActivities(remoteActs);
+    }
+    if(!evsSnap.empty){
+      const remoteEvs = evsSnap.docs.map(doc => doc.data());
+      mergeEvents(remoteEvs);
+    }
+
+    persistActivities();
+    persistEvents();
+  } catch(err) {
+    console.error('Firebase sync pull failed', err);
+  }
+  setSyncBusy(false);
+}
+
+function mergeActivities(remoteRows){
+  const byId = new Map(state.activities.map(a=>[a.id, a]));
+  remoteRows.forEach(r=>{
+    const local = byId.get(r.id);
+    if(!local){
+      byId.set(r.id, { id:r.id, name:r.name, category:r.category, color:r.color, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at });
+    } else if(local.synced){
+      Object.assign(local, { name:r.name, category:r.category, color:r.color, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at });
+    }
+  });
+  state.activities = Array.from(byId.values());
+}
+
+function mergeEvents(remoteRows){
+  const byId = new Map(state.events.map(e=>[e.id, e]));
+  remoteRows.forEach(r=>{
+    const local = byId.get(r.id);
+    if(!local){
+      byId.set(r.id, { id:r.id, client_id:r.client_id, activity_id:r.activity_id, activity_name:r.activity_name, category:r.category, color:r.color, start_time:r.start_time, date:r.date, synced:true });
+    } else if(local.synced){
+      Object.assign(local, { activity_name:r.activity_name, category:r.category, color:r.color, start_time:r.start_time, date:r.date, synced:true });
+    }
+  });
+  state.events = Array.from(byId.values()).sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
+}
+
+/* ============================= INIT ============================= */
+renderAuthUI();
+renderAll();
+
+})();
+</script>
+</body>
+</html>
