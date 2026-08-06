@@ -29,6 +29,7 @@
     --social-h:16; --social-s:72%;
     --essential-h:150; --essential-s:32%;
     --danger:#B3492F;
+    --accent:#B3492F;
     --radius:14px;
     --radius-sm:9px;
   }
@@ -68,7 +69,28 @@
   .cloud-badge.on{background:#3E8E5A;}
   .cloud-badge.busy{background:#D3A227;animation:pulse 1s infinite;}
 
-  /* ---- Status / pulse strip ---- */
+  /* ---- Timeline card ---- */
+  .tl-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-top:12px;padding:14px 0 14px 14px;overflow:hidden;}
+  .tl-head{display:flex;justify-content:space-between;align-items:baseline;padding-right:14px;margin-bottom:10px;}
+  .tl-title{font-family:"Space Grotesk";font-weight:600;font-size:14.5px;}
+  .tl-sub{font-size:11px;color:var(--ink-faint);}
+  .tl-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding-right:14px;}
+  .tl-inner{position:relative;}
+  .tl-ruler{position:relative;height:16px;margin-bottom:8px;}
+  .tl-tick{position:absolute;top:0;font-size:9.5px;color:var(--ink-faint);transform:translateX(-50%);white-space:nowrap;font-family:"JetBrains Mono";}
+  .tl-tick::after{content:"";position:absolute;left:50%;top:13px;width:1px;height:5px;background:var(--border-strong);}
+  .tl-day{margin-bottom:8px;}
+  .tl-day-label{font-size:10.5px;color:var(--ink-soft);margin-bottom:3px;font-weight:600;font-family:"Space Grotesk";}
+  .tl-track{position:relative;height:22px;border-radius:6px;background:var(--paper);overflow:visible;}
+  .tl-seg{position:absolute;top:0;bottom:0;min-width:3px;border-radius:3px;}
+  .tl-seg.live::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,0.35);animation:pulse 1.6s ease-in-out infinite;border-radius:3px;}
+  .tl-marker{position:absolute;top:-4px;width:2px;height:30px;border-radius:1px;z-index:3;background:var(--mc,var(--ink));}
+  .tl-marker::after{content:"";position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:var(--mc,var(--ink));}
+  .tl-now{position:absolute;top:0;width:2px;background:var(--accent);z-index:5;pointer-events:none;}
+  .tl-now::before{content:"now";position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--accent);font-weight:700;font-family:"JetBrains Mono";white-space:nowrap;}
+  @keyframes pulse{0%,100%{opacity:0.15;}50%{opacity:0;}}
+
+  /* ---- Status card ---- */
   .status-card{
     background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
     padding:14px 14px 12px;margin-top:12px;
@@ -80,22 +102,6 @@
   .status-empty{color:var(--ink-soft);font-size:14px;}
   .status-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .status-undo{background:none;border:none;color:var(--ink-faint);font-size:12px;text-decoration:underline;padding:4px;}
-
-  .strip{
-    display:flex;width:100%;height:20px;border-radius:999px;overflow:hidden;
-    margin-top:12px;background:var(--paper);border:1px solid var(--border);
-  }
-  .strip-seg{min-width:3px;transition:flex-grow .4s ease;}
-  .strip-seg--live{position:relative;}
-  .strip-seg--live::after{
-    content:"";position:absolute;inset:0;background:rgba(255,255,255,0.35);
-    animation:pulse 1.6s ease-in-out infinite;
-  }
-  .strip-empty{font-size:12px;color:var(--ink-faint);display:flex;align-items:center;padding-left:10px;}
-  @keyframes pulse{0%,100%{opacity:0.15;}50%{opacity:0;}}
-  .strip-legend{display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--ink-soft);}
-  .strip-legend span{display:inline-flex;align-items:center;gap:4px;}
-  .strip-legend i{width:7px;height:7px;border-radius:50%;display:inline-block;}
 
   /* ---- Tabs ---- */
   .tabs{display:flex;gap:4px;margin-top:16px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:3px;}
@@ -116,6 +122,7 @@
   }
   .qa-btn:active{transform:scale(0.97);background:var(--paper);}
   .qa-dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .qa-instant{opacity:.55;font-size:11px;margin-left:2px;}
   .qa-add{
     margin-top:16px;width:100%;background:none;border:1.5px dashed var(--border-strong);
     border-radius:var(--radius-sm);padding:12px;font-size:13.5px;color:var(--ink-soft);font-weight:600;font-family:"Space Grotesk";
@@ -143,7 +150,8 @@
   .hist-date{font-weight:600;font-size:13.5px;font-family:"Space Grotesk";}
   .hist-total{font-size:11.5px;color:var(--ink-soft);}
   .hist-strip{display:flex;height:14px;border-radius:999px;overflow:hidden;background:var(--paper);}
-  .hist-strip .strip-seg{min-width:2px;}
+  .strip-seg{min-width:2px;}
+  .strip-empty{font-size:12px;color:var(--ink-faint);display:flex;align-items:center;padding-left:10px;}
   .hist-detail{margin-top:9px;display:none;}
   .hist-detail.open{display:block;}
   .load-more{width:100%;background:none;border:1px solid var(--border);border-radius:999px;padding:10px;font-size:13px;color:var(--ink-soft);font-weight:600;font-family:"Space Grotesk";margin-top:4px;}
@@ -178,7 +186,7 @@
   .modal{
     background:var(--surface);width:100%;max-width:560px;border-radius:18px 18px 0 0;
     padding:20px 18px calc(20px + env(safe-area-inset-bottom));
-    animation:slideUp .22s ease;max-height:86vh;overflow-y:auto;
+    animation:slideUp .22s ease;max-height:86vh;overflow-y:auto;position:relative;
   }
   @keyframes slideUp{from{transform:translateY(24px);opacity:0;}to{transform:translateY(0);opacity:1;}}
   .modal h2{font-size:17px;margin:0 0 14px;}
@@ -202,9 +210,8 @@
   .authtoggle{display:flex;justify-content:center;gap:16px;font-size:12.5px;margin-top:12px;color:var(--ink-soft);}
   .authtoggle b{color:var(--ink);cursor:pointer;text-decoration:underline;}
   .auth-msg{font-size:12.5px;color:var(--danger);margin-top:8px;min-height:14px;}
-  .cloud-note{font-size:12px;color:var(--ink-faint);background:var(--paper);border-radius:9px;padding:10px 11px;line-height:1.5;}
+  .cloud-note{font-size:12px;color:var(--ink-faint);background:var(--paper);border-radius:999px;padding:10px 11px;line-height:1.5;}
   .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:15px;color:var(--ink-faint);}
-  .modal{position:relative;}
 
   @media (prefers-reduced-motion:reduce){
     *{animation:none!important;transition:none!important;}
@@ -224,20 +231,6 @@
     </div>
   </div>
 
-  <!-- Status + pulse strip -->
-  <div class="status-card">
-    <div class="status-row">
-      <div class="status-main" id="statusCard"><div class="status-empty">Tap an activity below to start tracking today.</div></div>
-      <button class="status-undo" id="undoBtn" style="display:none;">Undo</button>
-    </div>
-    <div class="strip" id="todayStrip"></div>
-    <div class="strip-legend">
-      <span><i style="background:hsl(var(--study-h) var(--study-s) 46%)"></i>Study</span>
-      <span><i style="background:hsl(var(--social-h) var(--social-s) 52%)"></i>Social</span>
-      <span><i style="background:hsl(var(--essential-h) var(--essential-s) 40%)"></i>Essential</span>
-    </div>
-  </div>
-
   <!-- Tabs -->
   <div class="tabs">
     <button class="tab-btn active" data-tab="today">Today</button>
@@ -247,6 +240,30 @@
 
   <!-- Today -->
   <div class="tab-panel active" id="tab-today">
+
+    <!-- Horizontal multi-day timeline -->
+    <div class="tl-card">
+      <div class="tl-head">
+        <div class="tl-title">Timeline</div>
+        <div class="tl-sub">day starts 4:00 AM · scroll ↔</div>
+      </div>
+      <div class="tl-scroll" id="tlScroll">
+        <div class="tl-inner" id="tlInner">
+          <div class="tl-ruler" id="tlRuler"></div>
+          <div id="tlRows"></div>
+          <div class="tl-now" id="tlNow"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Current activity status -->
+    <div class="status-card">
+      <div class="status-row">
+        <div class="status-main" id="statusCard"><div class="status-empty">Tap an activity below to start tracking.</div></div>
+        <button class="status-undo" id="undoBtn" style="display:none;">Undo</button>
+      </div>
+    </div>
+
     <div id="quickAdd"></div>
     <div class="log-section">
       <div class="section-title">Today's log</div>
@@ -293,6 +310,10 @@
       <input type="checkbox" id="actPin" checked style="width:16px;height:16px;">
       <label style="margin:0;font-weight:400;">Pin to quick-add grid</label>
     </div>
+    <div class="field check-row">
+      <input type="checkbox" id="actInstant" style="width:16px;height:16px;">
+      <label style="margin:0;font-weight:400;">Instant marker (like Wake Up) — a moment, not an ongoing activity</label>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="saveOnlyBtn">Save only</button>
       <button class="btn btn-primary" id="saveLogBtn">Save & log now</button>
@@ -335,23 +356,39 @@ function getFirebaseConfig() {
 }
 
 const firebaseConfig = getFirebaseConfig();
-const CLOUD_ENABLED = firebaseConfig && firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('YOUR_');
+const CLOUD_ENABLED = !!(firebaseConfig && firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('YOUR_'));
 
 let auth = null;
 let db = null;
 
 if (CLOUD_ENABLED) {
-  firebase.initializeApp(firebaseConfig);
-  auth = firebase.auth();
-  db = firebase.firestore();
+  try {
+    firebase.initializeApp(firebaseConfig);
+    auth = firebase.auth();
+    db = firebase.firestore();
+  } catch(e) {
+    console.error("Firebase init failed", e);
+  }
 }
 
 const CATEGORY_LABELS = { study:'Study', social:'Social & Fun', essential:'Essential' };
 const CATEGORY_HUE = { study:208, social:16, essential:150 };
 const CATEGORY_SAT = { study:62, social:72, essential:32 };
 
+const PALETTE = [
+  '#2563EB','#DC2626','#059669','#D97706','#7C3AED','#DB2777',
+  '#0891B2','#65A30D','#EA580C','#4F46E5','#0D9488','#C026D3',
+  '#B45309','#1D4ED8','#BE123C','#15803D','#9333EA','#0EA5E9',
+  '#CA8A04','#E11D48','#166534','#7E22CE','#0369A1','#A16207'
+];
+
+const DAY_START_HOUR = 4;
+const PX_PER_HOUR = 42;
+const DAY_WIDTH = 24 * PX_PER_HOUR;
+const TIMELINE_DAYS = 7;
+
 const DEFAULT_ACTIVITIES = [
-  {name:'Wake Up', category:'essential'},
+  {name:'Wake Up', category:'essential', instant:true},
   {name:'Ready', category:'essential'},
   {name:'Bath', category:'essential'},
   {name:'Breakfast', category:'essential'},
@@ -371,10 +408,9 @@ const DEFAULT_ACTIVITIES = [
 ];
 
 const LS = {
-  activities:'chrono_activities_v1',
-  events:'chrono_events_v1',
-  deletes:'chrono_pending_deletes_v1',
-  localId:'chrono_local_id_v1',
+  activities:'chrono_activities_v2',
+  events:'chrono_events_v2',
+  deletes:'chrono_pending_deletes_v2',
 };
 
 /* ============================= UTIL ============================= */
@@ -385,27 +421,48 @@ function fmt12(d){ let h=d.getHours(), m=d.getMinutes(); const ap=h>=12?'PM':'AM
 function durationLabel(mins){ mins = Math.max(0,Math.round(mins)); const h=Math.floor(mins/60), m=mins%60; return h ? (h+'h '+m+'m') : (m+'m'); }
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function hashStr(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h*31+str.charCodeAt(i))>>>0; } return h; }
-function colorForActivity(name, category){
-  const baseHue = CATEGORY_HUE[category] !== undefined ? CATEGORY_HUE[category] : CATEGORY_HUE.essential;
-  const sat = CATEGORY_SAT[category] !== undefined ? CATEGORY_SAT[category] : CATEGORY_SAT.essential;
-  const h = hashStr((name||'').toLowerCase().trim());
-  const hueOff = (h % 34) - 17;
-  const lightOff = ((h >> 6) % 22) - 11;
-  const hue = (baseHue + hueOff + 360) % 360;
-  const light = Math.min(62, Math.max(30, 46 + lightOff));
-  return 'hsl(' + hue + ' ' + sat + '% ' + light + '%)';
-}
+function paletteColor(name){ return PALETTE[hashStr((name||'').toLowerCase().trim()) % PALETTE.length]; }
 function categoryColor(cat){ return 'hsl(' + CATEGORY_HUE[cat] + ' ' + CATEGORY_SAT[cat] + '% 46%)'; }
 function loadLS(key, fallback){ try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } }
 function saveLS(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){ console.error('localStorage save failed', e); } }
 function debounce(fn, ms){ let t; return function(){ clearTimeout(t); const a=arguments; t=setTimeout(()=>fn.apply(null,a), ms); }; }
 
+function logicalDateStr(d){
+  const shifted = new Date(d.getTime() - DAY_START_HOUR*3600000);
+  return localDateStr(shifted);
+}
+function todayLogicalDate(){ return logicalDateStr(new Date()); }
+function dayBoundaryStart(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  d.setHours(d.getHours()+DAY_START_HOUR);
+  return d;
+}
+function minutesIntoDay(date, dateStr){
+  return (date - dayBoundaryStart(dateStr)) / 60000;
+}
+function dayLabel(dateStr){
+  const todayL = todayLogicalDate();
+  if(dateStr === todayL) return 'Today';
+  const yest = new Date(todayL+'T00:00:00'); yest.setDate(yest.getDate()-1);
+  if(dateStr === localDateStr(yest)) return 'Yesterday';
+  return new Date(dateStr+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short', day:'numeric', month:'short'});
+}
+function last7LogicalDates(){
+  const base = new Date(todayLogicalDate()+'T00:00:00');
+  const out = [];
+  for(let i=TIMELINE_DAYS-1;i>=0;i--){
+    const d = new Date(base); d.setDate(d.getDate()-i);
+    out.push(localDateStr(d));
+  }
+  return out;
+}
+
 /* ============================= STATE ============================= */
 const state = {
   user: null,
   activities: loadLS(LS.activities, null) || DEFAULT_ACTIVITIES.map(a => ({
-    id: uid(), name:a.name, category:a.category, color: colorForActivity(a.name, a.category),
-    is_pinned:true, synced:false, updated_at: new Date().toISOString(),
+    id: uid(), name:a.name, category:a.category, color: paletteColor(a.name),
+    instant: !!a.instant, is_pinned:true, synced:false, updated_at: new Date().toISOString(),
   })),
   events: loadLS(LS.events, []),
   pendingDeletes: loadLS(LS.deletes, []),
@@ -413,27 +470,41 @@ const state = {
   historyDaysShown: 7,
   authMode: 'signin',
 };
-if(!localStorage.getItem(LS.activities)) saveLS(LS.activities, state.activities);
+
+state.activities.forEach(a=>{
+  a.color = paletteColor(a.name);
+  if(a.instant === undefined) a.instant = (a.name === 'Wake Up');
+});
+saveLS(LS.activities, state.activities);
 
 function persistActivities(){ saveLS(LS.activities, state.activities); }
 function persistEvents(){ saveLS(LS.events, state.events); }
 function persistDeletes(){ saveLS(LS.deletes, state.pendingDeletes); }
 
 /* ============================= CORE ACTIONS ============================= */
+function currentEvent(){
+  const todayL = todayLogicalDate();
+  const todays = state.events
+    .filter(e => logicalDateStr(new Date(e.start_time)) === todayL)
+    .sort((a,b)=> new Date(a.start_time) - new Date(b.start_time));
+  return todays.length ? todays[todays.length-1] : null;
+}
+
 function logActivity(activity, atDate){
   atDate = atDate || new Date();
   const ev = {
     id: uid(), client_id: uid(),
     activity_id: activity.id, activity_name: activity.name,
     category: activity.category, color: activity.color,
-    start_time: atDate.toISOString(), date: localDateStr(atDate),
+    instant: !!activity.instant,
+    start_time: atDate.toISOString(), date: logicalDateStr(atDate),
     synced:false,
   };
   state.events.push(ev);
   state.events.sort((a,b)=> new Date(a.start_time) - new Date(b.start_time));
   persistEvents();
   renderAll();
-  showToast('Logged ' + activity.name + ' · ' + fmt12(atDate));
+  showToast((activity.instant ? 'Marked ' : 'Logged ') + activity.name + ' · ' + fmt12(atDate));
   queueSync();
 }
 
@@ -443,7 +514,7 @@ function updateEventTime(id, hh, mm){
   const d = new Date(ev.start_time);
   d.setHours(hh, mm, 0, 0);
   ev.start_time = d.toISOString();
-  ev.date = localDateStr(d);
+  ev.date = logicalDateStr(d);
   ev.synced = false;
   state.events.sort((a,b)=> new Date(a.start_time) - new Date(b.start_time));
   persistEvents();
@@ -467,12 +538,14 @@ function addActivity(opts){
   const existing = state.activities.find(a => a.name.toLowerCase() === name.toLowerCase());
   if(existing){
     if(opts.pin) existing.is_pinned = true;
+    if(opts.instant !== undefined) existing.instant = !!opts.instant;
     persistActivities();
     return existing;
   }
   const act = {
     id: uid(), name, category: opts.category || 'essential',
-    color: colorForActivity(name, opts.category || 'essential'),
+    color: paletteColor(name),
+    instant: !!opts.instant,
     is_pinned: !!opts.pin, synced:false, updated_at: new Date().toISOString(),
   };
   state.activities.push(act);
@@ -480,42 +553,94 @@ function addActivity(opts){
   return act;
 }
 
-/* ============================= TIMELINE ============================= */
-function buildSegments(dateStr){
-  const dayEvents = state.events.filter(e=>e.date===dateStr).sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
-  if(!dayEvents.length) return [];
-  const isToday = dateStr === localDateStr();
-  const segs = [];
-  for(let i=0;i<dayEvents.length;i++){
-    const start = new Date(dayEvents[i].start_time);
-    let end;
-    if(i < dayEvents.length-1){ end = new Date(dayEvents[i+1].start_time); }
-    else if(isToday){ end = new Date(); }
-    else { end = new Date(start); end.setHours(23,59,59,999); }
-    const mins = Math.max(1, (end-start)/60000);
-    segs.push(Object.assign({}, dayEvents[i], {start, end, mins}));
+function computeGlobalSegments(){
+  const events = state.events.slice().sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
+  const ranges = [], markers = [];
+  const now = new Date();
+  const nowLogical = todayLogicalDate();
+  for(let i=0;i<events.length;i++){
+    const ev = events[i];
+    const start = new Date(ev.start_time);
+    if(ev.instant){ markers.push(Object.assign({}, ev, {start})); continue; }
+    let end, live=false;
+    if(i < events.length-1){
+      end = new Date(events[i+1].start_time);
+    } else {
+      const evLogical = logicalDateStr(start);
+      if(evLogical === nowLogical){ end = now; live = true; }
+      else { end = new Date(dayBoundaryStart(evLogical).getTime() + 24*3600000); }
+    }
+    if(end <= start) end = new Date(start.getTime()+60000);
+    ranges.push(Object.assign({}, ev, {start, end, live}));
   }
-  return segs;
+  return {ranges, markers};
 }
 
-function renderStripInto(el, segs, live){
-  el.innerHTML = '';
-  if(!segs.length){ el.innerHTML = '<div class="strip-empty">No activity logged yet</div>'; return; }
-  segs.forEach((s,i)=>{
-    const div = document.createElement('div');
-    div.className = 'strip-seg' + (live && i===segs.length-1 ? ' strip-seg--live' : '');
-    div.style.flexGrow = s.mins;
-    div.style.background = s.color;
-    const endLabel = (live && i===segs.length-1) ? 'now' : fmt12(s.end);
-    div.title = s.activity_name + ' · ' + fmt12(s.start) + '–' + endLabel + ' (' + durationLabel(s.mins) + ')';
-    el.appendChild(div);
+function segmentsForDay(dateStr, ranges){
+  const ds = dayBoundaryStart(dateStr), de = new Date(ds.getTime()+24*3600000);
+  const out = [];
+  ranges.forEach(r=>{
+    const st = r.start < ds ? ds : r.start;
+    const en = r.end > de ? de : r.end;
+    if(en > st) out.push(Object.assign({}, r, {start:st, end:en}));
   });
+  return out;
+}
+function markersForDay(dateStr, markers){
+  const ds = dayBoundaryStart(dateStr), de = new Date(ds.getTime()+24*3600000);
+  return markers.filter(m=> m.start >= ds && m.start < de);
 }
 
 /* ============================= RENDER ============================= */
-function currentEvent(){
-  const todays = state.events.filter(e=>e.date===localDateStr()).sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
-  return todays.length ? todays[todays.length-1] : null;
+function renderRuler(){
+  const el = document.getElementById('tlRuler');
+  el.style.width = DAY_WIDTH+'px';
+  let html = '';
+  for(let h=0; h<=24; h+=3){
+    const clockHour = (DAY_START_HOUR + h) % 24;
+    const label = clockHour===0 ? '12A' : clockHour<12 ? (clockHour+'A') : clockHour===12 ? '12P' : ((clockHour-12)+'P');
+    html += '<span class="tl-tick" style="left:'+(h*PX_PER_HOUR)+'px">'+label+'</span>';
+  }
+  el.innerHTML = html;
+}
+
+function renderTimeline(){
+  renderRuler();
+  const {ranges, markers} = computeGlobalSegments();
+  const dates = last7LogicalDates();
+  const rowsEl = document.getElementById('tlRows');
+  let html = '';
+  dates.forEach(dateStr=>{
+    const segs = segmentsForDay(dateStr, ranges);
+    const mks = markersForDay(dateStr, markers);
+    let inner = '';
+    segs.forEach(s=>{
+      const left = minutesIntoDay(s.start, dateStr) * PX_PER_HOUR/60;
+      const width = Math.max(3, (s.end-s.start)/60000 * PX_PER_HOUR/60);
+      inner += '<div class="tl-seg'+(s.live?' live':'')+'" style="left:'+left+'px;width:'+width+'px;background:'+s.color+'" title="'+escapeHtml(s.activity_name)+' · '+fmt12(s.start)+'–'+(s.live?'now':fmt12(s.end))+'"></div>';
+    });
+    mks.forEach(m=>{
+      const left = minutesIntoDay(m.start, dateStr) * PX_PER_HOUR/60;
+      inner += '<div class="tl-marker" style="left:'+left+'px;--mc:'+m.color+'" title="'+escapeHtml(m.activity_name)+' · '+fmt12(m.start)+'"></div>';
+    });
+    html += '<div class="tl-day"><div class="tl-day-label">'+dayLabel(dateStr)+'</div><div class="tl-track" style="width:'+DAY_WIDTH+'px">'+inner+'</div></div>';
+  });
+  rowsEl.innerHTML = html;
+  rowsEl.style.width = DAY_WIDTH+'px';
+
+  const nowEl = document.getElementById('tlNow');
+  const todayL = todayLogicalDate();
+  const nowLeft = minutesIntoDay(new Date(), todayL) * PX_PER_HOUR/60;
+  const rulerH = document.getElementById('tlRuler').offsetHeight;
+  const rowsH = rowsEl.offsetHeight;
+  nowEl.style.left = nowLeft+'px';
+  nowEl.style.top = '0px';
+  nowEl.style.height = (rulerH + 8 + rowsH) + 'px';
+
+  const scrollEl = document.getElementById('tlScroll');
+  if(!scrollEl.dataset.userScrolled){
+    scrollEl.scrollLeft = Math.max(0, nowLeft - scrollEl.clientWidth/2);
+  }
 }
 
 function renderStatus(){
@@ -523,20 +648,23 @@ function renderStatus(){
   const undoBtn = document.getElementById('undoBtn');
   const ev = currentEvent();
   if(!ev){
-    el.innerHTML = '<div class="status-empty">Tap an activity below to start tracking today.</div>';
+    el.innerHTML = '<div class="status-empty">Tap an activity below to start tracking.</div>';
     undoBtn.style.display = 'none';
     return;
   }
   const start = new Date(ev.start_time);
-  el.innerHTML =
-    '<span class="status-dot" style="background:'+ev.color+'"></span>' +
-    '<div><div class="status-name">'+escapeHtml(ev.activity_name)+'</div>' +
-    '<div class="status-since mono">since '+fmt12(start)+' · <span id="statusElapsed">'+durationLabel((Date.now()-start)/60000)+'</span></div></div>';
+  if(ev.instant){
+    el.innerHTML =
+      '<span class="status-dot" style="background:'+ev.color+'"></span>' +
+      '<div><div class="status-name">'+escapeHtml(ev.activity_name)+'</div>' +
+      '<div class="status-since mono">at '+fmt12(start)+' · log what\'s next</div></div>';
+  } else {
+    el.innerHTML =
+      '<span class="status-dot" style="background:'+ev.color+'"></span>' +
+      '<div><div class="status-name">'+escapeHtml(ev.activity_name)+'</div>' +
+      '<div class="status-since mono">since '+fmt12(start)+' · <span id="statusElapsed">'+durationLabel((Date.now()-start)/60000)+'</span></div></div>';
+  }
   undoBtn.style.display = 'inline-block';
-}
-
-function renderTodayStrip(){
-  renderStripInto(document.getElementById('todayStrip'), buildSegments(localDateStr()), true);
 }
 
 function renderQuickAdd(){
@@ -548,7 +676,7 @@ function renderQuickAdd(){
     if(!groups[cat].length) return;
     html += '<div class="qa-group"><div class="qa-label" style="color:'+categoryColor(cat)+'">'+CATEGORY_LABELS[cat]+'</div><div class="qa-grid">';
     groups[cat].forEach(a=>{
-      html += '<button class="qa-btn" style="border-left-color:'+a.color+'" data-id="'+a.id+'"><span class="qa-dot" style="background:'+a.color+'"></span>'+escapeHtml(a.name)+'</button>';
+      html += '<button class="qa-btn" style="border-left-color:'+a.color+'" data-id="'+a.id+'"><span class="qa-dot" style="background:'+a.color+'"></span>'+escapeHtml(a.name)+(a.instant?' <span class="qa-instant">⚡</span>':'')+'</button>';
     });
     html += '</div></div>';
   });
@@ -558,7 +686,10 @@ function renderQuickAdd(){
 
 function renderTodayLog(){
   const container = document.getElementById('todayLog');
-  const dayEvents = state.events.filter(e=>e.date===localDateStr()).sort((a,b)=> new Date(b.start_time)-new Date(a.start_time));
+  const todayL = todayLogicalDate();
+  const dayEvents = state.events
+    .filter(e => logicalDateStr(new Date(e.start_time)) === todayL)
+    .sort((a,b)=> new Date(b.start_time)-new Date(a.start_time));
   if(!dayEvents.length){ container.innerHTML = '<div class="empty-note">Nothing logged yet today.</div>'; return; }
   container.innerHTML = dayEvents.map(e=>{
     if(state.editingId === e.id){
@@ -571,7 +702,7 @@ function renderTodayLog(){
     }
     return '<div class="log-row" data-id="'+e.id+'">' +
       '<span class="log-dot" style="background:'+e.color+'"></span>' +
-      '<span class="log-name">'+escapeHtml(e.activity_name)+'</span>' +
+      '<span class="log-name">'+escapeHtml(e.activity_name)+(e.instant?' ⚡':'')+'</span>' +
       '<span class="log-time mono">'+fmt12(new Date(e.start_time))+'</span>' +
       '<button class="log-edit" data-action="edit" data-id="'+e.id+'">✎</button>' +
       '<button class="log-del" data-action="del" data-id="'+e.id+'">🗑</button></div>';
@@ -579,39 +710,47 @@ function renderTodayLog(){
 }
 
 function allDatesWithData(limit){
-  const set = new Set(state.events.map(e=>e.date));
-  set.add(localDateStr());
+  const set = new Set(state.events.map(e => e.date || logicalDateStr(new Date(e.start_time))));
+  set.add(todayLogicalDate());
   return Array.from(set).sort().reverse().slice(0, limit);
 }
 
 function renderHistory(){
   const container = document.getElementById('historyList');
   const dates = allDatesWithData(state.historyDaysShown);
+  const {ranges, markers} = computeGlobalSegments();
   container.innerHTML = dates.map(dateStr=>{
-    const segs = buildSegments(dateStr);
-    const totalMins = segs.reduce((s,x)=>s+x.mins,0);
-    const d = new Date(dateStr+'T00:00:00');
-    const label = dateStr === localDateStr() ? 'Today' : d.toLocaleDateString('en-IN',{weekday:'short', day:'numeric', month:'short'});
+    const segs = segmentsForDay(dateStr, ranges);
+    const mks = markersForDay(dateStr, markers);
+    const totalMins = segs.reduce((s,x)=> s + (x.end-x.start)/60000, 0);
     let stripHtml = '';
-    if(!segs.length){ stripHtml = '<div class="strip-empty">No data</div>'; }
-    else { stripHtml = segs.map(s=> '<div class="strip-seg" style="flex-grow:'+s.mins+';background:'+s.color+'" title="'+escapeHtml(s.activity_name)+' '+fmt12(s.start)+'–'+fmt12(s.end)+'"></div>').join(''); }
-    const detailHtml = segs.map(s=>
-      '<div class="log-row"><span class="log-dot" style="background:'+s.color+'"></span><span class="log-name">'+escapeHtml(s.activity_name)+'</span><span class="log-time mono">'+fmt12(s.start)+' – '+fmt12(s.end)+' ('+durationLabel(s.mins)+')</span></div>'
+    if(!segs.length && !mks.length){
+      stripHtml = '<div class="strip-empty">No data</div>';
+    } else {
+      stripHtml = segs.map(s=> '<div class="strip-seg" style="flex-grow:'+((s.end-s.start)/60000)+';background:'+s.color+'" title="'+escapeHtml(s.activity_name)+' '+fmt12(s.start)+'–'+fmt12(s.end)+'"></div>').join('');
+    }
+    const rangeRows = segs.map(s=>
+      '<div class="log-row"><span class="log-dot" style="background:'+s.color+'"></span><span class="log-name">'+escapeHtml(s.activity_name)+'</span><span class="log-time mono">'+fmt12(s.start)+' – '+fmt12(s.end)+' ('+durationLabel((s.end-s.start)/60000)+')</span></div>'
     ).join('');
+    const markerRows = mks.map(m=>
+      '<div class="log-row"><span class="log-dot" style="background:'+m.color+'"></span><span class="log-name">'+escapeHtml(m.activity_name)+' ⚡</span><span class="log-time mono">'+fmt12(m.start)+'</span></div>'
+    ).join('');
+    const detailHtml = (rangeRows + markerRows) || '<div class="empty-note">No entries.</div>';
     return '<div class="hist-day" data-date="'+dateStr+'">' +
-      '<div class="hist-day-head"><span class="hist-date">'+label+'</span><span class="hist-total mono">'+(totalMins?durationLabel(totalMins):'')+'</span></div>' +
+      '<div class="hist-day-head"><span class="hist-date">'+dayLabel(dateStr)+'</span><span class="hist-total mono">'+(totalMins?durationLabel(totalMins):'')+'</span></div>' +
       '<div class="hist-strip">'+stripHtml+'</div>' +
-      '<div class="hist-detail" id="detail-'+dateStr+'">'+(detailHtml||'<div class="empty-note">No entries.</div>')+'</div>' +
+      '<div class="hist-detail" id="detail-'+dateStr+'">'+detailHtml+'</div>' +
       '</div>';
   }).join('');
 }
 
 function renderStats(){
   const container = document.getElementById('statsPanel');
-  const today = localDateStr();
-  const todaySegs = buildSegments(today);
+  const {ranges} = computeGlobalSegments();
+  const todayL = todayLogicalDate();
+  const todaySegs = segmentsForDay(todayL, ranges);
   const todayTotals = {study:0, social:0, essential:0};
-  todaySegs.forEach(s=>{ todayTotals[s.category] = (todayTotals[s.category]||0) + s.mins; });
+  todaySegs.forEach(s=>{ todayTotals[s.category] = (todayTotals[s.category]||0) + (s.end-s.start)/60000; });
   const todayGrandTotal = Object.values(todayTotals).reduce((a,b)=>a+b,0) || 1;
 
   let html = '<div class="stat-card"><h3>Today\'s split</h3>';
@@ -625,14 +764,13 @@ function renderStats(){
   html += '</div>';
 
   html += '<div class="stat-card"><h3>Last 7 days · category totals</h3>';
-  const last7 = [];
-  for(let i=6;i>=0;i--){ const d = new Date(); d.setDate(d.getDate()-i); last7.push(localDateStr(d)); }
-  const dayLabels = last7.map(ds => new Date(ds+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short'}).slice(0,2));
+  const last7 = last7LogicalDates();
+  const dayLabels = last7.map(ds => dayLabel(ds)==='Today' ? 'Tdy' : new Date(ds+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short'}).slice(0,2));
   last7.forEach((ds,i)=>{
-    const segs = buildSegments(ds);
+    const segs = segmentsForDay(ds, ranges);
     const totals = {study:0, social:0, essential:0};
     let grand = 0;
-    segs.forEach(s=>{ totals[s.category]=(totals[s.category]||0)+s.mins; grand += s.mins; });
+    segs.forEach(s=>{ const m=(s.end-s.start)/60000; totals[s.category]=(totals[s.category]||0)+m; grand += m; });
     let segHtml = '';
     if(grand > 0){
       ['study','social','essential'].forEach(cat=>{
@@ -670,20 +808,19 @@ function renderAuthUI(){
 }
 
 function renderAll(){
+  renderTimeline();
   renderStatus();
-  renderTodayStrip();
   renderQuickAdd();
   renderTodayLog();
   renderHistory();
   renderStats();
 }
 
-/* live elapsed timer */
 setInterval(()=>{
   const ev = currentEvent();
   const elEl = document.getElementById('statusElapsed');
-  if(ev && elEl){ elEl.textContent = durationLabel((Date.now()-new Date(ev.start_time))/60000); }
-  renderTodayStrip();
+  if(ev && !ev.instant && elEl){ elEl.textContent = durationLabel((Date.now()-new Date(ev.start_time))/60000); }
+  renderTimeline();
 }, 30000);
 
 /* ============================= TOAST ============================= */
@@ -696,7 +833,7 @@ function showToast(msg){
   toastTimer = setTimeout(()=> t.classList.remove('show'), 2200);
 }
 
-/* ============================= MODALS ============================= */
+/* ============================= MODALS & LISTENERS ============================= */
 function openModal(id){ document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('[data-close]').forEach(btn=>{
@@ -717,6 +854,7 @@ document.getElementById('quickAdd').addEventListener('click', (e)=>{
     document.getElementById('actName').value = '';
     document.getElementById('actTime').value = nowTimeValue();
     document.getElementById('actPin').checked = true;
+    document.getElementById('actInstant').checked = false;
     document.querySelectorAll('#catPills .pill').forEach(p=>p.classList.remove('active'));
     document.querySelector('#catPills .pill[data-cat="study"]').classList.add('active');
     openModal('addModal');
@@ -725,7 +863,13 @@ document.getElementById('quickAdd').addEventListener('click', (e)=>{
   const qb = e.target.closest('.qa-btn');
   if(qb){
     const act = state.activities.find(a=>a.id===qb.dataset.id);
-    if(act) logActivity(act, new Date());
+    if(!act) return;
+    const cur = currentEvent();
+    if(cur && cur.activity_id === act.id){
+      showToast(act.name + ' is already active');
+      return;
+    }
+    logActivity(act, new Date());
   }
 });
 
@@ -750,7 +894,7 @@ function timeInputToDate(val){
 document.getElementById('saveOnlyBtn').addEventListener('click', ()=>{
   const name = document.getElementById('actName').value.trim();
   if(!name){ return; }
-  addActivity({ name, category:getSelectedCat(), pin: document.getElementById('actPin').checked });
+  addActivity({ name, category:getSelectedCat(), pin: document.getElementById('actPin').checked, instant: document.getElementById('actInstant').checked });
   renderAll();
   closeModal('addModal');
   showToast('Saved ' + name);
@@ -759,7 +903,7 @@ document.getElementById('saveOnlyBtn').addEventListener('click', ()=>{
 document.getElementById('saveLogBtn').addEventListener('click', ()=>{
   const name = document.getElementById('actName').value.trim();
   if(!name){ return; }
-  const act = addActivity({ name, category:getSelectedCat(), pin: document.getElementById('actPin').checked });
+  const act = addActivity({ name, category:getSelectedCat(), pin: document.getElementById('actPin').checked, instant: document.getElementById('actInstant').checked });
   const when = timeInputToDate(document.getElementById('actTime').value);
   closeModal('addModal');
   if(act) logActivity(act, when);
@@ -796,17 +940,20 @@ document.getElementById('loadMoreBtn').addEventListener('click', ()=>{
   renderHistory();
 });
 
-/* ---- Tabs ---- */
+document.getElementById('tlScroll').addEventListener('pointerdown', function(){
+  this.dataset.userScrolled = '1';
+});
+
 document.querySelectorAll('.tab-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab === 'today') renderTimeline();
   });
 });
 
-/* ---- Scroll shadow on topbar ---- */
 window.addEventListener('scroll', ()=>{
   document.getElementById('topbar').classList.toggle('scrolled', window.scrollY > 4);
 });
@@ -817,7 +964,10 @@ document.getElementById('authChip').addEventListener('click', ()=>{
   renderAuthModalMode();
   openModal('authModal');
 });
-document.getElementById('guestBtn').addEventListener('click', ()=> closeModal('authModal'));
+document.getElementById('guestBtn').addEventListener('click', ()=>{
+  closeModal('authModal');
+  showToast('Continuing without an account — saved on this device only');
+});
 
 function renderAuthModalMode(){
   document.getElementById('authTitle').textContent = state.authMode === 'signin' ? 'Sign in' : 'Create account';
@@ -836,7 +986,6 @@ document.getElementById('authToggleRow').addEventListener('click', (e)=>{
 });
 
 if(CLOUD_ENABLED){
-  // Google Sign-In
   document.getElementById('googleBtn').addEventListener('click', async ()=>{
     const provider = new firebase.auth.GoogleAuthProvider();
     try {
@@ -847,14 +996,13 @@ if(CLOUD_ENABLED){
     }
   });
 
-  // Email / Password Authentication
   document.getElementById('authSubmitBtn').addEventListener('click', async ()=>{
     const email = document.getElementById('authEmail').value.trim();
     const pass = document.getElementById('authPass').value;
     const msgEl = document.getElementById('authMsg');
     if(!email || !pass){ msgEl.textContent = 'Enter both email and password.'; return; }
     msgEl.textContent = '';
-    
+
     try {
       if(state.authMode === 'signin'){
         await auth.signInWithEmailAndPassword(email, pass);
@@ -867,20 +1015,18 @@ if(CLOUD_ENABLED){
     }
   });
 
-  // Sign Out
   document.getElementById('signOutBtn').addEventListener('click', async ()=>{
     await auth.signOut();
     closeModal('authModal');
   });
 
-  // Auth Observer
   auth.onAuthStateChanged(async (user) => {
     const prevUser = state.user;
     state.user = user;
     renderAuthUI();
 
     if(user && !prevUser){
-      const migratedKey = 'chrono_migrated_' + user.uid;
+      const migratedKey = 'chrono_migrated_v2_' + user.uid;
       const alreadyMigrated = loadLS(migratedKey, false);
       if(!alreadyMigrated){
         state.activities.forEach(a=>a.synced=false);
@@ -912,7 +1058,6 @@ async function syncPush(){
     const uid = state.user.uid;
     const batch = db.batch();
 
-    // Activities Sync
     const unsyncedActs = state.activities.filter(a => !a.synced);
     unsyncedActs.forEach(a => {
       const ref = db.collection('users').doc(uid).collection('activities').doc(a.id);
@@ -921,28 +1066,28 @@ async function syncPush(){
         name: a.name,
         category: a.category,
         color: a.color,
+        instant: !!a.instant,
         is_pinned: a.is_pinned,
         updated_at: new Date().toISOString()
       }, { merge: true });
     });
 
-    // Events Sync
     const unsyncedEvs = state.events.filter(e => !e.synced);
     unsyncedEvs.forEach(e => {
       const ref = db.collection('users').doc(uid).collection('events').doc(e.id);
       batch.set(ref, {
         id: e.id,
-        client_id: e.client_id,
+        client_id: e.client_id || e.id,
         activity_id: e.activity_id,
         activity_name: e.activity_name,
         category: e.category,
         color: e.color,
+        instant: !!e.instant,
         start_time: e.start_time,
         date: e.date
       }, { merge: true });
     });
 
-    // Pending Deletes Sync
     if(state.pendingDeletes.length){
       state.pendingDeletes.forEach(id => {
         const ref = db.collection('users').doc(uid).collection('events').doc(id);
@@ -952,7 +1097,6 @@ async function syncPush(){
 
     await batch.commit();
 
-    // Mark items synced locally
     unsyncedActs.forEach(a => a.synced = true);
     unsyncedEvs.forEach(e => e.synced = true);
     state.pendingDeletes = [];
@@ -971,13 +1115,9 @@ async function syncPull(){
   setSyncBusy(true);
   try {
     const uid = state.user.uid;
-    const since = new Date();
-    since.setDate(since.getDate() - 90);
-    const sinceStr = localDateStr(since);
-
     const [actsSnap, evsSnap] = await Promise.all([
       db.collection('users').doc(uid).collection('activities').get(),
-      db.collection('users').doc(uid).collection('events').where('date', '>=', sinceStr).get()
+      db.collection('users').doc(uid).collection('events').get()
     ]);
 
     if(!actsSnap.empty){
@@ -1002,22 +1142,24 @@ function mergeActivities(remoteRows){
   remoteRows.forEach(r=>{
     const local = byId.get(r.id);
     if(!local){
-      byId.set(r.id, { id:r.id, name:r.name, category:r.category, color:r.color, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at });
+      byId.set(r.id, { id:r.id, name:r.name, category:r.category, color:r.color, instant:!!r.instant, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at });
     } else if(local.synced){
-      Object.assign(local, { name:r.name, category:r.category, color:r.color, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at });
+      Object.assign(local, { name:r.name, category:r.category, color:r.color, instant:!!r.instant, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at });
     }
   });
   state.activities = Array.from(byId.values());
 }
 
 function mergeEvents(remoteRows){
+  const pendingSet = new Set(state.pendingDeletes);
   const byId = new Map(state.events.map(e=>[e.id, e]));
   remoteRows.forEach(r=>{
+    if(pendingSet.has(r.id)) return;
     const local = byId.get(r.id);
     if(!local){
-      byId.set(r.id, { id:r.id, client_id:r.client_id, activity_id:r.activity_id, activity_name:r.activity_name, category:r.category, color:r.color, start_time:r.start_time, date:r.date, synced:true });
+      byId.set(r.id, { id:r.id, client_id:r.client_id||r.id, activity_id:r.activity_id, activity_name:r.activity_name, category:r.category, color:r.color, instant:!!r.instant, start_time:r.start_time, date:r.date, synced:true });
     } else if(local.synced){
-      Object.assign(local, { activity_name:r.activity_name, category:r.category, color:r.color, start_time:r.start_time, date:r.date, synced:true });
+      Object.assign(local, { activity_name:r.activity_name, category:r.category, color:r.color, instant:!!r.instant, start_time:r.start_time, date:r.date, synced:true });
     }
   });
   state.events = Array.from(byId.values()).sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
