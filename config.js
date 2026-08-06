@@ -1,12 +1,10 @@
-// config.js
-// NEVER commit this file to public repositories (add config.js to your .gitignore)
 window.APP_CONFIG = {
   firebase: {
-    apiKey: "YOUR_FIREBASE_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyBkqINVQDvotNAlwezK6_fXhHduT7E2M_4",
+    authDomain: "chrono-e6497.firebaseapp.com",
+    projectId: "chrono-e6497",
+    storageBucket: "chrono-e6497.firebasestorage.app",
+    messagingSenderId: "954295376775",
+    appId: "1:954295376775:web:5383634ba4a04e61289122"
   }
 };
