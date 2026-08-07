@@ -1,0 +1,10 @@
+{
+  "name": "chrono-insights",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Nightly job: computes personal + k-anonymized cohort stats from Chrono's Firestore data, then asks Gemini to narrate insights per user.",
+  "dependencies": {
+    "firebase-admin": "^12.6.0"
+  }
+}
