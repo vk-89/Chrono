@@ -1,0 +1,32 @@
+name: Nightly Insights
+
+on:
+  schedule:
+    # 19:30 UTC = 1:00 AM IST. Runs once a day. Edit the cron if you want a
+    # different time â€” cron time is always UTC, GitHub does not use IST.
+    - cron: '30 19 * * *'
+  workflow_dispatch: {} # lets you click "Run workflow" manually to test
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: scripts
+        run: npm install
+
+      - name: Generate insights
+        working-directory: scripts
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          K_ANON_THRESHOLD: '20'
+        run: node generate-insights.mjs
