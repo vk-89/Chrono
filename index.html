@@ -168,6 +168,18 @@
   .stat-week-day{width:34px;flex:none;font-size:11px;color:var(--ink-faint);}
   .stat-week-strip{flex:1;display:flex;height:16px;border-radius:6px;overflow:hidden;background:var(--paper);}
 
+  /* ---- Insights ---- */
+  .insight-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+  .insight-card h3{font-size:13px;margin:0 0 10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+  .insight-text{font-size:14px;line-height:1.65;color:var(--ink);white-space:pre-wrap;}
+  .insight-meta{font-size:11px;color:var(--ink-faint);margin-top:10px;font-family:"JetBrains Mono";}
+  .insight-empty{font-size:13px;color:var(--ink-soft);line-height:1.6;}
+  .insight-loading{font-size:13px;color:var(--ink-faint);}
+  .insight-stat-row{display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);}
+  .insight-stat-row:last-child{border-bottom:none;}
+  .insight-stat-label{color:var(--ink-soft);}
+  .insight-stat-val{font-family:"JetBrains Mono";font-weight:600;}
+
   /* ---- Toast ---- */
   #toast{
     position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
@@ -236,6 +248,7 @@
     <button class="tab-btn active" data-tab="today">Today</button>
     <button class="tab-btn" data-tab="history">History</button>
     <button class="tab-btn" data-tab="stats">Stats</button>
+    <button class="tab-btn" data-tab="insights">Insights</button>
   </div>
 
   <!-- Today -->
@@ -280,6 +293,11 @@
   <!-- Stats -->
   <div class="tab-panel" id="tab-stats">
     <div style="margin-top:16px;" id="statsPanel"></div>
+  </div>
+
+  <!-- Insights -->
+  <div class="tab-panel" id="tab-insights">
+    <div style="margin-top:16px;" id="insightsPanel"></div>
   </div>
 </div>
 
@@ -386,6 +404,7 @@ const DAY_START_HOUR = 4;
 const PX_PER_HOUR = 42;
 const DAY_WIDTH = 24 * PX_PER_HOUR;
 const TIMELINE_DAYS = 7;
+const INSIGHTS_LOOKBACK_DAYS = 14;
 
 const DEFAULT_ACTIVITIES = [
   {name:'Wake Up', category:'essential', instant:true},
@@ -451,6 +470,15 @@ function last7LogicalDates(){
   const base = new Date(todayLogicalDate()+'T00:00:00');
   const out = [];
   for(let i=TIMELINE_DAYS-1;i>=0;i--){
+    const d = new Date(base); d.setDate(d.getDate()-i);
+    out.push(localDateStr(d));
+  }
+  return out;
+}
+function lastNLogicalDates(n){
+  const base = new Date(todayLogicalDate()+'T00:00:00');
+  const out = [];
+  for(let i=n-1;i>=0;i--){
     const d = new Date(base); d.setDate(d.getDate()-i);
     out.push(localDateStr(d));
   }
@@ -786,6 +814,107 @@ function renderStats(){
   container.innerHTML = html;
 }
 
+/* ---- Insights: personal stats are computed instantly, client-side, for
+   free. The AI narration text is fetched from Firestore, where the nightly
+   GitHub Action writes it (see scripts/generate-insights.mjs). ---- */
+
+function computePersonalAverages(days){
+  const {ranges} = computeGlobalSegments();
+  const dates = lastNLogicalDates(days);
+  const totals = {study:[], social:[], essential:[]};
+  const wakeMinutesArr = [];
+  dates.forEach(ds=>{
+    const segs = segmentsForDay(ds, ranges);
+    if(!segs.length) return;
+    const dayTotals = {study:0, social:0, essential:0};
+    segs.forEach(s=>{ dayTotals[s.category] += (s.end-s.start)/60000; });
+    ['study','social','essential'].forEach(c=> totals[c].push(dayTotals[c]));
+    let firstStart = segs[0].start;
+    segs.forEach(s=>{ if(s.start < firstStart) firstStart = s.start; });
+    wakeMinutesArr.push(minutesIntoDay(firstStart, ds));
+  });
+  function avg(arr){ return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null; }
+  return {
+    daysLogged: wakeMinutesArr.length,
+    avgWakeMinutes: avg(wakeMinutesArr),
+    avgStudy: avg(totals.study),
+    avgSocial: avg(totals.social),
+    avgEssential: avg(totals.essential),
+  };
+}
+
+function fmtWakeClock(mins){
+  if(mins==null) return '—';
+  const total = ((DAY_START_HOUR*60 + mins) % (24*60) + 24*60) % (24*60);
+  const d = new Date(); d.setHours(0,0,0,0); d.setMinutes(total);
+  return fmt12(d);
+}
+
+function computeTodayWakeDeviation(personal){
+  const {ranges} = computeGlobalSegments();
+  const todayL = todayLogicalDate();
+  const segs = segmentsForDay(todayL, ranges);
+  if(!segs.length || personal.avgWakeMinutes==null) return null;
+  let firstStart = segs[0].start;
+  segs.forEach(s=>{ if(s.start < firstStart) firstStart = s.start; });
+  const todayWake = minutesIntoDay(firstStart, todayL);
+  return todayWake - personal.avgWakeMinutes;
+}
+
+async function renderInsights(){
+  const container = document.getElementById('insightsPanel');
+  const personal = computePersonalAverages(INSIGHTS_LOOKBACK_DAYS);
+
+  let html = '<div class="insight-card"><h3>Your last '+INSIGHTS_LOOKBACK_DAYS+' days</h3>';
+  if(personal.daysLogged < 3){
+    html += '<div class="insight-empty">Log a few more days and this section will start showing your averages.</div>';
+  } else {
+    html +=
+      '<div class="insight-stat-row"><span class="insight-stat-label">Wake time</span><span class="insight-stat-val">'+fmtWakeClock(personal.avgWakeMinutes)+' avg</span></div>' +
+      '<div class="insight-stat-row"><span class="insight-stat-label">Study</span><span class="insight-stat-val">'+durationLabel(personal.avgStudy)+'/day avg</span></div>' +
+      '<div class="insight-stat-row"><span class="insight-stat-label">Social & Fun</span><span class="insight-stat-val">'+durationLabel(personal.avgSocial)+'/day avg</span></div>' +
+      '<div class="insight-stat-row"><span class="insight-stat-label">Essential</span><span class="insight-stat-val">'+durationLabel(personal.avgEssential)+'/day avg</span></div>';
+
+    const diff = computeTodayWakeDeviation(personal);
+    if(diff != null && Math.abs(diff) >= 20){
+      html += '<div class="insight-stat-row"><span class="insight-stat-label">Today vs average</span><span class="insight-stat-val" style="color:var(--accent)">'+Math.round(Math.abs(diff))+'m '+(diff>0?'later':'earlier')+'</span></div>';
+    }
+  }
+  html += '</div>';
+
+  html += '<div class="insight-card"><h3>AI observations</h3><div id="aiInsightBody">';
+  if(!CLOUD_ENABLED || !state.user){
+    html += '<div class="insight-empty">Sign in to get AI-generated observations, refreshed nightly from your logged data.</div>';
+  } else {
+    html += '<div class="insight-loading">Loading…</div>';
+  }
+  html += '</div></div>';
+
+  container.innerHTML = html;
+
+  if(CLOUD_ENABLED && state.user){
+    try{
+      const docSnap = await db.collection('users').doc(state.user.uid).collection('insights').doc('latest').get();
+      const body = document.getElementById('aiInsightBody');
+      if(!body) return; // user navigated away before this resolved
+      if(docSnap.exists){
+        const d = docSnap.data();
+        const when = new Date(d.generated_at);
+        body.innerHTML =
+          '<div class="insight-text">'+escapeHtml(d.text)+'</div>' +
+          '<div class="insight-meta">Generated '+when.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' at '+fmt12(when) +
+          (d.cohort_available ? ' · included patterns from similar users' : '') + '</div>';
+      } else {
+        body.innerHTML = '<div class="insight-empty">No AI insight yet — check back after tonight\'s update. This starts once you have a handful of logged days.</div>';
+      }
+    } catch(err){
+      console.error('Failed to load AI insight', err);
+      const body = document.getElementById('aiInsightBody');
+      if(body) body.innerHTML = '<div class="insight-empty">Couldn\'t load — check your connection and try again.</div>';
+    }
+  }
+}
+
 function renderAuthUI(){
   const label = document.getElementById('authChipLabel');
   const badge = document.getElementById('cloudBadge');
@@ -951,6 +1080,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.classList.add('active');
     document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
     if(btn.dataset.tab === 'today') renderTimeline();
+    if(btn.dataset.tab === 'insights') renderInsights();
   });
 });
 
