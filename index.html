@@ -1118,7 +1118,9 @@ async function sendChatMessage(text){
     const contents = history.map(m=>({ role: m.role==='ai'?'model':'user', parts:[{text:m.text}] }));
     contents.push({ role:'user', parts:[{text}] });
 
-    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+getGeminiKey(), {
+    // NOTE: gemini-2.0-flash was retired by Google on June 1, 2026 — every call
+    // to it now 404s. gemini-2.5-flash is the current stable replacement.
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+getGeminiKey(), {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
@@ -1127,9 +1129,18 @@ async function sendChatMessage(text){
       })
     });
     const data = await res.json();
-    const reply = data && data.candidates && data.candidates[0] && data.candidates[0].content
-      ? data.candidates[0].content.parts.map(p=>p.text).join('')
-      : 'Sorry, I couldn\'t generate a response just now.';
+    let reply;
+    if(!res.ok || data.error){
+      // Surface the real reason instead of a generic message, so a bad key,
+      // a retired model, or a rate limit are each recognizable at a glance.
+      reply = 'AI request failed (' + (data.error && data.error.code || res.status) + '): ' + (data.error && data.error.message || 'unknown error');
+    } else if(data.candidates && data.candidates[0] && data.candidates[0].content){
+      reply = data.candidates[0].content.parts.map(p=>p.text).join('');
+    } else if(data.candidates && data.candidates[0] && data.candidates[0].finishReason){
+      reply = 'Response was blocked (reason: ' + data.candidates[0].finishReason + '). Try rephrasing.';
+    } else {
+      reply = 'Sorry, I couldn\'t generate a response just now.';
+    }
     state.chatMessages[state.chatMessages.length-1] = {role:'ai', text:reply};
   } catch(err){
     console.error('Chat request failed', err);
