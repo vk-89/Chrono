@@ -225,6 +225,26 @@
   .cloud-note{font-size:12px;color:var(--ink-faint);background:var(--paper);border-radius:999px;padding:10px 11px;line-height:1.5;}
   .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:15px;color:var(--ink-faint);}
 
+  /* ---- Quote banner ---- */
+  .quote-banner{
+    margin-top:12px;padding:12px 14px;border-radius:var(--radius);
+    background:linear-gradient(135deg, hsl(var(--study-h) var(--study-s) 96%), hsl(var(--social-h) var(--social-s) 95%));
+    border:1px solid var(--border);font-size:13px;line-height:1.55;color:var(--ink);font-style:italic;
+  }
+  .quote-banner .qtag{display:block;font-style:normal;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);margin-top:6px;}
+
+  /* ---- Chat ---- */
+  .chat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-top:14px;display:flex;flex-direction:column;overflow:hidden;}
+  .chat-log{padding:12px;max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:9px;}
+  .chat-msg{max-width:84%;padding:9px 12px;border-radius:14px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;}
+  .chat-msg.user{align-self:flex-end;background:var(--ink);color:#fff;border-bottom-right-radius:4px;}
+  .chat-msg.ai{align-self:flex-start;background:var(--paper);color:var(--ink);border-bottom-left-radius:4px;}
+  .chat-msg.system{align-self:center;background:none;color:var(--ink-faint);font-size:12px;font-style:italic;max-width:100%;text-align:center;}
+  .chat-input-row{display:flex;gap:8px;padding:10px;border-top:1px solid var(--border);}
+  .chat-input-row input{flex:1;border:1px solid var(--border-strong);border-radius:999px;padding:10px 14px;font-size:14px;font-family:inherit;background:var(--paper);}
+  .chat-input-row button{border:none;border-radius:999px;padding:10px 16px;font-size:13.5px;font-weight:600;background:var(--ink);color:#fff;font-family:"Space Grotesk";flex:none;}
+  .chat-input-row button:disabled{opacity:.5;}
+
   @media (prefers-reduced-motion:reduce){
     *{animation:none!important;transition:none!important;}
   }
@@ -246,13 +266,15 @@
   <!-- Tabs -->
   <div class="tabs">
     <button class="tab-btn active" data-tab="today">Today</button>
+    <button class="tab-btn" data-tab="chat">Chat</button>
     <button class="tab-btn" data-tab="history">History</button>
     <button class="tab-btn" data-tab="stats">Stats</button>
-    <button class="tab-btn" data-tab="insights">Insights</button>
   </div>
 
   <!-- Today -->
   <div class="tab-panel active" id="tab-today">
+
+    <div class="quote-banner" id="quoteBanner"></div>
 
     <!-- Horizontal multi-day timeline -->
     <div class="tl-card">
@@ -293,11 +315,26 @@
   <!-- Stats -->
   <div class="tab-panel" id="tab-stats">
     <div style="margin-top:16px;" id="statsPanel"></div>
+    <div class="stat-card">
+      <h3>Export your data</h3>
+      <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;line-height:1.5;">Download every activity you've ever logged, notes included.</div>
+      <div class="modal-actions" style="margin-top:0;">
+        <button class="btn btn-outline" id="exportJsonBtn">Export JSON</button>
+        <button class="btn btn-outline" id="exportCsvBtn">Export CSV</button>
+      </div>
+    </div>
   </div>
 
-  <!-- Insights -->
-  <div class="tab-panel" id="tab-insights">
-    <div style="margin-top:16px;" id="insightsPanel"></div>
+  <!-- Chat -->
+  <div class="tab-panel" id="tab-chat">
+    <div style="margin-top:16px;" id="chatInsightPanel"></div>
+    <div class="chat-card">
+      <div class="chat-log" id="chatLog"></div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" placeholder="Ask about your routine…" maxlength="400">
+        <button id="chatSendBtn">Send</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -332,9 +369,29 @@
       <input type="checkbox" id="actInstant" style="width:16px;height:16px;">
       <label style="margin:0;font-weight:400;">Instant marker (like Wake Up) — a moment, not an ongoing activity</label>
     </div>
+    <div class="field check-row">
+      <input type="checkbox" id="actNeedsDetail" style="width:16px;height:16px;">
+      <label style="margin:0;font-weight:400;">Ask for a short note each time (e.g. who you're calling, what you're doing)</label>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="saveOnlyBtn">Save only</button>
       <button class="btn btn-primary" id="saveLogBtn">Save & log now</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail prompt modal (for activities like Call / Timepass) -->
+<div class="modal-backdrop" id="detailModal">
+  <div class="modal">
+    <button class="modal-close" data-close="detailModal">✕</button>
+    <h2 id="detailModalTitle">Add a note</h2>
+    <div class="field">
+      <label id="detailModalLabel">Details</label>
+      <input type="text" id="detailModalInput" placeholder="e.g. Sumit, or what you're actually doing" maxlength="60">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="detailSkipBtn">Skip</button>
+      <button class="btn btn-primary" id="detailSaveBtn">Log it</button>
     </div>
   </div>
 </div>
@@ -399,6 +456,33 @@ const PALETTE = [
   '#B45309','#1D4ED8','#BE123C','#15803D','#9333EA','#0EA5E9',
   '#CA8A04','#E11D48','#166534','#7E22CE','#0369A1','#A16207'
 ];
+
+const QUOTES = [
+  "Discipline is choosing between what you want now and what you want most.",
+  "You don't rise to the level of your goals, you fall to the level of your systems.",
+  "The days are long, but the logged hours don't lie.",
+  "Small, boring, repeated actions compound into a life.",
+  "What gets tracked gets noticed. What gets noticed gets better.",
+  "Motivation gets you started. Routine keeps you going.",
+  "A day well-logged is a day you can actually learn from.",
+  "You can't manage what you don't measure — start with today.",
+  "Progress is invisible day to day, obvious month to month.",
+  "The best time to fix your routine was this morning. The next best time is now.",
+  "Every activity you log is a vote for the person you're becoming.",
+  "Consistency beats intensity, almost every time.",
+  "Don't count the hours, make the hours count.",
+  "Rest is not the opposite of productivity — it's part of it.",
+  "You are one honest look at your timeline away from a better week.",
+];
+function quoteForToday(){
+  const seed = hashStr(todayLogicalDate());
+  return QUOTES[seed % QUOTES.length];
+}
+function renderQuoteBanner(){
+  const el = document.getElementById('quoteBanner');
+  if(!el) return;
+  el.innerHTML = '"'+escapeHtml(quoteForToday())+'"<span class="qtag">Today\'s reflection · day starts 4:00 AM</span>';
+}
 
 const DAY_START_HOUR = 4;
 const PX_PER_HOUR = 42;
@@ -490,7 +574,7 @@ const state = {
   user: null,
   activities: loadLS(LS.activities, null) || DEFAULT_ACTIVITIES.map(a => ({
     id: uid(), name:a.name, category:a.category, color: paletteColor(a.name),
-    instant: !!a.instant, is_pinned:true, synced:false, updated_at: new Date().toISOString(),
+    instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), is_pinned:true, synced:false, updated_at: new Date().toISOString(),
   })),
   events: loadLS(LS.events, []),
   pendingDeletes: loadLS(LS.deletes, []),
@@ -502,6 +586,7 @@ const state = {
 state.activities.forEach(a=>{
   a.color = paletteColor(a.name);
   if(a.instant === undefined) a.instant = (a.name === 'Wake Up');
+  if(a.needsDetail === undefined) a.needsDetail = defaultNeedsDetail(a.name);
 });
 saveLS(LS.activities, state.activities);
 
@@ -518,13 +603,14 @@ function currentEvent(){
   return todays.length ? todays[todays.length-1] : null;
 }
 
-function logActivity(activity, atDate){
+function logActivity(activity, atDate, detail){
   atDate = atDate || new Date();
   const ev = {
     id: uid(), client_id: uid(),
     activity_id: activity.id, activity_name: activity.name,
     category: activity.category, color: activity.color,
     instant: !!activity.instant,
+    detail: (detail||'').trim(),
     start_time: atDate.toISOString(), date: logicalDateStr(atDate),
     synced:false,
   };
@@ -532,14 +618,21 @@ function logActivity(activity, atDate){
   state.events.sort((a,b)=> new Date(a.start_time) - new Date(b.start_time));
   persistEvents();
   renderAll();
-  showToast((activity.instant ? 'Marked ' : 'Logged ') + activity.name + ' · ' + fmt12(atDate));
+  showToast((activity.instant ? 'Marked ' : 'Logged ') + activity.name + (ev.detail ? ' — '+ev.detail : '') + ' · ' + fmt12(atDate));
   queueSync();
 }
 
 function updateEventTime(id, hh, mm){
   const ev = state.events.find(e=>e.id===id);
   if(!ev) return;
-  const d = new Date(ev.start_time);
+  // Rebuild the datetime from the event's LOGICAL date rather than just
+  // patching hours/minutes onto the old calendar date. A logical day runs
+  // 4:00 AM -> 3:59 AM, so times before DAY_START_HOUR belong to the next
+  // calendar date. Without this, editing an entry to/from a past-midnight
+  // time (e.g. 12:30 AM) silently jumped it a full day backward/forward.
+  const logicalDate = ev.date || logicalDateStr(new Date(ev.start_time));
+  const d = new Date(logicalDate+'T00:00:00');
+  if(hh < DAY_START_HOUR) d.setDate(d.getDate()+1);
   d.setHours(hh, mm, 0, 0);
   ev.start_time = d.toISOString();
   ev.date = logicalDateStr(d);
@@ -560,6 +653,11 @@ function deleteEvent(id){
   queueSync();
 }
 
+function defaultNeedsDetail(name){
+  const n = (name||'').toLowerCase().trim();
+  return n === 'call' || n === 'timepass';
+}
+
 function addActivity(opts){
   const name = (opts.name||'').trim();
   if(!name) return null;
@@ -567,6 +665,7 @@ function addActivity(opts){
   if(existing){
     if(opts.pin) existing.is_pinned = true;
     if(opts.instant !== undefined) existing.instant = !!opts.instant;
+    if(opts.needsDetail !== undefined) existing.needsDetail = !!opts.needsDetail;
     persistActivities();
     return existing;
   }
@@ -574,6 +673,7 @@ function addActivity(opts){
     id: uid(), name, category: opts.category || 'essential',
     color: paletteColor(name),
     instant: !!opts.instant,
+    needsDetail: opts.needsDetail !== undefined ? !!opts.needsDetail : defaultNeedsDetail(name),
     is_pinned: !!opts.pin, synced:false, updated_at: new Date().toISOString(),
   };
   state.activities.push(act);
@@ -728,9 +828,10 @@ function renderTodayLog(){
         '<button class="btn-save" data-action="saveEdit" data-id="'+e.id+'">Save</button>' +
         '<button class="btn-cancel" data-action="cancelEdit">Cancel</button></div>';
     }
+    const nameHtml = escapeHtml(e.activity_name) + (e.detail ? ' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(e.detail)+'</span>' : '') + (e.instant?' ⚡':'');
     return '<div class="log-row" data-id="'+e.id+'">' +
       '<span class="log-dot" style="background:'+e.color+'"></span>' +
-      '<span class="log-name">'+escapeHtml(e.activity_name)+(e.instant?' ⚡':'')+'</span>' +
+      '<span class="log-name">'+nameHtml+'</span>' +
       '<span class="log-time mono">'+fmt12(new Date(e.start_time))+'</span>' +
       '<button class="log-edit" data-action="edit" data-id="'+e.id+'">✎</button>' +
       '<button class="log-del" data-action="del" data-id="'+e.id+'">🗑</button></div>';
@@ -758,10 +859,10 @@ function renderHistory(){
       stripHtml = segs.map(s=> '<div class="strip-seg" style="flex-grow:'+((s.end-s.start)/60000)+';background:'+s.color+'" title="'+escapeHtml(s.activity_name)+' '+fmt12(s.start)+'–'+fmt12(s.end)+'"></div>').join('');
     }
     const rangeRows = segs.map(s=>
-      '<div class="log-row"><span class="log-dot" style="background:'+s.color+'"></span><span class="log-name">'+escapeHtml(s.activity_name)+'</span><span class="log-time mono">'+fmt12(s.start)+' – '+fmt12(s.end)+' ('+durationLabel((s.end-s.start)/60000)+')</span></div>'
+      '<div class="log-row"><span class="log-dot" style="background:'+s.color+'"></span><span class="log-name">'+escapeHtml(s.activity_name)+(s.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(s.detail)+'</span>':'')+'</span><span class="log-time mono">'+fmt12(s.start)+' – '+fmt12(s.end)+' ('+durationLabel((s.end-s.start)/60000)+')</span></div>'
     ).join('');
     const markerRows = mks.map(m=>
-      '<div class="log-row"><span class="log-dot" style="background:'+m.color+'"></span><span class="log-name">'+escapeHtml(m.activity_name)+' ⚡</span><span class="log-time mono">'+fmt12(m.start)+'</span></div>'
+      '<div class="log-row"><span class="log-dot" style="background:'+m.color+'"></span><span class="log-name">'+escapeHtml(m.activity_name)+(m.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(m.detail)+'</span>':'')+' ⚡</span><span class="log-time mono">'+fmt12(m.start)+'</span></div>'
     ).join('');
     const detailHtml = (rangeRows + markerRows) || '<div class="empty-note">No entries.</div>';
     return '<div class="hist-day" data-date="'+dateStr+'">' +
@@ -811,8 +912,58 @@ function renderStats(){
   });
   html += '</div>';
 
+  const personal = computePersonalAverages(INSIGHTS_LOOKBACK_DAYS);
+  html += '<div class="stat-card"><h3>Your last '+INSIGHTS_LOOKBACK_DAYS+' days</h3>';
+  if(personal.daysLogged < 3){
+    html += '<div class="insight-empty">Log a few more days and this section will start showing your averages.</div>';
+  } else {
+    html +=
+      '<div class="insight-stat-row"><span class="insight-stat-label">Wake time</span><span class="insight-stat-val">'+fmtWakeClock(personal.avgWakeMinutes)+' avg</span></div>' +
+      '<div class="insight-stat-row"><span class="insight-stat-label">Study</span><span class="insight-stat-val">'+durationLabel(personal.avgStudy)+'/day avg</span></div>' +
+      '<div class="insight-stat-row"><span class="insight-stat-label">Social & Fun</span><span class="insight-stat-val">'+durationLabel(personal.avgSocial)+'/day avg</span></div>' +
+      '<div class="insight-stat-row"><span class="insight-stat-label">Essential</span><span class="insight-stat-val">'+durationLabel(personal.avgEssential)+'/day avg</span></div>';
+    const diff = computeTodayWakeDeviation(personal);
+    if(diff != null && Math.abs(diff) >= 20){
+      html += '<div class="insight-stat-row"><span class="insight-stat-label">Today vs average</span><span class="insight-stat-val" style="color:var(--accent)">'+Math.round(Math.abs(diff))+'m '+(diff>0?'later':'earlier')+'</span></div>';
+    }
+  }
+  html += '</div>';
+
   container.innerHTML = html;
 }
+
+/* ============================= EXPORT ============================= */
+function downloadBlob(filename, content, mime){
+  const blob = new Blob([content], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=> URL.revokeObjectURL(url), 1000);
+}
+function exportJson(){
+  const events = state.events.slice().sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
+  const payload = {
+    exported_at: new Date().toISOString(),
+    activities: state.activities.map(a=>({ id:a.id, name:a.name, category:a.category, instant:!!a.instant, needsDetail:!!a.needsDetail })),
+    events: events.map(e=>({ id:e.id, activity_name:e.activity_name, category:e.category, detail:e.detail||'', instant:!!e.instant, start_time:e.start_time, date:e.date }))
+  };
+  downloadBlob('chrono-export-'+localDateStr()+'.json', JSON.stringify(payload, null, 2), 'application/json');
+  showToast('Exported '+events.length+' activities as JSON');
+}
+function csvEscape(v){ v = String(v==null?'':v); return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
+function exportCsv(){
+  const events = state.events.slice().sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
+  const rows = [['date','start_time','activity','category','detail','instant']];
+  events.forEach(e=>{
+    rows.push([e.date, e.start_time, e.activity_name, e.category, e.detail||'', e.instant?'yes':'no']);
+  });
+  const csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
+  downloadBlob('chrono-export-'+localDateStr()+'.csv', csv, 'text/csv');
+  showToast('Exported '+events.length+' activities as CSV');
+}
+document.getElementById('exportJsonBtn').addEventListener('click', exportJson);
+document.getElementById('exportCsvBtn').addEventListener('click', exportCsv);
 
 /* ---- Insights: personal stats are computed instantly, client-side, for
    free. The AI narration text is fetched from Firestore, where the nightly
@@ -861,30 +1012,13 @@ function computeTodayWakeDeviation(personal){
   return todayWake - personal.avgWakeMinutes;
 }
 
-async function renderInsights(){
-  const container = document.getElementById('insightsPanel');
-  const personal = computePersonalAverages(INSIGHTS_LOOKBACK_DAYS);
+async function renderChatInsight(){
+  const container = document.getElementById('chatInsightPanel');
+  if(!container) return;
 
-  let html = '<div class="insight-card"><h3>Your last '+INSIGHTS_LOOKBACK_DAYS+' days</h3>';
-  if(personal.daysLogged < 3){
-    html += '<div class="insight-empty">Log a few more days and this section will start showing your averages.</div>';
-  } else {
-    html +=
-      '<div class="insight-stat-row"><span class="insight-stat-label">Wake time</span><span class="insight-stat-val">'+fmtWakeClock(personal.avgWakeMinutes)+' avg</span></div>' +
-      '<div class="insight-stat-row"><span class="insight-stat-label">Study</span><span class="insight-stat-val">'+durationLabel(personal.avgStudy)+'/day avg</span></div>' +
-      '<div class="insight-stat-row"><span class="insight-stat-label">Social & Fun</span><span class="insight-stat-val">'+durationLabel(personal.avgSocial)+'/day avg</span></div>' +
-      '<div class="insight-stat-row"><span class="insight-stat-label">Essential</span><span class="insight-stat-val">'+durationLabel(personal.avgEssential)+'/day avg</span></div>';
-
-    const diff = computeTodayWakeDeviation(personal);
-    if(diff != null && Math.abs(diff) >= 20){
-      html += '<div class="insight-stat-row"><span class="insight-stat-label">Today vs average</span><span class="insight-stat-val" style="color:var(--accent)">'+Math.round(Math.abs(diff))+'m '+(diff>0?'later':'earlier')+'</span></div>';
-    }
-  }
-  html += '</div>';
-
-  html += '<div class="insight-card"><h3>AI observations</h3><div id="aiInsightBody">';
+  let html = '<div class="insight-card"><h3>AI observations</h3><div id="aiInsightBody">';
   if(!CLOUD_ENABLED || !state.user){
-    html += '<div class="insight-empty">Sign in to get AI-generated observations, refreshed nightly from your logged data.</div>';
+    html += '<div class="insight-empty">Sign in to get AI-generated observations, refreshed nightly from your logged data. You can still chat below without signing in.</div>';
   } else {
     html += '<div class="insight-loading">Loading…</div>';
   }
@@ -915,6 +1049,113 @@ async function renderInsights(){
   }
 }
 
+/* ============================= LIVE AI CHAT ============================= */
+// Reads window.APP_CONFIG.gemini.apiKey from config.js, the same file that
+// carries the Firebase config. Calls the Gemini API directly from the
+// client — fine for a personal single-user tool, not meant for a shared
+// deployment with a public key.
+function getGeminiKey(){
+  return (window.APP_CONFIG && window.APP_CONFIG.gemini && window.APP_CONFIG.gemini.apiKey) || null;
+}
+const GEMINI_ENABLED = !!getGeminiKey();
+const LS_CHAT = 'chrono_chat_v1';
+state.chatMessages = loadLS(LS_CHAT, []);
+
+function buildChatContext(){
+  const personal = computePersonalAverages(INSIGHTS_LOOKBACK_DAYS);
+  const {ranges} = computeGlobalSegments();
+  const recentDates = lastNLogicalDates(5);
+  const recentLines = recentDates.map(ds=>{
+    const segs = segmentsForDay(ds, ranges);
+    if(!segs.length) return dayLabel(ds)+': no data';
+    const parts = segs.map(s => s.activity_name + (s.detail?' ('+s.detail+')':'') + ' ' + fmt12(s.start)+'-'+fmt12(s.end));
+    return dayLabel(ds)+': ' + parts.join(', ');
+  }).join('\n');
+  return [
+    'You are a concise, encouraging personal routine coach inside a time-tracking app called Chrono.',
+    'The user logs activities in three categories: Study, Social & Fun, Essential.',
+    'Their averages over the last '+INSIGHTS_LOOKBACK_DAYS+' days: wake time '+fmtWakeClock(personal.avgWakeMinutes)+
+      ', study '+durationLabel(personal.avgStudy||0)+'/day, social '+durationLabel(personal.avgSocial||0)+'/day, essential '+durationLabel(personal.avgEssential||0)+'/day.',
+    'Their last 5 logged days:',
+    recentLines || 'No data yet.',
+    'Answer the user\'s question directly and briefly (a few sentences unless asked for more). Reference their actual logged data when relevant. Be honest, not just cheerleading.'
+  ].join('\n');
+}
+
+function renderChatLog(){
+  const el = document.getElementById('chatLog');
+  if(!el) return;
+  if(!state.chatMessages.length){
+    el.innerHTML = '<div class="chat-msg system">Ask me anything about your routine — e.g. "How much have I studied this week?" or "Why do I keep sleeping late?"</div>';
+  } else {
+    el.innerHTML = state.chatMessages.map(m=>
+      '<div class="chat-msg '+m.role+'">'+escapeHtml(m.text)+'</div>'
+    ).join('');
+  }
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendChatMessage(text){
+  text = (text||'').trim();
+  if(!text) return;
+  if(!GEMINI_ENABLED){
+    state.chatMessages.push({role:'system', text:'AI chat isn\'t configured yet — add a gemini.apiKey to config.js to enable it.'});
+    saveLS(LS_CHAT, state.chatMessages);
+    renderChatLog();
+    return;
+  }
+  state.chatMessages.push({role:'user', text});
+  saveLS(LS_CHAT, state.chatMessages);
+  renderChatLog();
+
+  const sendBtn = document.getElementById('chatSendBtn');
+  sendBtn.disabled = true;
+  state.chatMessages.push({role:'ai', text:'…'});
+  renderChatLog();
+
+  try {
+    const history = state.chatMessages.filter(m=>m.role==='user'||m.role==='ai').slice(-13, -1);
+    const contents = history.map(m=>({ role: m.role==='ai'?'model':'user', parts:[{text:m.text}] }));
+    contents.push({ role:'user', parts:[{text}] });
+
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+getGeminiKey(), {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        system_instruction: { parts:[{text: buildChatContext()}] },
+        contents,
+      })
+    });
+    const data = await res.json();
+    const reply = data && data.candidates && data.candidates[0] && data.candidates[0].content
+      ? data.candidates[0].content.parts.map(p=>p.text).join('')
+      : 'Sorry, I couldn\'t generate a response just now.';
+    state.chatMessages[state.chatMessages.length-1] = {role:'ai', text:reply};
+  } catch(err){
+    console.error('Chat request failed', err);
+    state.chatMessages[state.chatMessages.length-1] = {role:'ai', text:'Something went wrong reaching the AI — check your connection and try again.'};
+  }
+  saveLS(LS_CHAT, state.chatMessages);
+  renderChatLog();
+  sendBtn.disabled = false;
+}
+
+document.getElementById('chatSendBtn').addEventListener('click', ()=>{
+  const input = document.getElementById('chatInput');
+  const text = input.value;
+  input.value = '';
+  sendChatMessage(text);
+});
+document.getElementById('chatInput').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){
+    const input = e.target;
+    const text = input.value;
+    input.value = '';
+    sendChatMessage(text);
+  }
+});
+renderChatLog();
+
 function renderAuthUI(){
   const label = document.getElementById('authChipLabel');
   const badge = document.getElementById('cloudBadge');
@@ -937,6 +1178,7 @@ function renderAuthUI(){
 }
 
 function renderAll(){
+  renderQuoteBanner();
   renderTimeline();
   renderStatus();
   renderQuickAdd();
@@ -984,6 +1226,7 @@ document.getElementById('quickAdd').addEventListener('click', (e)=>{
     document.getElementById('actTime').value = nowTimeValue();
     document.getElementById('actPin').checked = true;
     document.getElementById('actInstant').checked = false;
+    document.getElementById('actNeedsDetail').checked = false;
     document.querySelectorAll('#catPills .pill').forEach(p=>p.classList.remove('active'));
     document.querySelector('#catPills .pill[data-cat="study"]').classList.add('active');
     openModal('addModal');
@@ -998,8 +1241,40 @@ document.getElementById('quickAdd').addEventListener('click', (e)=>{
       showToast(act.name + ' is already active');
       return;
     }
-    logActivity(act, new Date());
+    if(act.needsDetail){
+      openDetailModal(act, new Date());
+    } else {
+      logActivity(act, new Date());
+    }
   }
+});
+
+let pendingDetailAct = null, pendingDetailTime = null;
+function openDetailModal(act, atDate){
+  pendingDetailAct = act; pendingDetailTime = atDate;
+  document.getElementById('detailModalTitle').textContent = act.name;
+  document.getElementById('detailModalLabel').textContent =
+    act.name.toLowerCase() === 'call' ? 'Who are you calling?' :
+    act.name.toLowerCase() === 'timepass' ? 'What exactly are you doing?' : 'Note';
+  const input = document.getElementById('detailModalInput');
+  input.value = '';
+  openModal('detailModal');
+  setTimeout(()=> input.focus(), 150);
+}
+function resolvePendingDetail(detail){
+  if(!pendingDetailAct) return;
+  logActivity(pendingDetailAct, pendingDetailTime, detail);
+  pendingDetailAct = null; pendingDetailTime = null;
+  closeModal('detailModal');
+}
+document.getElementById('detailSaveBtn').addEventListener('click', ()=>{
+  resolvePendingDetail(document.getElementById('detailModalInput').value);
+});
+document.getElementById('detailSkipBtn').addEventListener('click', ()=>{
+  resolvePendingDetail('');
+});
+document.getElementById('detailModalInput').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') resolvePendingDetail(e.target.value);
 });
 
 document.getElementById('catPills').addEventListener('click', (e)=>{
@@ -1023,7 +1298,7 @@ function timeInputToDate(val){
 document.getElementById('saveOnlyBtn').addEventListener('click', ()=>{
   const name = document.getElementById('actName').value.trim();
   if(!name){ return; }
-  addActivity({ name, category:getSelectedCat(), pin: document.getElementById('actPin').checked, instant: document.getElementById('actInstant').checked });
+  addActivity({ name, category:getSelectedCat(), pin: document.getElementById('actPin').checked, instant: document.getElementById('actInstant').checked, needsDetail: document.getElementById('actNeedsDetail').checked });
   renderAll();
   closeModal('addModal');
   showToast('Saved ' + name);
@@ -1032,10 +1307,12 @@ document.getElementById('saveOnlyBtn').addEventListener('click', ()=>{
 document.getElementById('saveLogBtn').addEventListener('click', ()=>{
   const name = document.getElementById('actName').value.trim();
   if(!name){ return; }
-  const act = addActivity({ name, category:getSelectedCat(), pin: document.getElementById('actPin').checked, instant: document.getElementById('actInstant').checked });
+  const act = addActivity({ name, category:getSelectedCat(), pin: document.getElementById('actPin').checked, instant: document.getElementById('actInstant').checked, needsDetail: document.getElementById('actNeedsDetail').checked });
   const when = timeInputToDate(document.getElementById('actTime').value);
   closeModal('addModal');
-  if(act) logActivity(act, when);
+  if(!act) return;
+  if(act.needsDetail) openDetailModal(act, when);
+  else logActivity(act, when);
 });
 
 document.getElementById('undoBtn').addEventListener('click', ()=>{
@@ -1080,7 +1357,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.classList.add('active');
     document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
     if(btn.dataset.tab === 'today') renderTimeline();
-    if(btn.dataset.tab === 'insights') renderInsights();
+    if(btn.dataset.tab === 'chat') renderChatInsight();
   });
 });
 
