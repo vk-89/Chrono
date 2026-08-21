@@ -56,6 +56,8 @@
   .brand{display:flex;align-items:baseline;gap:7px;}
   .brand-mark{width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,hsl(var(--study-h) var(--study-s) 50%),hsl(var(--social-h) var(--social-s) 55%));display:inline-block;}
   .brand h1{font-size:19px;font-weight:700;margin:0;letter-spacing:-0.01em;}
+  .top-actions{display:flex;align-items:center;gap:8px;}
+  .icon-btn{background:var(--surface);border:1px solid var(--border);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:14px;}
   .authchip{
     display:flex;align-items:center;gap:6px;
     background:var(--surface);border:1px solid var(--border);
@@ -65,6 +67,14 @@
   .cloud-badge{width:6px;height:6px;border-radius:50%;background:var(--ink-faint);}
   .cloud-badge.on{background:#3E8E5A;}
   .cloud-badge.busy{background:#D3A227;animation:pulse 1s infinite;}
+
+  /* ---- Warnings / Banner ---- */
+  .frag-warning{
+    background:#FFF5F5;border:1px solid #FED7D7;color:#9B2C2C;
+    border-radius:var(--radius-sm);padding:10px 12px;margin-top:12px;
+    font-size:12.5px;display:flex;align-items:flex-start;gap:8px;line-height:1.4;
+  }
+  .frag-warning-icon{flex:none;font-size:14px;}
 
   /* ---- Timeline card ---- */
   .tl-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-top:12px;padding:14px 0 14px 14px;overflow:hidden;}
@@ -77,8 +87,9 @@
   .tl-tick{position:absolute;top:0;font-size:9.5px;color:var(--ink-faint);transform:translateX(-50%);white-space:nowrap;font-family:"JetBrains Mono";}
   .tl-tick::after{content:"";position:absolute;left:50%;top:13px;width:1px;height:5px;background:var(--border-strong);}
   .tl-day{margin-bottom:8px;}
-  .tl-day-label{font-size:10.5px;color:var(--ink-soft);margin-bottom:3px;font-weight:600;font-family:"Space Grotesk";}
+  .tl-day-label{font-size:10.5px;color:var(--ink-soft);margin-bottom:3px;font-weight:600;font-family:"Space Grotesk";display:flex;align-items:center;justify-content:space-between;padding-right:14px;}
   .tl-track{position:relative;height:22px;border-radius:6px;background:var(--paper);overflow:visible;}
+  .tl-track.offgrid-track{background:repeating-linear-gradient(45deg, var(--paper), var(--paper) 10px, #EBE9DF 10px, #EBE9DF 20px);opacity:0.75;}
   .tl-seg{position:absolute;top:0;bottom:0;min-width:3px;border-radius:3px;}
   .tl-seg.live::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,0.35);animation:pulse 1.6s ease-in-out infinite;border-radius:3px;}
   .tl-marker{position:absolute;top:-4px;width:2px;height:30px;border-radius:1px;z-index:3;background:var(--mc,var(--ink));}
@@ -98,7 +109,12 @@
   .status-since{color:var(--ink-soft);font-size:12.5px;margin-top:1px;}
   .status-empty{color:var(--ink-soft);font-size:14px;}
   .status-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-  .status-undo{background:none;border:none;color:var(--ink-faint);font-size:12px;text-decoration:underline;padding:4px;}
+  .status-actions{display:flex;align-items:center;gap:8px;}
+  .status-undo,.status-interrupt{background:none;border:none;color:var(--ink-faint);font-size:12px;text-decoration:underline;padding:4px;}
+  .status-interrupt{color:var(--accent);font-weight:600;text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;background:var(--paper);}
+
+  /* ---- Interrupt list inline ---- */
+  .interrupt-tag{display:inline-block;font-size:11px;background:#FED7D7;color:#9B2C2C;padding:1px 5px;border-radius:4px;margin-left:4px;font-weight:500;}
 
   /* ---- Tabs ---- */
   .tabs{display:flex;gap:4px;margin-top:16px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:3px;}
@@ -125,9 +141,17 @@
     border-radius:var(--radius-sm);padding:12px;font-size:13.5px;color:var(--ink-soft);font-weight:600;font-family:"Space Grotesk";
   }
 
+  /* ---- Auto group banner ---- */
+  .group-offer{
+    background:linear-gradient(135deg, hsl(var(--study-h) var(--study-s) 95%), hsl(var(--essential-h) var(--essential-s) 95%));
+    border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-top:14px;
+    font-size:12.5px;display:flex;align-items:center;justify-content:space-between;
+  }
+  .group-offer button{background:var(--ink);color:#fff;border:none;border-radius:6px;padding:5px 9px;font-size:12px;font-weight:600;}
+
   /* ---- Log list ---- */
   .log-section{margin-top:22px;}
-  .section-title{font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:8px;font-family:"Space Grotesk";}
+  .section-title{font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:8px;font-family:"Space Grotesk";display:flex;justify-content:space-between;align-items:center;}
   .log-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--border);}
   .log-row:last-child{border-bottom:none;}
   .log-dot{width:8px;height:8px;border-radius:50%;flex:none;}
@@ -144,7 +168,7 @@
   /* ---- History ---- */
   .hist-day{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 12px;margin-bottom:9px;}
   .hist-day-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
-  .hist-date{font-weight:600;font-size:13.5px;font-family:"Space Grotesk";}
+  .hist-date{font-weight:600;font-size:13.5px;font-family:"Space Grotesk";display:flex;align-items:center;gap:6px;}
   .hist-total{font-size:11.5px;color:var(--ink-soft);}
   .hist-strip{display:flex;height:14px;border-radius:999px;overflow:hidden;background:var(--paper);}
   .strip-seg{min-width:2px;}
@@ -152,10 +176,11 @@
   .hist-detail{margin-top:9px;display:none;}
   .hist-detail.open{display:block;}
   .load-more{width:100%;background:none;border:1px solid var(--border);border-radius:999px;padding:10px;font-size:13px;color:var(--ink-soft);font-weight:600;font-family:"Space Grotesk";margin-top:4px;}
+  .badge-offgrid{font-size:10px;background:#E1DFD2;color:var(--ink-soft);padding:2px 6px;border-radius:4px;text-transform:uppercase;font-weight:700;}
 
   /* ---- Stats ---- */
   .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;}
-  .stat-card h3{font-size:13px;margin:0 0 10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+  .stat-card h3{font-size:13px;margin:0 0 10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;font-weight:600;display:flex;justify-content:space-between;align-items:center;}
   .stat-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:12.5px;}
   .stat-bar-label{width:70px;flex:none;color:var(--ink-soft);}
   .stat-bar-track{flex:1;height:9px;background:var(--paper);border-radius:999px;overflow:hidden;}
@@ -164,18 +189,17 @@
   .stat-week-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
   .stat-week-day{width:34px;flex:none;font-size:11px;color:var(--ink-faint);}
   .stat-week-strip{flex:1;display:flex;height:16px;border-radius:6px;overflow:hidden;background:var(--paper);}
+  .toggle-filter{font-size:11px;font-weight:500;text-transform:none;display:flex;align-items:center;gap:5px;cursor:pointer;}
 
-  /* ---- Insights ---- */
-  .insight-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
-  .insight-card h3{font-size:13px;margin:0 0 10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
-  .insight-text{font-size:14px;line-height:1.65;color:var(--ink);white-space:pre-wrap;}
-  .insight-meta{font-size:11px;color:var(--ink-faint);margin-top:10px;font-family:"JetBrains Mono";}
-  .insight-empty{font-size:13px;color:var(--ink-soft);line-height:1.6;}
-  .insight-loading{font-size:13px;color:var(--ink-faint);}
-  .insight-stat-row{display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);}
-  .insight-stat-row:last-child{border-bottom:none;}
-  .insight-stat-label{color:var(--ink-soft);}
-  .insight-stat-val{font-family:"JetBrains Mono";font-weight:600;}
+  /* ---- Sleep contig card ---- */
+  .sleep-banner{
+    background:linear-gradient(135deg, #2B3A42 0%, #192227 100%);
+    color:#E0E6ED;border-radius:var(--radius);padding:14px;margin-bottom:12px;
+  }
+  .sleep-banner h4{margin:0 0 6px;font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:#8FA0B3;font-family:"Space Grotesk";}
+  .sleep-metrics{display:flex;justify-content:space-between;align-items:baseline;}
+  .sleep-duration{font-size:22px;font-weight:700;font-family:"Space Grotesk";color:#FFF;}
+  .sleep-range{font-size:12px;color:#A9B9CA;font-family:"JetBrains Mono";}
 
   /* ---- Toast ---- */
   #toast{
@@ -201,26 +225,22 @@
   .modal h2{font-size:17px;margin:0 0 14px;}
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:6px;font-weight:600;}
-  .field input[type=text],.field input[type=email],.field input[type=password],.field input[type=time]{
+  .field input[type=text],.field input[type=email],.field input[type=password],.field input[type=time],.field input[type=number],.field select{
     width:100%;border:1px solid var(--border-strong);border-radius:999px;padding:11px 12px;font-size:15px;font-family:inherit;background:var(--paper);
   }
   .pill-row{display:flex;gap:8px;}
   .pill{flex:1;border:1.5px solid var(--border-strong);border-radius:9px;padding:10px 8px;text-align:center;font-size:12.5px;font-weight:600;background:var(--surface);}
   .pill.active{border-color:var(--ink);background:var(--paper);}
   .pill i{display:block;width:10px;height:10px;border-radius:50%;margin:0 auto 5px;}
-  .check-row{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-soft);}
+  .check-row{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-soft);margin-bottom:8px;}
   .modal-actions{display:flex;gap:8px;margin-top:16px;}
   .btn{flex:1;border:none;border-radius:10px;padding:13px;font-size:14.5px;font-weight:600;font-family:"Space Grotesk";}
   .btn-primary{background:var(--ink);color:#fff;}
   .btn-ghost{background:var(--paper);color:var(--ink-soft);}
   .btn-outline{background:none;border:1.5px solid var(--border-strong);color:var(--ink);}
+  .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:15px;color:var(--ink-faint);}
   .divider-line{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--ink-faint);font-size:11.5px;}
   .divider-line::before,.divider-line::after{content:"";flex:1;height:1px;background:var(--border);}
-  .authtoggle{display:flex;justify-content:center;gap:16px;font-size:12.5px;margin-top:12px;color:var(--ink-soft);}
-  .authtoggle b{color:var(--ink);cursor:pointer;text-decoration:underline;}
-  .auth-msg{font-size:12.5px;color:var(--danger);margin-top:8px;min-height:14px;}
-  .cloud-note{font-size:12px;color:var(--ink-faint);background:var(--paper);border-radius:999px;padding:10px 11px;line-height:1.5;}
-  .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:15px;color:var(--ink-faint);}
 
   /* ---- Quote banner ---- */
   .quote-banner{
@@ -253,10 +273,13 @@
   <div class="topbar" id="topbar">
     <div class="topbar-row">
       <div class="brand"><span class="brand-mark"></span><h1>Chrono</h1></div>
-      <button class="authchip" id="authChip">
-        <span class="cloud-badge" id="cloudBadge"></span>
-        <span id="authChipLabel">Guest</span>
-      </button>
+      <div class="top-actions">
+        <button class="icon-btn" id="settingsBtn" title="Preferences & Day Boundary">⚙</button>
+        <button class="authchip" id="authChip">
+          <span class="cloud-badge" id="cloudBadge"></span>
+          <span id="authChipLabel">Guest</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -273,11 +296,20 @@
 
     <div class="quote-banner" id="quoteBanner"></div>
 
+    <!-- Fragmentation warning container -->
+    <div id="fragWarningContainer"></div>
+
+    <!-- Sleep cycle banner (if recent rest exists) -->
+    <div id="sleepBannerContainer"></div>
+
+    <!-- Multi-day micro-switch grouping offer -->
+    <div id="autoGroupOfferContainer"></div>
+
     <!-- Horizontal multi-day timeline -->
     <div class="tl-card">
       <div class="tl-head">
         <div class="tl-title">Timeline</div>
-        <div class="tl-sub">day starts 4:00 AM · scroll ↔</div>
+        <div class="tl-sub" id="tlSubLabel">day starts 4:00 AM · scroll ↔</div>
       </div>
       <div class="tl-scroll" id="tlScroll">
         <div class="tl-inner" id="tlInner">
@@ -292,13 +324,19 @@
     <div class="status-card">
       <div class="status-row">
         <div class="status-main" id="statusCard"><div class="status-empty">Tap an activity below to start tracking.</div></div>
-        <button class="status-undo" id="undoBtn" style="display:none;">Undo</button>
+        <div class="status-actions">
+          <button class="status-interrupt" id="interruptBtn" style="display:none;">+ Interruption</button>
+          <button class="status-undo" id="undoBtn" style="display:none;">Undo</button>
+        </div>
       </div>
     </div>
 
     <div id="quickAdd"></div>
     <div class="log-section">
-      <div class="section-title">Today's log</div>
+      <div class="section-title">
+        <span>Today's log</span>
+        <button class="btn-ghost" id="markDayOffgridBtn" style="font-size:11.5px;padding:4px 8px;border-radius:6px;font-weight:600;">Mark Out-of-Town / Travel</button>
+      </div>
       <div id="todayLog"></div>
     </div>
   </div>
@@ -314,7 +352,7 @@
     <div style="margin-top:16px;" id="statsPanel"></div>
     <div class="stat-card">
       <h3>Export your data</h3>
-      <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;line-height:1.5;">Download every activity you've ever logged, notes included.</div>
+      <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;line-height:1.5;">Download every activity you've ever logged, notes and interruption tags included.</div>
       <div class="modal-actions" style="margin-top:0;">
         <button class="btn btn-outline" id="exportJsonBtn">Export JSON</button>
         <button class="btn btn-outline" id="exportCsvBtn">Export CSV</button>
@@ -336,6 +374,54 @@
 </div>
 
 <div id="toast"></div>
+
+<!-- Interruption Tag Modal -->
+<div class="modal-backdrop" id="interruptModal">
+  <div class="modal">
+    <button class="modal-close" data-close="interruptModal">✕</button>
+    <h2>Log quick interruption</h2>
+    <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;">Tag a short distraction inside your ongoing block without breaking your focus timer.</div>
+    <div class="field">
+      <label>Interruption detail</label>
+      <input type="text" id="interruptDetail" placeholder="e.g. 1m call w/ Krishna, Delivery at door" maxlength="60">
+    </div>
+    <div class="field">
+      <label>Duration (approx minutes)</label>
+      <input type="number" id="interruptDuration" value="2" min="1" max="30">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close="interruptModal">Cancel</button>
+      <button class="btn btn-primary" id="saveInterruptBtn">Tag interruption</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings & Day Boundary Modal -->
+<div class="modal-backdrop" id="settingsModal">
+  <div class="modal">
+    <button class="modal-close" data-close="settingsModal">✕</button>
+    <h2>Routine & Day Boundary</h2>
+    <div class="field">
+      <label>Custom Start-of-Day Hour (0 to 12 AM/PM)</label>
+      <select id="settingDayStartHour">
+        <option value="0">12:00 AM (Midnight)</option>
+        <option value="3">3:00 AM</option>
+        <option value="4" selected>4:00 AM (Default)</option>
+        <option value="5">5:00 AM</option>
+        <option value="6">6:00 AM</option>
+        <option value="7">7:00 AM</option>
+        <option value="8">8:00 AM</option>
+      </select>
+    </div>
+    <div class="field check-row">
+      <input type="checkbox" id="settingAutoGroup" checked style="width:16px;height:16px;">
+      <label style="margin:0;font-weight:400;">Enable auto-grouping prompts for rapid task switching (&lt;10m)</label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+    </div>
+  </div>
+</div>
 
 <!-- Add Activity Modal -->
 <div class="modal-backdrop" id="addModal">
@@ -419,7 +505,7 @@
 (function(){
 "use strict";
 
-/* ============================= CONFIG LOADING ============================= */
+/* ============================= CONFIG & SETTINGS ============================= */
 function getFirebaseConfig() {
   if (window.APP_CONFIG && window.APP_CONFIG.firebase) {
     return window.APP_CONFIG.firebase;
@@ -471,17 +557,7 @@ const QUOTES = [
   "Rest is not the opposite of productivity — it's part of it.",
   "You are one honest look at your timeline away from a better week.",
 ];
-function quoteForToday(){
-  const seed = hashStr(todayLogicalDate());
-  return QUOTES[seed % QUOTES.length];
-}
-function renderQuoteBanner(){
-  const el = document.getElementById('quoteBanner');
-  if(!el) return;
-  el.innerHTML = '"'+escapeHtml(quoteForToday())+'"<span class="qtag">Today\'s reflection · day starts 4:00 AM</span>';
-}
 
-const DAY_START_HOUR = 4;
 const PX_PER_HOUR = 42;
 const DAY_WIDTH = 24 * PX_PER_HOUR;
 const TIMELINE_DAYS = 7;
@@ -498,6 +574,7 @@ const DEFAULT_ACTIVITIES = [
   {name:'Rest', category:'essential'},
   {name:'Cooking', category:'essential'},
   {name:'Sleep', category:'essential'},
+  {name:'Admin / Switching', category:'essential'},
   {name:'Library', category:'study'},
   {name:'Coaching', category:'study'},
   {name:'Newspaper', category:'study'},
@@ -511,9 +588,11 @@ const LS = {
   activities:'chrono_activities_v2',
   events:'chrono_events_v2',
   deletes:'chrono_pending_deletes_v2',
+  settings:'chrono_user_settings_v2',
+  offgridDays:'chrono_offgrid_days_v1'
 };
 
-/* ============================= UTIL ============================= */
+/* ============================= UTIL & SETTINGS ============================= */
 function uid(){ return (crypto.randomUUID ? crypto.randomUUID() : 'id-'+Date.now()+'-'+Math.random().toString(16).slice(2)); }
 function pad(n){ return String(n).padStart(2,'0'); }
 function localDateStr(d){ d = d || new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
@@ -527,14 +606,23 @@ function loadLS(key, fallback){ try{ const v = localStorage.getItem(key); return
 function saveLS(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){ console.error('localStorage save failed', e); } }
 function debounce(fn, ms){ let t; return function(){ clearTimeout(t); const a=arguments; t=setTimeout(()=>fn.apply(null,a), ms); }; }
 
+/* Load User Settings */
+const userSettings = Object.assign({
+  dayStartHour: 4,
+  autoGroupPrompt: true,
+  excludeOffgridFromStats: true
+}, loadLS(LS.settings, {}));
+
+function getDayStartHour(){ return userSettings.dayStartHour; }
+
 function logicalDateStr(d){
-  const shifted = new Date(d.getTime() - DAY_START_HOUR*3600000);
+  const shifted = new Date(d.getTime() - getDayStartHour()*3600000);
   return localDateStr(shifted);
 }
 function todayLogicalDate(){ return logicalDateStr(new Date()); }
 function dayBoundaryStart(dateStr){
   const d = new Date(dateStr+'T00:00:00');
-  d.setHours(d.getHours()+DAY_START_HOUR);
+  d.setHours(d.getHours()+getDayStartHour());
   return d;
 }
 function minutesIntoDay(date, dateStr){
@@ -566,6 +654,16 @@ function lastNLogicalDates(n){
   return out;
 }
 
+function quoteForToday(){
+  const seed = hashStr(todayLogicalDate());
+  return QUOTES[seed % QUOTES.length];
+}
+function renderQuoteBanner(){
+  const el = document.getElementById('quoteBanner');
+  if(!el) return;
+  el.innerHTML = '"'+escapeHtml(quoteForToday())+'"<span class="qtag">Today\'s reflection · day starts '+getDayStartHour()+':00 AM</span>';
+}
+
 /* ============================= STATE ============================= */
 const state = {
   user: null,
@@ -575,9 +673,11 @@ const state = {
   })),
   events: loadLS(LS.events, []),
   pendingDeletes: loadLS(LS.deletes, []),
+  offgridDays: loadLS(LS.offgridDays, {}),
   editingId: null,
   historyDaysShown: 7,
   authMode: 'signin',
+  dismissedGroupPrompt: false
 };
 
 state.activities.forEach(a=>{
@@ -590,6 +690,8 @@ saveLS(LS.activities, state.activities);
 function persistActivities(){ saveLS(LS.activities, state.activities); }
 function persistEvents(){ saveLS(LS.events, state.events); }
 function persistDeletes(){ saveLS(LS.deletes, state.pendingDeletes); }
+function persistOffgrid(){ saveLS(LS.offgridDays, state.offgridDays); }
+function persistSettings(){ saveLS(LS.settings, userSettings); }
 
 /* ============================= CORE ACTIONS ============================= */
 function currentEvent(){
@@ -608,6 +710,7 @@ function logActivity(activity, atDate, detail){
     category: activity.category, color: activity.color,
     instant: !!activity.instant,
     detail: (detail||'').trim(),
+    interruptions: [],
     start_time: atDate.toISOString(), date: logicalDateStr(atDate),
     synced:false,
   };
@@ -619,12 +722,29 @@ function logActivity(activity, atDate, detail){
   queueSync();
 }
 
+function addInterruptionToActive(note, mins){
+  const ev = currentEvent();
+  if(!ev || ev.instant) return;
+  if(!ev.interruptions) ev.interruptions = [];
+  ev.interruptions.push({
+    id: uid(),
+    note: (note || 'Interruption').trim(),
+    mins: parseInt(mins, 10) || 1,
+    time: new Date().toISOString()
+  });
+  ev.synced = false;
+  persistEvents();
+  renderAll();
+  showToast('Tagged interruption: ' + note);
+  queueSync();
+}
+
 function updateEventTime(id, hh, mm){
   const ev = state.events.find(e=>e.id===id);
   if(!ev) return;
   const logicalDate = ev.date || logicalDateStr(new Date(ev.start_time));
   const d = new Date(logicalDate+'T00:00:00');
-  if(hh < DAY_START_HOUR) d.setDate(d.getDate()+1);
+  if(hh < getDayStartHour()) d.setDate(d.getDate()+1);
   d.setHours(hh, mm, 0, 0);
   ev.start_time = d.toISOString();
   ev.date = logicalDateStr(d);
@@ -673,27 +793,41 @@ function addActivity(opts){
   return act;
 }
 
+/* SMART CONTIGUOUS SEGMENTS & SLEEP RECOGNITION */
 function computeGlobalSegments(){
   const events = state.events.slice().sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
   const ranges = [], markers = [];
   const now = new Date();
   const nowLogical = todayLogicalDate();
+
   for(let i=0;i<events.length;i++){
     const ev = events[i];
     const start = new Date(ev.start_time);
-    if(ev.instant){ markers.push(Object.assign({}, ev, {start})); continue; }
+    if(ev.instant){
+      markers.push(Object.assign({}, ev, {start}));
+      continue;
+    }
     let end, live=false;
     if(i < events.length-1){
       end = new Date(events[i+1].start_time);
     } else {
       const evLogical = logicalDateStr(start);
-      if(evLogical === nowLogical){ end = now; live = true; }
-      else { end = new Date(dayBoundaryStart(evLogical).getTime() + 24*3600000); }
+      if(evLogical === nowLogical){
+        end = now; live = true;
+      } else {
+        // Multi-day & overnight continuous span: don't chop arbitrarily
+        end = new Date(dayBoundaryStart(evLogical).getTime() + 24*3600000);
+      }
     }
     if(end <= start) end = new Date(start.getTime()+60000);
-    ranges.push(Object.assign({}, ev, {start, end, live}));
+    ranges.push(Object.assign({}, ev, {start, end, live, isSleep: isSleepOrRest(ev.activity_name)}));
   }
   return {ranges, markers};
+}
+
+function isSleepOrRest(name){
+  const n = (name||'').toLowerCase();
+  return n === 'rest' || n === 'sleep';
 }
 
 function segmentsForDay(dateStr, ranges){
@@ -702,7 +836,7 @@ function segmentsForDay(dateStr, ranges){
   ranges.forEach(r=>{
     const st = r.start < ds ? ds : r.start;
     const en = r.end > de ? de : r.end;
-    if(en > st) out.push(Object.assign({}, r, {start:st, end:en}));
+    if(en > st) out.push(Object.assign({}, r, {start:st, end:en, originalStart: r.start, originalEnd: r.end}));
   });
   return out;
 }
@@ -711,13 +845,87 @@ function markersForDay(dateStr, markers){
   return markers.filter(m=> m.start >= ds && m.start < de);
 }
 
+/* SMART SLEEP CYCLE CALCULATION */
+function getLatestSleepCycle(){
+  const {ranges} = computeGlobalSegments();
+  const sleepRanges = ranges.filter(r => r.isSleep);
+  if(!sleepRanges.length) return null;
+  const latest = sleepRanges[sleepRanges.length-1];
+  const durMins = (latest.end - latest.start) / 60000;
+  return {
+    name: latest.activity_name,
+    start: latest.start,
+    end: latest.end,
+    live: latest.live,
+    durationMins: durMins
+  };
+}
+
+/* FRAGMENTATION DETECTION */
+function checkDayFragmentation(dateStr){
+  const {ranges} = computeGlobalSegments();
+  const segs = segmentsForDay(dateStr, ranges);
+  if(segs.length < 5) return null;
+  const shortBlocks = segs.filter(s => (s.end - s.start)/60000 <= 15);
+  if(shortBlocks.length >= 4){
+    return {
+      count: shortBlocks.length,
+      message: "High context-switching detected ("+shortBlocks.length+" micro-sessions under 15m). Consider bundling tasks into a dedicated focus block."
+    };
+  }
+  return null;
+}
+
+/* AUTO-GROUPING DETECTION (3-10m switches) */
+function checkMicroSwitchSequence(){
+  if(!userSettings.autoGroupPrompt || state.dismissedGroupPrompt) return null;
+  const todayL = todayLogicalDate();
+  const dayEvents = state.events
+    .filter(e => logicalDateStr(new Date(e.start_time)) === todayL && !e.instant)
+    .sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
+  
+  if(dayEvents.length < 3) return null;
+
+  // Check last 3 events
+  const slice = dayEvents.slice(-3);
+  const now = Date.now();
+  const times = slice.map((e, idx) => {
+    const st = new Date(e.start_time).getTime();
+    const nextSt = (idx < slice.length - 1) ? new Date(slice[idx+1].start_time).getTime() : now;
+    return (nextSt - st) / 60000;
+  });
+
+  const allShort = times.every(t => t >= 1 && t <= 10);
+  if(allShort){
+    return slice;
+  }
+  return null;
+}
+
+function applyAutoGroup(eventsToGroup){
+  if(!eventsToGroup || !eventsToGroup.length) return;
+  const first = eventsToGroup[0];
+  const combinedNotes = eventsToGroup.map(e => e.activity_name + (e.detail ? ' ('+e.detail+')' : '')).join(' → ');
+  const adminAct = state.activities.find(a => a.name.toLowerCase() === 'admin / switching') || addActivity({ name:'Admin / Switching', category:'essential', pin:true });
+  
+  // Remove individual rapid events
+  const idsToRemove = new Set(eventsToGroup.map(e => e.id));
+  state.events = state.events.filter(e => !idsToRemove.has(e.id));
+  
+  // Add bundled block
+  logActivity(adminAct, new Date(first.start_time), combinedNotes);
+  state.dismissedGroupPrompt = true;
+  renderAll();
+}
+
 /* ============================= RENDER ============================= */
 function renderRuler(){
   const el = document.getElementById('tlRuler');
   el.style.width = DAY_WIDTH+'px';
   let html = '';
+  const startH = getDayStartHour();
   for(let h=0; h<=24; h+=3){
-    const clockHour = (DAY_START_HOUR + h) % 24;
+    const clockHour = (startH + h) % 24;
     const label = clockHour===0 ? '12A' : clockHour<12 ? (clockHour+'A') : clockHour===12 ? '12P' : ((clockHour-12)+'P');
     html += '<span class="tl-tick" style="left:'+(h*PX_PER_HOUR)+'px">'+label+'</span>';
   }
@@ -726,24 +934,30 @@ function renderRuler(){
 
 function renderTimeline(){
   renderRuler();
+  document.getElementById('tlSubLabel').textContent = 'day starts ' + getDayStartHour() + ':00 AM · scroll ↔';
   const {ranges, markers} = computeGlobalSegments();
   const dates = last7LogicalDates();
   const rowsEl = document.getElementById('tlRows');
   let html = '';
   dates.forEach(dateStr=>{
+    const isOffgrid = !!state.offgridDays[dateStr];
     const segs = segmentsForDay(dateStr, ranges);
     const mks = markersForDay(dateStr, markers);
     let inner = '';
     segs.forEach(s=>{
       const left = minutesIntoDay(s.start, dateStr) * PX_PER_HOUR/60;
       const width = Math.max(3, (s.end-s.start)/60000 * PX_PER_HOUR/60);
-      inner += '<div class="tl-seg'+(s.live?' live':'')+'" style="left:'+left+'px;width:'+width+'px;background:'+s.color+'" title="'+escapeHtml(s.activity_name)+' · '+fmt12(s.start)+'–'+(s.live?'now':fmt12(s.end))+'"></div>';
+      const isSleep = s.isSleep;
+      const titleStr = escapeHtml(s.activity_name) + ' · ' + fmt12(s.originalStart||s.start) + '–' + (s.live ? 'now' : fmt12(s.originalEnd||s.end)) + (isSleep ? ' (Sleep Cycle)' : '');
+      inner += '<div class="tl-seg'+(s.live?' live':'')+'" style="left:'+left+'px;width:'+width+'px;background:'+s.color+';opacity:'+(isOffgrid?'0.4':'1')+'" title="'+titleStr+'"></div>';
     });
     mks.forEach(m=>{
       const left = minutesIntoDay(m.start, dateStr) * PX_PER_HOUR/60;
       inner += '<div class="tl-marker" style="left:'+left+'px;--mc:'+m.color+'" title="'+escapeHtml(m.activity_name)+' · '+fmt12(m.start)+'"></div>';
     });
-    html += '<div class="tl-day"><div class="tl-day-label">'+dayLabel(dateStr)+'</div><div class="tl-track" style="width:'+DAY_WIDTH+'px">'+inner+'</div></div>';
+    const trackClass = isOffgrid ? "tl-track offgrid-track" : "tl-track";
+    const offgridTag = isOffgrid ? '<span class="badge-offgrid">Out of town</span>' : '';
+    html += '<div class="tl-day"><div class="tl-day-label"><span>'+dayLabel(dateStr)+'</span>'+offgridTag+'</div><div class="'+trackClass+'" style="width:'+DAY_WIDTH+'px">'+inner+'</div></div>';
   });
   rowsEl.innerHTML = html;
   rowsEl.style.width = DAY_WIDTH+'px';
@@ -766,25 +980,75 @@ function renderTimeline(){
 function renderStatus(){
   const el = document.getElementById('statusCard');
   const undoBtn = document.getElementById('undoBtn');
+  const interruptBtn = document.getElementById('interruptBtn');
   const ev = currentEvent();
   if(!ev){
     el.innerHTML = '<div class="status-empty">Tap an activity below to start tracking.</div>';
     undoBtn.style.display = 'none';
+    interruptBtn.style.display = 'none';
     return;
   }
   const start = new Date(ev.start_time);
+  const interTags = (ev.interruptions && ev.interruptions.length) 
+    ? ev.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(it.note)+' ('+it.mins+'m)</span>').join('')
+    : '';
+
   if(ev.instant){
     el.innerHTML =
       '<span class="status-dot" style="background:'+ev.color+'"></span>' +
       '<div><div class="status-name">'+escapeHtml(ev.activity_name)+'</div>' +
       '<div class="status-since mono">at '+fmt12(start)+' · log what\'s next</div></div>';
+    interruptBtn.style.display = 'none';
   } else {
     el.innerHTML =
       '<span class="status-dot" style="background:'+ev.color+'"></span>' +
-      '<div><div class="status-name">'+escapeHtml(ev.activity_name)+'</div>' +
+      '<div><div class="status-name">'+escapeHtml(ev.activity_name)+interTags+'</div>' +
       '<div class="status-since mono">since '+fmt12(start)+' · <span id="statusElapsed">'+durationLabel((Date.now()-start)/60000)+'</span></div></div>';
+    interruptBtn.style.display = 'inline-block';
   }
   undoBtn.style.display = 'inline-block';
+}
+
+function renderSleepBanner(){
+  const container = document.getElementById('sleepBannerContainer');
+  const sleep = getLatestSleepCycle();
+  if(!sleep || sleep.durationMins < 60){
+    container.innerHTML = '';
+    return;
+  }
+  const durStr = durationLabel(sleep.durationMins);
+  const rangeStr = fmt12(sleep.start) + ' → ' + (sleep.live ? 'Now (Ongoing)' : fmt12(sleep.end));
+  container.innerHTML = 
+    '<div class="sleep-banner">' +
+      '<h4>Continuous Sleep & Rest Session</h4>' +
+      '<div class="sleep-metrics">' +
+        '<span class="sleep-duration">'+durStr+'</span>' +
+        '<span class="sleep-range">'+rangeStr+'</span>' +
+      '</div>' +
+    '</div>';
+}
+
+function renderFragmentationWarning(){
+  const container = document.getElementById('fragWarningContainer');
+  const frag = checkDayFragmentation(todayLogicalDate());
+  if(!frag){ container.innerHTML = ''; return; }
+  container.innerHTML = '<div class="frag-warning"><span class="frag-warning-icon">⚡</span><span>'+escapeHtml(frag.message)+'</span></div>';
+}
+
+function renderAutoGroupOffer(){
+  const container = document.getElementById('autoGroupOfferContainer');
+  const seq = checkMicroSwitchSequence();
+  if(!seq){ container.innerHTML = ''; return; }
+  const names = seq.map(s => s.activity_name).join(' → ');
+  container.innerHTML = 
+    '<div class="group-offer">' +
+      '<span>Rapid task switching detected ('+escapeHtml(names)+'). Group into Admin block?</span>' +
+      '<button id="acceptAutoGroupBtn">Group</button>' +
+    '</div>';
+  
+  document.getElementById('acceptAutoGroupBtn').addEventListener('click', ()=>{
+    applyAutoGroup(seq);
+  });
 }
 
 function renderQuickAdd(){
@@ -807,6 +1071,14 @@ function renderQuickAdd(){
 function renderTodayLog(){
   const container = document.getElementById('todayLog');
   const todayL = todayLogicalDate();
+  const isOffgrid = !!state.offgridDays[todayL];
+  const offgridBtn = document.getElementById('markDayOffgridBtn');
+  if(offgridBtn){
+    offgridBtn.textContent = isOffgrid ? '✓ Out of Town (Active)' : 'Mark Out-of-Town / Travel';
+    offgridBtn.style.background = isOffgrid ? 'var(--ink)' : 'var(--paper)';
+    offgridBtn.style.color = isOffgrid ? '#fff' : 'var(--ink-soft)';
+  }
+
   const dayEvents = state.events
     .filter(e => logicalDateStr(new Date(e.start_time)) === todayL)
     .sort((a,b)=> new Date(b.start_time)-new Date(a.start_time));
@@ -820,7 +1092,10 @@ function renderTodayLog(){
         '<button class="btn-save" data-action="saveEdit" data-id="'+e.id+'">Save</button>' +
         '<button class="btn-cancel" data-action="cancelEdit">Cancel</button></div>';
     }
-    const nameHtml = escapeHtml(e.activity_name) + (e.detail ? ' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(e.detail)+'</span>' : '') + (e.instant?' ⚡':'');
+    const interTags = (e.interruptions && e.interruptions.length)
+      ? e.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(it.note)+'</span>').join('')
+      : '';
+    const nameHtml = escapeHtml(e.activity_name) + (e.detail ? ' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(e.detail)+'</span>' : '') + interTags + (e.instant?' ⚡':'');
     return '<div class="log-row" data-id="'+e.id+'">' +
       '<span class="log-dot" style="background:'+e.color+'"></span>' +
       '<span class="log-name">'+nameHtml+'</span>' +
@@ -841,24 +1116,29 @@ function renderHistory(){
   const dates = allDatesWithData(state.historyDaysShown);
   const {ranges, markers} = computeGlobalSegments();
   container.innerHTML = dates.map(dateStr=>{
+    const isOffgrid = !!state.offgridDays[dateStr];
     const segs = segmentsForDay(dateStr, ranges);
     const mks = markersForDay(dateStr, markers);
     const totalMins = segs.reduce((s,x)=> s + (x.end-x.start)/60000, 0);
     let stripHtml = '';
     if(!segs.length && !mks.length){
-      stripHtml = '<div class="strip-empty">No data</div>';
+      stripHtml = '<div class="strip-empty">'+(isOffgrid?'Out of town / Vacation':'No data')+'</div>';
     } else {
       stripHtml = segs.map(s=> '<div class="strip-seg" style="flex-grow:'+((s.end-s.start)/60000)+';background:'+s.color+'" title="'+escapeHtml(s.activity_name)+' '+fmt12(s.start)+'–'+fmt12(s.end)+'"></div>').join('');
     }
-    const rangeRows = segs.map(s=>
-      '<div class="log-row"><span class="log-dot" style="background:'+s.color+'"></span><span class="log-name">'+escapeHtml(s.activity_name)+(s.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(s.detail)+'</span>':'')+'</span><span class="log-time mono">'+fmt12(s.start)+' – '+fmt12(s.end)+' ('+durationLabel((s.end-s.start)/60000)+')</span></div>'
-    ).join('');
+    const rangeRows = segs.map(s=> {
+      const interTags = (s.interruptions && s.interruptions.length)
+        ? s.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(it.note)+'</span>').join('')
+        : '';
+      return '<div class="log-row"><span class="log-dot" style="background:'+s.color+'"></span><span class="log-name">'+escapeHtml(s.activity_name)+(s.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(s.detail)+'</span>':'')+interTags+'</span><span class="log-time mono">'+fmt12(s.start)+' – '+fmt12(s.end)+' ('+durationLabel((s.end-s.start)/60000)+')</span></div>';
+    }).join('');
     const markerRows = mks.map(m=>
       '<div class="log-row"><span class="log-dot" style="background:'+m.color+'"></span><span class="log-name">'+escapeHtml(m.activity_name)+(m.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(m.detail)+'</span>':'')+' ⚡</span><span class="log-time mono">'+fmt12(m.start)+'</span></div>'
     ).join('');
     const detailHtml = (rangeRows + markerRows) || '<div class="empty-note">No entries.</div>';
+    const offgridTag = isOffgrid ? '<span class="badge-offgrid">Out of town</span>' : '';
     return '<div class="hist-day" data-date="'+dateStr+'">' +
-      '<div class="hist-day-head"><span class="hist-date">'+dayLabel(dateStr)+'</span><span class="hist-total mono">'+(totalMins?durationLabel(totalMins):'')+'</span></div>' +
+      '<div class="hist-day-head"><span class="hist-date"><span>'+dayLabel(dateStr)+'</span>'+offgridTag+'</span><span class="hist-total mono">'+(totalMins?durationLabel(totalMins):'')+'</span></div>' +
       '<div class="hist-strip">'+stripHtml+'</div>' +
       '<div class="hist-detail" id="detail-'+dateStr+'">'+detailHtml+'</div>' +
       '</div>';
@@ -888,6 +1168,7 @@ function renderStats(){
   const last7 = last7LogicalDates();
   const dayLabels = last7.map(ds => dayLabel(ds)==='Today' ? 'Tdy' : new Date(ds+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short'}).slice(0,2));
   last7.forEach((ds,i)=>{
+    const isOffgrid = !!state.offgridDays[ds];
     const segs = segmentsForDay(ds, ranges);
     const totals = {study:0, social:0, essential:0};
     let grand = 0;
@@ -898,14 +1179,16 @@ function renderStats(){
         if(totals[cat] > 0) segHtml += '<div style="flex-grow:'+totals[cat]+';background:'+categoryColor(cat)+'"></div>';
       });
     }
-    html += '<div class="stat-week-row"><span class="stat-week-day">'+dayLabels[i]+'</span>' +
+    const labelStyle = isOffgrid ? 'style="color:var(--ink-faint);text-decoration:line-through;"' : '';
+    html += '<div class="stat-week-row"><span class="stat-week-day" '+labelStyle+'>'+dayLabels[i]+'</span>' +
       '<span class="stat-week-strip">'+segHtml+'</span>' +
       '<span class="hist-total mono" style="width:44px;text-align:right;">'+(grand?durationLabel(grand):'—')+'</span></div>';
   });
   html += '</div>';
 
-  const personal = computePersonalAverages(INSIGHTS_LOOKBACK_DAYS);
-  html += '<div class="stat-card"><h3>Your last '+INSIGHTS_LOOKBACK_DAYS+' days</h3>';
+  const personal = computePersonalAverages(INSIGHTS_LOOKBACK_DAYS, userSettings.excludeOffgridFromStats);
+  const filterChecked = userSettings.excludeOffgridFromStats ? 'checked' : '';
+  html += '<div class="stat-card"><h3><span>Your last '+INSIGHTS_LOOKBACK_DAYS+' days</span><label class="toggle-filter"><input type="checkbox" id="statFilterToggle" '+filterChecked+'> Exclude Travel</label></h3>';
   if(personal.daysLogged < 3){
     html += '<div class="insight-empty">Log a few more days and this section will start showing your averages.</div>';
   } else {
@@ -922,6 +1205,15 @@ function renderStats(){
   html += '</div>';
 
   container.innerHTML = html;
+
+  const toggleEl = document.getElementById('statFilterToggle');
+  if(toggleEl){
+    toggleEl.addEventListener('change', (e)=>{
+      userSettings.excludeOffgridFromStats = e.target.checked;
+      persistSettings();
+      renderStats();
+    });
+  }
 }
 
 /* ============================= EXPORT ============================= */
@@ -937,8 +1229,10 @@ function exportJson(){
   const events = state.events.slice().sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
   const payload = {
     exported_at: new Date().toISOString(),
+    day_start_hour: getDayStartHour(),
+    offgrid_days: state.offgridDays,
     activities: state.activities.map(a=>({ id:a.id, name:a.name, category:a.category, instant:!!a.instant, needsDetail:!!a.needsDetail })),
-    events: events.map(e=>({ id:e.id, activity_name:e.activity_name, category:e.category, detail:e.detail||'', instant:!!e.instant, start_time:e.start_time, date:e.date }))
+    events: events.map(e=>({ id:e.id, activity_name:e.activity_name, category:e.category, detail:e.detail||'', instant:!!e.instant, interruptions:e.interruptions||[], start_time:e.start_time, date:e.date }))
   };
   downloadBlob('chrono-export-'+localDateStr()+'.json', JSON.stringify(payload, null, 2), 'application/json');
   showToast('Exported '+events.length+' activities as JSON');
@@ -946,9 +1240,10 @@ function exportJson(){
 function csvEscape(v){ v = String(v==null?'':v); return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
 function exportCsv(){
   const events = state.events.slice().sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
-  const rows = [['date','start_time','activity','category','detail','instant']];
+  const rows = [['date','start_time','activity','category','detail','interruptions','instant','offgrid_day']];
   events.forEach(e=>{
-    rows.push([e.date, e.start_time, e.activity_name, e.category, e.detail||'', e.instant?'yes':'no']);
+    const interStr = (e.interruptions && e.interruptions.length) ? e.interruptions.map(i=>i.note+' ('+i.mins+'m)').join('; ') : '';
+    rows.push([e.date, e.start_time, e.activity_name, e.category, e.detail||'', interStr, e.instant?'yes':'no', state.offgridDays[e.date]?'yes':'no']);
   });
   const csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
   downloadBlob('chrono-export-'+localDateStr()+'.csv', csv, 'text/csv');
@@ -957,12 +1252,13 @@ function exportCsv(){
 document.getElementById('exportJsonBtn').addEventListener('click', exportJson);
 document.getElementById('exportCsvBtn').addEventListener('click', exportCsv);
 
-function computePersonalAverages(days){
+function computePersonalAverages(days, filterOffgrid){
   const {ranges} = computeGlobalSegments();
   const dates = lastNLogicalDates(days);
   const totals = {study:[], social:[], essential:[]};
   const wakeMinutesArr = [];
   dates.forEach(ds=>{
+    if(filterOffgrid && state.offgridDays[ds]) return; // Exclude travel / off-grid days from routine averages
     const segs = segmentsForDay(ds, ranges);
     if(!segs.length) return;
     const dayTotals = {study:0, social:0, essential:0};
@@ -984,7 +1280,7 @@ function computePersonalAverages(days){
 
 function fmtWakeClock(mins){
   if(mins==null) return '—';
-  const total = ((DAY_START_HOUR*60 + mins) % (24*60) + 24*60) % (24*60);
+  const total = ((getDayStartHour()*60 + mins) % (24*60) + 24*60) % (24*60);
   const d = new Date(); d.setHours(0,0,0,0); d.setMinutes(total);
   return fmt12(d);
 }
@@ -1044,19 +1340,21 @@ const LS_CHAT = 'chrono_chat_v1';
 state.chatMessages = loadLS(LS_CHAT, []);
 
 function buildChatContext(){
-  const personal = computePersonalAverages(INSIGHTS_LOOKBACK_DAYS);
+  const personal = computePersonalAverages(INSIGHTS_LOOKBACK_DAYS, userSettings.excludeOffgridFromStats);
   const {ranges} = computeGlobalSegments();
   const recentDates = lastNLogicalDates(5);
   const recentLines = recentDates.map(ds=>{
     const segs = segmentsForDay(ds, ranges);
     if(!segs.length) return dayLabel(ds)+': no data';
+    const isOffgrid = state.offgridDays[ds] ? ' (Out of town / travel)' : '';
     const parts = segs.map(s => s.activity_name + (s.detail?' ('+s.detail+')':'') + ' ' + fmt12(s.start)+'-'+fmt12(s.end));
-    return dayLabel(ds)+': ' + parts.join(', ');
+    return dayLabel(ds) + isOffgrid + ': ' + parts.join(', ');
   }).join('\n');
   return [
     'You are a concise, encouraging personal routine coach inside a time-tracking app called Chrono.',
     'The user logs activities in three categories: Study, Social & Fun, Essential.',
-    'Their averages over the last '+INSIGHTS_LOOKBACK_DAYS+' days: wake time '+fmtWakeClock(personal.avgWakeMinutes)+
+    'Day starts at '+getDayStartHour()+':00 AM.',
+    'Their averages over the last '+INSIGHTS_LOOKBACK_DAYS+' routine days (excluding travel days): wake time '+fmtWakeClock(personal.avgWakeMinutes)+
       ', study '+durationLabel(personal.avgStudy||0)+'/day, social '+durationLabel(personal.avgSocial||0)+'/day, essential '+durationLabel(personal.avgEssential||0)+'/day.',
     'Their last 5 logged days:',
     recentLines || 'No data yet.',
@@ -1171,6 +1469,9 @@ function renderAuthUI(){
 
 function renderAll(){
   renderQuoteBanner();
+  renderSleepBanner();
+  renderFragmentationWarning();
+  renderAutoGroupOffer();
   renderTimeline();
   renderStatus();
   renderQuickAdd();
@@ -1184,6 +1485,7 @@ setInterval(()=>{
   const elEl = document.getElementById('statusElapsed');
   if(ev && !ev.instant && elEl){ elEl.textContent = durationLabel((Date.now()-new Date(ev.start_time))/60000); }
   renderTimeline();
+  renderSleepBanner();
 }, 30000);
 
 /* ============================= TOAST ============================= */
@@ -1210,6 +1512,46 @@ function nowTimeValue(){
   const d = new Date();
   return pad(d.getHours())+':'+pad(d.getMinutes());
 }
+
+/* Settings Modal */
+document.getElementById('settingsBtn').addEventListener('click', ()=>{
+  document.getElementById('settingDayStartHour').value = String(userSettings.dayStartHour);
+  document.getElementById('settingAutoGroup').checked = !!userSettings.autoGroupPrompt;
+  openModal('settingsModal');
+});
+
+document.getElementById('saveSettingsBtn').addEventListener('click', ()=>{
+  userSettings.dayStartHour = parseInt(document.getElementById('settingDayStartHour').value, 10);
+  userSettings.autoGroupPrompt = document.getElementById('settingAutoGroup').checked;
+  persistSettings();
+  closeModal('settingsModal');
+  renderAll();
+  showToast('Saved settings');
+});
+
+/* Interruption Modal */
+document.getElementById('interruptBtn').addEventListener('click', ()=>{
+  document.getElementById('interruptDetail').value = '';
+  document.getElementById('interruptDuration').value = '2';
+  openModal('interruptModal');
+  setTimeout(()=> document.getElementById('interruptDetail').focus(), 150);
+});
+
+document.getElementById('saveInterruptBtn').addEventListener('click', ()=>{
+  const note = document.getElementById('interruptDetail').value.trim() || 'Call / Interruption';
+  const mins = document.getElementById('interruptDuration').value;
+  addInterruptionToActive(note, mins);
+  closeModal('interruptModal');
+});
+
+/* Out-of-town / Travel mode toggle */
+document.getElementById('markDayOffgridBtn').addEventListener('click', ()=>{
+  const todayL = todayLogicalDate();
+  state.offgridDays[todayL] = !state.offgridDays[todayL];
+  persistOffgrid();
+  renderAll();
+  showToast(state.offgridDays[todayL] ? 'Day marked as Out of Town / Vacation' : 'Restored regular routine day');
+});
 
 document.getElementById('quickAdd').addEventListener('click', (e)=>{
   const openBtn = e.target.closest('#addActOpenBtn');
@@ -1482,6 +1824,8 @@ async function syncPush(){
         category: e.category,
         color: e.color,
         instant: !!e.instant,
+        detail: e.detail || '',
+        interruptions: e.interruptions || [],
         start_time: e.start_time,
         date: e.date
       }, { merge: true });
@@ -1556,9 +1900,9 @@ function mergeEvents(remoteRows){
     if(pendingSet.has(r.id)) return;
     const local = byId.get(r.id);
     if(!local){
-      byId.set(r.id, { id:r.id, client_id:r.client_id||r.id, activity_id:r.activity_id, activity_name:r.activity_name, category:r.category, color:r.color, instant:!!r.instant, start_time:r.start_time, date:r.date, synced:true });
+      byId.set(r.id, { id:r.id, client_id:r.client_id||r.id, activity_id:r.activity_id, activity_name:r.activity_name, category:r.category, color:r.color, instant:!!r.instant, detail:r.detail||'', interruptions:r.interruptions||[], start_time:r.start_time, date:r.date, synced:true });
     } else if(local.synced){
-      Object.assign(local, { activity_name:r.activity_name, category:r.category, color:r.color, instant:!!r.instant, start_time:r.start_time, date:r.date, synced:true });
+      Object.assign(local, { activity_name:r.activity_name, category:r.category, color:r.color, instant:!!r.instant, detail:r.detail||'', interruptions:r.interruptions||[], start_time:r.start_time, date:r.date, synced:true });
     }
   });
   state.events = Array.from(byId.values()).sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
