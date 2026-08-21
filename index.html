@@ -8,9 +8,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-<!-- Runtime Config File -->
-<script src="config.js"></script>
-
 <!-- Firebase v10 SDK (Compat version for single-file browser usage) -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -625,11 +622,6 @@ function logActivity(activity, atDate, detail){
 function updateEventTime(id, hh, mm){
   const ev = state.events.find(e=>e.id===id);
   if(!ev) return;
-  // Rebuild the datetime from the event's LOGICAL date rather than just
-  // patching hours/minutes onto the old calendar date. A logical day runs
-  // 4:00 AM -> 3:59 AM, so times before DAY_START_HOUR belong to the next
-  // calendar date. Without this, editing an entry to/from a past-midnight
-  // time (e.g. 12:30 AM) silently jumped it a full day backward/forward.
   const logicalDate = ev.date || logicalDateStr(new Date(ev.start_time));
   const d = new Date(logicalDate+'T00:00:00');
   if(hh < DAY_START_HOUR) d.setDate(d.getDate()+1);
@@ -965,10 +957,6 @@ function exportCsv(){
 document.getElementById('exportJsonBtn').addEventListener('click', exportJson);
 document.getElementById('exportCsvBtn').addEventListener('click', exportCsv);
 
-/* ---- Insights: personal stats are computed instantly, client-side, for
-   free. The AI narration text is fetched from Firestore, where the nightly
-   GitHub Action writes it (see scripts/generate-insights.mjs). ---- */
-
 function computePersonalAverages(days){
   const {ranges} = computeGlobalSegments();
   const dates = lastNLogicalDates(days);
@@ -1030,7 +1018,7 @@ async function renderChatInsight(){
     try{
       const docSnap = await db.collection('users').doc(state.user.uid).collection('insights').doc('latest').get();
       const body = document.getElementById('aiInsightBody');
-      if(!body) return; // user navigated away before this resolved
+      if(!body) return;
       if(docSnap.exists){
         const d = docSnap.data();
         const when = new Date(d.generated_at);
@@ -1050,14 +1038,8 @@ async function renderChatInsight(){
 }
 
 /* ============================= LIVE AI CHAT ============================= */
-// Reads window.APP_CONFIG.gemini.apiKey from config.js, the same file that
-// carries the Firebase config. Calls the Gemini API directly from the
-// client — fine for a personal single-user tool, not meant for a shared
-// deployment with a public key.
-function getGeminiKey(){
-  return (window.APP_CONFIG && window.APP_CONFIG.gemini && window.APP_CONFIG.gemini.apiKey) || null;
-}
-const GEMINI_ENABLED = !!getGeminiKey();
+const WORKER_URL = "https://chrono-ai-proxy.vishalkumawat589.workers.dev";
+
 const LS_CHAT = 'chrono_chat_v1';
 state.chatMessages = loadLS(LS_CHAT, []);
 
@@ -1098,12 +1080,7 @@ function renderChatLog(){
 async function sendChatMessage(text){
   text = (text||'').trim();
   if(!text) return;
-  if(!GEMINI_ENABLED){
-    state.chatMessages.push({role:'system', text:'AI chat isn\'t configured yet — add a gemini.apiKey to config.js to enable it.'});
-    saveLS(LS_CHAT, state.chatMessages);
-    renderChatLog();
-    return;
-  }
+
   state.chatMessages.push({role:'user', text});
   saveLS(LS_CHAT, state.chatMessages);
   renderChatLog();
@@ -1114,38 +1091,42 @@ async function sendChatMessage(text){
   renderChatLog();
 
   try {
-    const history = state.chatMessages.filter(m=>m.role==='user'||m.role==='ai').slice(-13, -1);
-    const contents = history.map(m=>({ role: m.role==='ai'?'model':'user', parts:[{text:m.text}] }));
-    contents.push({ role:'user', parts:[{text}] });
+    const history = state.chatMessages
+      .filter(m => m.role === 'user' || m.role === 'ai')
+      .slice(-13, -1)
+      .map(m => ({ role: m.role === 'ai' ? 'model' : 'user', parts: [{ text: m.text }] }));
 
-    // NOTE: gemini-2.0-flash was retired by Google on June 1, 2026 — every call
-    // to it now 404s. gemini-2.5-flash is the current stable replacement.
-    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+getGeminiKey(), {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        system_instruction: { parts:[{text: buildChatContext()}] },
-        contents,
+        prompt: text,
+        system_instruction: buildChatContext(),
+        history
       })
     });
+
     const data = await res.json();
-    let reply;
-    if(!res.ok || data.error){
-      // Surface the real reason instead of a generic message, so a bad key,
-      // a retired model, or a rate limit are each recognizable at a glance.
-      reply = 'AI request failed (' + (data.error && data.error.code || res.status) + '): ' + (data.error && data.error.message || 'unknown error');
-    } else if(data.candidates && data.candidates[0] && data.candidates[0].content){
-      reply = data.candidates[0].content.parts.map(p=>p.text).join('');
-    } else if(data.candidates && data.candidates[0] && data.candidates[0].finishReason){
-      reply = 'Response was blocked (reason: ' + data.candidates[0].finishReason + '). Try rephrasing.';
+
+    if (!res.ok || data.error) {
+      state.chatMessages[state.chatMessages.length - 1] = {
+        role: 'ai',
+        text: 'AI request failed: ' + (data.error || res.statusText)
+      };
     } else {
-      reply = 'Sorry, I couldn\'t generate a response just now.';
+      state.chatMessages[state.chatMessages.length - 1] = {
+        role: 'ai',
+        text: data.text || "Sorry, I couldn't generate a response just now."
+      };
     }
-    state.chatMessages[state.chatMessages.length-1] = {role:'ai', text:reply};
   } catch(err){
     console.error('Chat request failed', err);
-    state.chatMessages[state.chatMessages.length-1] = {role:'ai', text:'Something went wrong reaching the AI — check your connection and try again.'};
+    state.chatMessages[state.chatMessages.length - 1] = {
+      role: 'ai',
+      text: 'Something went wrong reaching the AI worker — check your connection and try again.'
+    };
   }
+
   saveLS(LS_CHAT, state.chatMessages);
   renderChatLog();
   sendBtn.disabled = false;
@@ -1183,7 +1164,7 @@ function renderAuthUI(){
     signOutBtn.style.display = 'none';
   }
   if(!CLOUD_ENABLED){
-    cloudArea.innerHTML = '<div class="cloud-note">Cloud sync isn\'t active. Ensure your <code>config.js</code> file is populated with valid Firebase keys. Chrono will continue working locally.</div>';
+    cloudArea.innerHTML = '<div class="cloud-note">Cloud sync isn\'t active. Ensure your Firebase keys are configured if needed. Chrono will continue working locally.</div>';
     authToggleRow.style.display = 'none';
   }
 }
