@@ -140,6 +140,8 @@
     margin-top:16px;width:100%;background:none;border:1.5px dashed var(--border-strong);
     border-radius:var(--radius-sm);padding:12px;font-size:13.5px;color:var(--ink-soft);font-weight:600;font-family:"Space Grotesk";
   }
+  .qa-manage-row{display:flex;gap:8px;margin-top:8px;}
+  .qa-manage-row .qa-add{margin-top:0;}
 
   /* ---- Auto group banner ---- */
   .group-offer{
@@ -191,6 +193,17 @@
   .stat-week-strip{flex:1;display:flex;height:16px;border-radius:6px;overflow:hidden;background:var(--paper);}
   .toggle-filter{font-size:11px;font-weight:500;text-transform:none;display:flex;align-items:center;gap:5px;cursor:pointer;}
 
+  /* ---- Insight / personal averages panel (chat tab + stats tab) ---- */
+  .insight-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;}
+  .insight-card h3{font-size:13px;margin:0 0 10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+  .insight-empty,.insight-loading{font-size:12.5px;color:var(--ink-soft);line-height:1.5;}
+  .insight-text{font-size:13.5px;line-height:1.55;color:var(--ink);white-space:pre-wrap;}
+  .insight-meta{font-size:11px;color:var(--ink-faint);margin-top:8px;}
+  .insight-stat-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);}
+  .insight-stat-row:last-child{border-bottom:none;}
+  .insight-stat-label{color:var(--ink-soft);}
+  .insight-stat-val{font-family:"JetBrains Mono";font-weight:600;font-size:12.5px;}
+
   /* ---- Sleep contig card ---- */
   .sleep-banner{
     background:linear-gradient(135deg, #2B3A42 0%, #192227 100%);
@@ -228,6 +241,7 @@
   .field input[type=text],.field input[type=email],.field input[type=password],.field input[type=time],.field input[type=number],.field select{
     width:100%;border:1px solid var(--border-strong);border-radius:999px;padding:11px 12px;font-size:15px;font-family:inherit;background:var(--paper);
   }
+  .field-hint{font-size:11.5px;color:var(--ink-faint);margin-top:5px;}
   .pill-row{display:flex;gap:8px;}
   .pill{flex:1;border:1.5px solid var(--border-strong);border-radius:9px;padding:10px 8px;text-align:center;font-size:12.5px;font-weight:600;background:var(--surface);}
   .pill.active{border-color:var(--ink);background:var(--paper);}
@@ -241,6 +255,19 @@
   .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:15px;color:var(--ink-faint);}
   .divider-line{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--ink-faint);font-size:11.5px;}
   .divider-line::before,.divider-line::after{content:"";flex:1;height:1px;background:var(--border);}
+  .cloud-note{font-size:12.5px;color:var(--ink-soft);line-height:1.5;background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:12px;}
+  .authtoggle{font-size:12.5px;color:var(--ink-soft);margin-top:12px;text-align:center;}
+  .authtoggle b{color:var(--ink);cursor:pointer;text-decoration:underline;}
+  .auth-msg{font-size:12.5px;color:var(--danger);margin-top:8px;min-height:1em;}
+
+  /* ---- Manage activities list ---- */
+  .manage-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--border);}
+  .manage-row:last-child{border-bottom:none;}
+  .manage-dot{width:10px;height:10px;border-radius:50%;flex:none;}
+  .manage-name{flex:1;font-size:14px;}
+  .manage-cat{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;}
+  .manage-actions{display:flex;gap:4px;}
+  .manage-actions button{background:none;border:none;font-size:13px;padding:4px 6px;color:var(--ink-faint);}
 
   /* ---- Quote banner ---- */
   .quote-banner{
@@ -402,7 +429,7 @@
     <button class="modal-close" data-close="settingsModal">✕</button>
     <h2>Routine & Day Boundary</h2>
     <div class="field">
-      <label>Custom Start-of-Day Hour (0 to 12 AM/PM)</label>
+      <label>Start-of-day hour (when your "day" resets)</label>
       <select id="settingDayStartHour">
         <option value="0">12:00 AM (Midnight)</option>
         <option value="3">3:00 AM</option>
@@ -412,6 +439,7 @@
         <option value="7">7:00 AM</option>
         <option value="8">8:00 AM</option>
       </select>
+      <div class="field-hint">Activities logged before this hour count toward the previous day — useful if you're up past midnight.</div>
     </div>
     <div class="field check-row">
       <input type="checkbox" id="settingAutoGroup" checked style="width:16px;height:16px;">
@@ -427,20 +455,21 @@
 <div class="modal-backdrop" id="addModal">
   <div class="modal">
     <button class="modal-close" data-close="addModal">✕</button>
-    <h2>Add activity</h2>
+    <h2 id="addModalTitle">Add activity</h2>
     <div class="field">
       <label>Name</label>
       <input type="text" id="actName" placeholder="e.g. Call — Sumit" maxlength="40">
+      <div class="field-hint" id="actNameHint" style="display:none;"></div>
     </div>
     <div class="field">
       <label>Category</label>
       <div class="pill-row" id="catPills">
-        <button class="pill active" data-cat="study"><i style="background:hsl(var(--study-h) var(--study-s) 46%)"></i>Study</button>
-        <button class="pill" data-cat="social"><i style="background:hsl(var(--social-h) var(--social-s) 52%)"></i>Social</button>
-        <button class="pill" data-cat="essential"><i style="background:hsl(var(--essential-h) var(--essential-s) 40%)"></i>Essential</button>
+        <button class="pill active" data-cat="study" type="button"><i style="background:hsl(var(--study-h) var(--study-s) 46%)"></i>Study</button>
+        <button class="pill" data-cat="social" type="button"><i style="background:hsl(var(--social-h) var(--social-s) 52%)"></i>Social</button>
+        <button class="pill" data-cat="essential" type="button"><i style="background:hsl(var(--essential-h) var(--essential-s) 40%)"></i>Essential</button>
       </div>
     </div>
-    <div class="field">
+    <div class="field" id="actTimeField">
       <label>Time</label>
       <input type="time" id="actTime">
     </div>
@@ -460,6 +489,16 @@
       <button class="btn btn-ghost" id="saveOnlyBtn">Save only</button>
       <button class="btn btn-primary" id="saveLogBtn">Save & log now</button>
     </div>
+  </div>
+</div>
+
+<!-- Manage activities modal -->
+<div class="modal-backdrop" id="manageModal">
+  <div class="modal">
+    <button class="modal-close" data-close="manageModal">✕</button>
+    <h2>Manage activities</h2>
+    <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;">Rename, recategorize, unpin, or delete activities you've created. Deleting only removes it from this list — past logged entries are kept.</div>
+    <div id="manageList"></div>
   </div>
 </div>
 
@@ -597,6 +636,7 @@ function uid(){ return (crypto.randomUUID ? crypto.randomUUID() : 'id-'+Date.now
 function pad(n){ return String(n).padStart(2,'0'); }
 function localDateStr(d){ d = d || new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
 function fmt12(d){ let h=d.getHours(), m=d.getMinutes(); const ap=h>=12?'PM':'AM'; h=h%12; if(h===0)h=12; return h+':'+pad(m)+' '+ap; }
+function fmtHour12(h){ h = ((h%24)+24)%24; const ap = h>=12?'PM':'AM'; let hh = h%12; if(hh===0) hh=12; return hh+':00 '+ap; }
 function durationLabel(mins){ mins = Math.max(0,Math.round(mins)); const h=Math.floor(mins/60), m=mins%60; return h ? (h+'h '+m+'m') : (m+'m'); }
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function hashStr(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h*31+str.charCodeAt(i))>>>0; } return h; }
@@ -661,7 +701,7 @@ function quoteForToday(){
 function renderQuoteBanner(){
   const el = document.getElementById('quoteBanner');
   if(!el) return;
-  el.innerHTML = '"'+escapeHtml(quoteForToday())+'"<span class="qtag">Today\'s reflection · day starts '+getDayStartHour()+':00 AM</span>';
+  el.innerHTML = '"'+escapeHtml(quoteForToday())+'"<span class="qtag">Today\'s reflection · day starts '+fmtHour12(getDayStartHour())+'</span>';
 }
 
 /* ============================= STATE ============================= */
@@ -778,6 +818,9 @@ function addActivity(opts){
     if(opts.pin) existing.is_pinned = true;
     if(opts.instant !== undefined) existing.instant = !!opts.instant;
     if(opts.needsDetail !== undefined) existing.needsDetail = !!opts.needsDetail;
+    if(opts.category !== undefined) existing.category = opts.category;
+    existing.synced = false;
+    existing.updated_at = new Date().toISOString();
     persistActivities();
     return existing;
   }
@@ -845,6 +888,20 @@ function markersForDay(dateStr, markers){
   return markers.filter(m=> m.start >= ds && m.start < de);
 }
 
+/* Earliest "start of day" moment — prefers an instant marker (e.g. Wake Up) if
+   the user logged one, since that's the true wake moment; otherwise falls
+   back to the first ranged activity of the day. */
+function firstMomentOfDay(dateStr, ranges, markers){
+  const segs = segmentsForDay(dateStr, ranges);
+  const mks = markersForDay(dateStr, markers);
+  let earliest = null;
+  if(segs.length){
+    segs.forEach(s=>{ if(!earliest || s.start < earliest) earliest = s.start; });
+  }
+  mks.forEach(m=>{ if(!earliest || m.start < earliest) earliest = m.start; });
+  return earliest;
+}
+
 /* SMART SLEEP CYCLE CALCULATION */
 function getLatestSleepCycle(){
   const {ranges} = computeGlobalSegments();
@@ -907,11 +964,17 @@ function applyAutoGroup(eventsToGroup){
   const first = eventsToGroup[0];
   const combinedNotes = eventsToGroup.map(e => e.activity_name + (e.detail ? ' ('+e.detail+')' : '')).join(' → ');
   const adminAct = state.activities.find(a => a.name.toLowerCase() === 'admin / switching') || addActivity({ name:'Admin / Switching', category:'essential', pin:true });
-  
-  // Remove individual rapid events
+
+  // Remove individual rapid events. Any that were already synced to the
+  // cloud need to be queued for deletion there too, or they'll resurrect
+  // on the next pull from Firestore.
   const idsToRemove = new Set(eventsToGroup.map(e => e.id));
+  eventsToGroup.forEach(e=>{
+    if(e.synced) state.pendingDeletes.push(e.id);
+  });
+  persistDeletes();
   state.events = state.events.filter(e => !idsToRemove.has(e.id));
-  
+
   // Add bundled block
   logActivity(adminAct, new Date(first.start_time), combinedNotes);
   state.dismissedGroupPrompt = true;
@@ -934,7 +997,7 @@ function renderRuler(){
 
 function renderTimeline(){
   renderRuler();
-  document.getElementById('tlSubLabel').textContent = 'day starts ' + getDayStartHour() + ':00 AM · scroll ↔';
+  document.getElementById('tlSubLabel').textContent = 'day starts ' + fmtHour12(getDayStartHour()) + ' · scroll ↔';
   const {ranges, markers} = computeGlobalSegments();
   const dates = last7LogicalDates();
   const rowsEl = document.getElementById('tlRows');
@@ -1064,7 +1127,7 @@ function renderQuickAdd(){
     });
     html += '</div></div>';
   });
-  html += '<button class="qa-add" id="addActOpenBtn">+ Add activity</button>';
+  html += '<div class="qa-manage-row"><button class="qa-add" id="addActOpenBtn" style="flex:2;">+ Add activity</button><button class="qa-add" id="manageActOpenBtn" style="flex:1;">Manage</button></div>';
   container.innerHTML = html;
 }
 
@@ -1204,7 +1267,7 @@ function renderStats(){
 
   const personal = computePersonalAverages(INSIGHTS_LOOKBACK_DAYS, userSettings.excludeOffgridFromStats);
   const filterChecked = userSettings.excludeOffgridFromStats ? 'checked' : '';
-  html += '<div class="stat-card"><h3><span>Your last '+INSIGHTS_LOOKBACK_DAYS+' days</span><label class="toggle-filter"><input type="checkbox" id="statFilterToggle" '+filterChecked+'> Exclude Travel</label></h3>';
+  html += '<div class="insight-card"><h3><span>Your last '+INSIGHTS_LOOKBACK_DAYS+' days</span><label class="toggle-filter"><input type="checkbox" id="statFilterToggle" '+filterChecked+'> Exclude Travel</label></h3>';
   if(personal.daysLogged < 3){
     html += '<div class="insight-empty">Log a few more days and this section will start showing your averages.</div>';
   } else {
@@ -1231,6 +1294,60 @@ function renderStats(){
     });
   }
 }
+
+/* ============================= MANAGE ACTIVITIES ============================= */
+function renderManageList(){
+  const container = document.getElementById('manageList');
+  const acts = state.activities.slice().sort((a,b)=> a.name.localeCompare(b.name));
+  if(!acts.length){ container.innerHTML = '<div class="empty-note">No activities yet.</div>'; return; }
+  container.innerHTML = acts.map(a=>
+    '<div class="manage-row" data-id="'+a.id+'">' +
+      '<span class="manage-dot" style="background:'+a.color+'"></span>' +
+      '<span class="manage-name">'+escapeHtml(a.name)+(a.is_pinned?'':' <span style="color:var(--ink-faint);font-weight:400;">(unpinned)</span>')+'</span>' +
+      '<span class="manage-cat">'+CATEGORY_LABELS[a.category]+'</span>' +
+      '<span class="manage-actions">' +
+        '<button data-action="togglePin" data-id="'+a.id+'" title="'+(a.is_pinned?'Unpin':'Pin')+'">'+(a.is_pinned?'📌':'📍')+'</button>' +
+        '<button data-action="cycleCat" data-id="'+a.id+'" title="Change category">↻</button>' +
+        '<button data-action="deleteAct" data-id="'+a.id+'" title="Delete">🗑</button>' +
+      '</span>' +
+    '</div>'
+  ).join('');
+}
+
+document.getElementById('manageList').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-action]');
+  if(!btn) return;
+  const id = btn.dataset.id;
+  const act = state.activities.find(a=>a.id===id);
+  if(!act) return;
+  if(btn.dataset.action === 'togglePin'){
+    act.is_pinned = !act.is_pinned;
+    act.synced = false;
+    persistActivities();
+    renderManageList();
+    renderQuickAdd();
+  } else if(btn.dataset.action === 'cycleCat'){
+    const order = ['study','social','essential'];
+    const idx = order.indexOf(act.category);
+    act.category = order[(idx+1) % order.length];
+    act.synced = false;
+    persistActivities();
+    renderManageList();
+    renderQuickAdd();
+    queueSync();
+  } else if(btn.dataset.action === 'deleteAct'){
+    const stillUsed = state.events.some(ev => ev.activity_id === id);
+    const msg = stillUsed
+      ? 'Remove "'+act.name+'" from your quick-add list? Past logged entries for it are kept.'
+      : 'Remove "'+act.name+'"?';
+    if(!confirm(msg)) return;
+    state.activities = state.activities.filter(a=>a.id!==id);
+    persistActivities();
+    renderManageList();
+    renderQuickAdd();
+    showToast('Removed ' + act.name);
+  }
+});
 
 /* ============================= EXPORT ============================= */
 function downloadBlob(filename, content, mime){
@@ -1269,7 +1386,7 @@ document.getElementById('exportJsonBtn').addEventListener('click', exportJson);
 document.getElementById('exportCsvBtn').addEventListener('click', exportCsv);
 
 function computePersonalAverages(days, filterOffgrid){
-  const {ranges} = computeGlobalSegments();
+  const {ranges, markers} = computeGlobalSegments();
   const dates = lastNLogicalDates(days);
   const totals = {study:[], social:[], essential:[]};
   const wakeMinutesArr = [];
@@ -1280,9 +1397,8 @@ function computePersonalAverages(days, filterOffgrid){
     const dayTotals = {study:0, social:0, essential:0};
     segs.forEach(s=>{ dayTotals[s.category] += (s.end-s.start)/60000; });
     ['study','social','essential'].forEach(c=> totals[c].push(dayTotals[c]));
-    let firstStart = segs[0].start;
-    segs.forEach(s=>{ if(s.start < firstStart) firstStart = s.start; });
-    wakeMinutesArr.push(minutesIntoDay(firstStart, ds));
+    const firstStart = firstMomentOfDay(ds, ranges, markers);
+    if(firstStart) wakeMinutesArr.push(minutesIntoDay(firstStart, ds));
   });
   function avg(arr){ return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null; }
   return {
@@ -1302,12 +1418,10 @@ function fmtWakeClock(mins){
 }
 
 function computeTodayWakeDeviation(personal){
-  const {ranges} = computeGlobalSegments();
+  const {ranges, markers} = computeGlobalSegments();
   const todayL = todayLogicalDate();
-  const segs = segmentsForDay(todayL, ranges);
-  if(!segs.length || personal.avgWakeMinutes==null) return null;
-  let firstStart = segs[0].start;
-  segs.forEach(s=>{ if(s.start < firstStart) firstStart = s.start; });
+  const firstStart = firstMomentOfDay(todayL, ranges, markers);
+  if(!firstStart || personal.avgWakeMinutes==null) return null;
   const todayWake = minutesIntoDay(firstStart, todayL);
   return todayWake - personal.avgWakeMinutes;
 }
@@ -1369,7 +1483,7 @@ function buildChatContext(){
   return [
     'You are a concise, encouraging personal routine coach inside a time-tracking app called Chrono.',
     'The user logs activities in three categories: Study, Social & Fun, Essential.',
-    'Day starts at '+getDayStartHour()+':00 AM.',
+    'Day starts at '+fmtHour12(getDayStartHour())+'.',
     'Their averages over the last '+INSIGHTS_LOOKBACK_DAYS+' routine days (excluding travel days): wake time '+fmtWakeClock(personal.avgWakeMinutes)+
       ', study '+durationLabel(personal.avgStudy||0)+'/day, social '+durationLabel(personal.avgSocial||0)+'/day, essential '+durationLabel(personal.avgEssential||0)+'/day.',
     'Their last 5 logged days:',
@@ -1389,6 +1503,32 @@ function renderChatLog(){
     ).join('');
   }
   el.scrollTop = el.scrollHeight;
+}
+
+/* Pull a usable reply string out of whatever shape the worker responds with.
+   Different backends (raw Gemini REST, a wrapped proxy, OpenAI-style, etc.)
+   name the text field differently — this checks the common shapes instead
+   of assuming just data.text, which was silently failing before. */
+function extractReplyText(data){
+  if(!data || typeof data !== 'object') return null;
+  if(typeof data.text === 'string' && data.text.trim()) return data.text;
+  if(typeof data.response === 'string' && data.response.trim()) return data.response;
+  if(typeof data.message === 'string' && data.message.trim()) return data.message;
+  if(typeof data.reply === 'string' && data.reply.trim()) return data.reply;
+  try{
+    const geminiText = data.candidates && data.candidates[0] && data.candidates[0].content &&
+      data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+    if(typeof geminiText === 'string' && geminiText.trim()) return geminiText;
+  } catch(e){ /* ignore */ }
+  try{
+    const openaiText = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+    if(typeof openaiText === 'string' && openaiText.trim()) return openaiText;
+  } catch(e){ /* ignore */ }
+  try{
+    const anthropicText = Array.isArray(data.content) && data.content.find(b => b.type === 'text');
+    if(anthropicText && typeof anthropicText.text === 'string' && anthropicText.text.trim()) return anthropicText.text;
+  } catch(e){ /* ignore */ }
+  return null;
 }
 
 async function sendChatMessage(text){
@@ -1420,17 +1560,35 @@ async function sendChatMessage(text){
       })
     });
 
-    const data = await res.json();
+    let data = null;
+    let rawText = '';
+    try{
+      rawText = await res.text();
+      data = rawText ? JSON.parse(rawText) : null;
+    } catch(parseErr){
+      console.error('Chat worker returned non-JSON response', rawText);
+    }
 
-    if (!res.ok || data.error) {
+    // Log the full raw exchange to the console so a stuck "couldn't generate
+    // a response" issue can actually be diagnosed from devtools.
+    console.debug('Chrono chat worker response', {status: res.status, ok: res.ok, data, rawText});
+
+    if (!res.ok) {
+      const detail = (data && (data.error || data.message)) || rawText || res.statusText;
       state.chatMessages[state.chatMessages.length - 1] = {
         role: 'ai',
-        text: 'AI request failed: ' + (data.error || res.statusText)
+        text: 'AI request failed (HTTP '+res.status+'): ' + detail
+      };
+    } else if (data && data.error) {
+      state.chatMessages[state.chatMessages.length - 1] = {
+        role: 'ai',
+        text: 'AI request failed: ' + data.error
       };
     } else {
+      const reply = extractReplyText(data);
       state.chatMessages[state.chatMessages.length - 1] = {
         role: 'ai',
-        text: data.text || "Sorry, I couldn't generate a response just now."
+        text: reply || "Sorry, I couldn't generate a response just now. (Check the browser console for the raw worker response.)"
       };
     }
   } catch(err){
@@ -1559,6 +1717,9 @@ document.getElementById('saveInterruptBtn').addEventListener('click', ()=>{
   addInterruptionToActive(note, mins);
   closeModal('interruptModal');
 });
+document.getElementById('interruptDetail').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') document.getElementById('saveInterruptBtn').click();
+});
 
 /* Out-of-town / Travel mode toggle */
 document.getElementById('markDayOffgridBtn').addEventListener('click', ()=>{
@@ -1567,12 +1728,21 @@ document.getElementById('markDayOffgridBtn').addEventListener('click', ()=>{
   persistOffgrid();
   renderAll();
   showToast(state.offgridDays[todayL] ? 'Day marked as Out of Town / Vacation' : 'Restored regular routine day');
+  queueSync();
 });
 
 document.getElementById('quickAdd').addEventListener('click', (e)=>{
+  const manageBtn = e.target.closest('#manageActOpenBtn');
+  if(manageBtn){
+    renderManageList();
+    openModal('manageModal');
+    return;
+  }
   const openBtn = e.target.closest('#addActOpenBtn');
   if(openBtn){
+    document.getElementById('addModalTitle').textContent = 'Add activity';
     document.getElementById('actName').value = '';
+    document.getElementById('actNameHint').style.display = 'none';
     document.getElementById('actTime').value = nowTimeValue();
     document.getElementById('actPin').checked = true;
     document.getElementById('actInstant').checked = false;
@@ -1580,6 +1750,7 @@ document.getElementById('quickAdd').addEventListener('click', (e)=>{
     document.querySelectorAll('#catPills .pill').forEach(p=>p.classList.remove('active'));
     document.querySelector('#catPills .pill[data-cat="study"]').classList.add('active');
     openModal('addModal');
+    setTimeout(()=> document.getElementById('actName').focus(), 150);
     return;
   }
   const qb = e.target.closest('.qa-btn');
@@ -1645,6 +1816,21 @@ function timeInputToDate(val){
   return d;
 }
 
+document.getElementById('actName').addEventListener('input', (e)=>{
+  const name = e.target.value.trim();
+  const hint = document.getElementById('actNameHint');
+  const existing = name && state.activities.find(a => a.name.toLowerCase() === name.toLowerCase());
+  if(existing){
+    hint.style.display = 'block';
+    hint.textContent = 'An activity named "'+existing.name+'" already exists — saving will update it instead of creating a duplicate.';
+  } else {
+    hint.style.display = 'none';
+  }
+});
+document.getElementById('actName').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('saveLogBtn').click(); }
+});
+
 document.getElementById('saveOnlyBtn').addEventListener('click', ()=>{
   const name = document.getElementById('actName').value.trim();
   if(!name){ return; }
@@ -1652,6 +1838,7 @@ document.getElementById('saveOnlyBtn').addEventListener('click', ()=>{
   renderAll();
   closeModal('addModal');
   showToast('Saved ' + name);
+  queueSync();
 });
 
 document.getElementById('saveLogBtn').addEventListener('click', ()=>{
@@ -1842,6 +2029,13 @@ if(CLOUD_ENABLED){
       renderAll();
     }
   });
+
+  // Keep devices reasonably in sync: pull periodically and whenever the tab
+  // regains focus, not just once at sign-in.
+  setInterval(()=>{ if(state.user) syncPull().then(renderAll); }, 5*60*1000);
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'visible' && state.user) syncPull().then(renderAll);
+  });
 }
 
 /* ============================= SYNC ============================= */
@@ -1900,6 +2094,14 @@ async function syncPush(){
       });
     }
 
+    // Sync the offgrid/travel day map as a single small doc so it's not lost
+    // when the same account is used from more than one device.
+    const settingsRef = db.collection('users').doc(uid).collection('meta').doc('settings');
+    batch.set(settingsRef, {
+      offgrid_days: state.offgridDays,
+      updated_at: new Date().toISOString()
+    }, { merge: true });
+
     await batch.commit();
 
     unsyncedActs.forEach(a => a.synced = true);
@@ -1920,9 +2122,10 @@ async function syncPull(){
   setSyncBusy(true);
   try {
     const uid = state.user.uid;
-    const [actsSnap, evsSnap] = await Promise.all([
+    const [actsSnap, evsSnap, metaSnap] = await Promise.all([
       db.collection('users').doc(uid).collection('activities').get(),
-      db.collection('users').doc(uid).collection('events').get()
+      db.collection('users').doc(uid).collection('events').get(),
+      db.collection('users').doc(uid).collection('meta').doc('settings').get()
     ]);
 
     if(!actsSnap.empty){
@@ -1932,6 +2135,13 @@ async function syncPull(){
     if(!evsSnap.empty){
       const remoteEvs = evsSnap.docs.map(doc => doc.data());
       mergeEvents(remoteEvs);
+    }
+    if(metaSnap.exists){
+      const remoteOffgrid = metaSnap.data().offgrid_days;
+      if(remoteOffgrid && typeof remoteOffgrid === 'object'){
+        state.offgridDays = Object.assign({}, remoteOffgrid, state.offgridDays);
+        persistOffgrid();
+      }
     }
 
     persistActivities();
