@@ -1127,14 +1127,30 @@ function renderHistory(){
       stripHtml = segs.map(s=> '<div class="strip-seg" style="flex-grow:'+((s.end-s.start)/60000)+';background:'+s.color+'" title="'+escapeHtml(s.activity_name)+' '+fmt12(s.start)+'–'+fmt12(s.end)+'"></div>').join('');
     }
     const rangeRows = segs.map(s=> {
+      if(state.editingId === s.id){
+        const d = s.originalStart || s.start;
+        const val = pad(d.getHours())+':'+pad(d.getMinutes());
+        return '<div class="log-editrow" data-id="'+s.id+'">' +
+          '<input type="time" class="editTimeInput" value="'+val+'">' +
+          '<button class="btn-save" data-action="saveEdit" data-id="'+s.id+'">Save</button>' +
+          '<button class="btn-cancel" data-action="cancelEdit">Cancel</button></div>';
+      }
       const interTags = (s.interruptions && s.interruptions.length)
         ? s.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(it.note)+'</span>').join('')
         : '';
-      return '<div class="log-row"><span class="log-dot" style="background:'+s.color+'"></span><span class="log-name">'+escapeHtml(s.activity_name)+(s.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(s.detail)+'</span>':'')+interTags+'</span><span class="log-time mono">'+fmt12(s.start)+' – '+fmt12(s.end)+' ('+durationLabel((s.end-s.start)/60000)+')</span></div>';
+      return '<div class="log-row"><span class="log-dot" style="background:'+s.color+'"></span><span class="log-name">'+escapeHtml(s.activity_name)+(s.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(s.detail)+'</span>':'')+interTags+'</span><span class="log-time mono">'+fmt12(s.start)+' – '+fmt12(s.end)+' ('+durationLabel((s.end-s.start)/60000)+')</span><button class="log-edit" data-action="edit" data-id="'+s.id+'">✎</button><button class="log-del" data-action="del" data-id="'+s.id+'">🗑</button></div>';
     }).join('');
-    const markerRows = mks.map(m=>
-      '<div class="log-row"><span class="log-dot" style="background:'+m.color+'"></span><span class="log-name">'+escapeHtml(m.activity_name)+(m.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(m.detail)+'</span>':'')+' ⚡</span><span class="log-time mono">'+fmt12(m.start)+'</span></div>'
-    ).join('');
+    const markerRows = mks.map(m=> {
+      if(state.editingId === m.id){
+        const d = m.start;
+        const val = pad(d.getHours())+':'+pad(d.getMinutes());
+        return '<div class="log-editrow" data-id="'+m.id+'">' +
+          '<input type="time" class="editTimeInput" value="'+val+'">' +
+          '<button class="btn-save" data-action="saveEdit" data-id="'+m.id+'">Save</button>' +
+          '<button class="btn-cancel" data-action="cancelEdit">Cancel</button></div>';
+      }
+      return '<div class="log-row"><span class="log-dot" style="background:'+m.color+'"></span><span class="log-name">'+escapeHtml(m.activity_name)+(m.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(m.detail)+'</span>':'')+' ⚡</span><span class="log-time mono">'+fmt12(m.start)+'</span><button class="log-edit" data-action="edit" data-id="'+m.id+'">✎</button><button class="log-del" data-action="del" data-id="'+m.id+'">🗑</button></div>';
+    }).join('');
     const detailHtml = (rangeRows + markerRows) || '<div class="empty-note">No entries.</div>';
     const offgridTag = isOffgrid ? '<span class="badge-offgrid">Out of town</span>' : '';
     return '<div class="hist-day" data-date="'+dateStr+'">' +
@@ -1342,7 +1358,7 @@ state.chatMessages = loadLS(LS_CHAT, []);
 function buildChatContext(){
   const personal = computePersonalAverages(INSIGHTS_LOOKBACK_DAYS, userSettings.excludeOffgridFromStats);
   const {ranges} = computeGlobalSegments();
-  const recentDates = lastNLogicalDates(5);
+  const recentDates = lastNLogicalDates(3);
   const recentLines = recentDates.map(ds=>{
     const segs = segmentsForDay(ds, ranges);
     if(!segs.length) return dayLabel(ds)+': no data';
@@ -1391,7 +1407,7 @@ async function sendChatMessage(text){
   try {
     const history = state.chatMessages
       .filter(m => m.role === 'user' || m.role === 'ai')
-      .slice(-13, -1)
+      .slice(-7, -1)
       .map(m => ({ role: m.role === 'ai' ? 'model' : 'user', parts: [{ text: m.text }] }));
 
     const res = await fetch(WORKER_URL, {
@@ -1669,6 +1685,22 @@ document.getElementById('todayLog').addEventListener('click', (e)=>{
 });
 
 document.getElementById('historyList').addEventListener('click', (e)=>{
+  const actionBtn = e.target.closest('button[data-action]');
+  if(actionBtn){
+    const action = actionBtn.dataset.action;
+    if(action === 'edit'){ state.editingId = actionBtn.dataset.id; renderHistory(); }
+    else if(action === 'del'){ deleteEvent(actionBtn.dataset.id); }
+    else if(action === 'cancelEdit'){ state.editingId = null; renderHistory(); }
+    else if(action === 'saveEdit'){
+      const row = actionBtn.closest('.log-editrow');
+      const input = row.querySelector('.editTimeInput');
+      const parts = input.value.split(':');
+      updateEventTime(actionBtn.dataset.id, parseInt(parts[0],10), parseInt(parts[1],10));
+    }
+    return;
+  }
+  const toggleZone = e.target.closest('.hist-day-head') || e.target.closest('.hist-strip');
+  if(!toggleZone) return;
   const day = e.target.closest('.hist-day');
   if(!day) return;
   const detail = document.getElementById('detail-'+day.dataset.date);
@@ -1729,12 +1761,42 @@ document.getElementById('authToggleRow').addEventListener('click', (e)=>{
 if(CLOUD_ENABLED){
   document.getElementById('googleBtn').addEventListener('click', async ()=>{
     const provider = new firebase.auth.GoogleAuthProvider();
+    const msgEl = document.getElementById('authMsg');
+    const popupFallbackCodes = new Set([
+      'auth/popup-blocked',
+      'auth/popup-closed-by-user',
+      'auth/cancelled-popup-request',
+      'auth/operation-not-supported-in-this-environment'
+    ]);
     try {
       await auth.signInWithPopup(provider);
       closeModal('authModal');
     } catch(err) {
-      document.getElementById('authMsg').textContent = err.message;
+      if(popupFallbackCodes.has(err.code)){
+        // Mobile browsers (and in-app browsers) frequently block/kill popups.
+        // Redirect flow works everywhere popups don't.
+        try {
+          msgEl.textContent = 'Redirecting to Google…';
+          await auth.signInWithRedirect(provider);
+        } catch(err2) {
+          msgEl.textContent = err2.message;
+        }
+      } else {
+        msgEl.textContent = err.message;
+      }
     }
+  });
+
+  // Complete the redirect-based sign-in on page load, if one was in progress.
+  auth.getRedirectResult().then((result)=>{
+    if(result && result.user){
+      closeModal('authModal');
+      showToast('Signed in as ' + (result.user.email || 'Google account'));
+    }
+  }).catch((err)=>{
+    console.error('Google redirect sign-in failed', err);
+    const msgEl = document.getElementById('authMsg');
+    if(msgEl) msgEl.textContent = err.message;
   });
 
   document.getElementById('authSubmitBtn').addEventListener('click', async ()=>{
