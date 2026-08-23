@@ -260,6 +260,13 @@
   .authtoggle b{color:var(--ink);cursor:pointer;text-decoration:underline;}
   .auth-msg{font-size:12.5px;color:var(--danger);margin-top:8px;min-height:1em;}
 
+  /* ---- People picker list ---- */
+  .person-row{display:flex;align-items:center;gap:8px;padding:8px 2px;border-bottom:1px solid var(--border);font-size:14px;}
+  .person-row:last-child{border-bottom:none;}
+  .person-row input[type=checkbox]{width:17px;height:17px;flex:none;}
+  .person-row button[data-del]{background:none;border:none;font-size:13px;padding:4px 6px;color:var(--ink-faint);flex:none;}
+  .person-empty{font-size:12.5px;color:var(--ink-faint);padding:8px 2px;}
+
   /* ---- Manage activities list ---- */
   .manage-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--border);}
   .manage-row:last-child{border-bottom:none;}
@@ -410,7 +417,7 @@
     <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;">Tag a short distraction inside your ongoing block without breaking your focus timer.</div>
     <div class="field">
       <label>Interruption detail</label>
-      <input type="text" id="interruptDetail" placeholder="e.g. 1m call w/ Krishna, Delivery at door" maxlength="60">
+      <input type="text" id="interruptDetail" placeholder="e.g. Quick call, Delivery at door" maxlength="60">
     </div>
     <div class="field">
       <label>Duration (approx minutes)</label>
@@ -458,7 +465,7 @@
     <h2 id="addModalTitle">Add activity</h2>
     <div class="field">
       <label>Name</label>
-      <input type="text" id="actName" placeholder="e.g. Call — Sumit" maxlength="40">
+      <input type="text" id="actName" placeholder="e.g. Gym, Deep Work" maxlength="40">
       <div class="field-hint" id="actNameHint" style="display:none;"></div>
     </div>
     <div class="field">
@@ -483,7 +490,11 @@
     </div>
     <div class="field check-row">
       <input type="checkbox" id="actNeedsDetail" style="width:16px;height:16px;">
-      <label style="margin:0;font-weight:400;">Ask for a short note each time (e.g. who you're calling, what you're doing)</label>
+      <label style="margin:0;font-weight:400;">Ask for a short note each time (a free-text note)</label>
+    </div>
+    <div class="field check-row">
+      <input type="checkbox" id="actPeoplePicker" style="width:16px;height:16px;">
+      <label style="margin:0;font-weight:400;">Multi-person picker (choose who's involved — pick multiple, or add someone new on the fly, e.g. for group calls)</label>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="saveOnlyBtn">Save only</button>
@@ -509,11 +520,32 @@
     <h2 id="detailModalTitle">Add a note</h2>
     <div class="field">
       <label id="detailModalLabel">Details</label>
-      <input type="text" id="detailModalInput" placeholder="e.g. Sumit, or what you're actually doing" maxlength="60">
+      <input type="text" id="detailModalInput" placeholder="e.g. what you're actually doing" maxlength="60">
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="detailSkipBtn">Skip</button>
       <button class="btn btn-primary" id="detailSaveBtn">Log it</button>
+    </div>
+  </div>
+</div>
+
+<!-- People / group picker modal (Call and any other multi-person activity) -->
+<div class="modal-backdrop" id="peopleModal">
+  <div class="modal">
+    <button class="modal-close" data-close="peopleModal">✕</button>
+    <h2 id="peopleModalTitle">Who's on the call?</h2>
+    <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;">Select everyone involved — tap as many as apply. Not listed yet? Add them below.</div>
+    <div id="peopleCheckList" style="max-height:280px;overflow-y:auto;margin-bottom:12px;"></div>
+    <div class="field" style="display:flex;gap:8px;align-items:flex-end;margin-bottom:0;">
+      <div style="flex:1;">
+        <label>Add a new person</label>
+        <input type="text" id="newPersonInput" placeholder="Name" maxlength="40">
+      </div>
+      <button class="btn btn-outline" id="addPersonBtn" type="button" style="flex:none;padding:11px 14px;">Add</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="peopleSkipBtn">Skip</button>
+      <button class="btn btn-primary" id="peopleLogBtn">Log it</button>
     </div>
   </div>
 </div>
@@ -628,7 +660,8 @@ const LS = {
   events:'chrono_events_v2',
   deletes:'chrono_pending_deletes_v2',
   settings:'chrono_user_settings_v2',
-  offgridDays:'chrono_offgrid_days_v1'
+  offgridDays:'chrono_offgrid_days_v1',
+  people:'chrono_people_v1'
 };
 
 /* ============================= UTIL & SETTINGS ============================= */
@@ -709,11 +742,12 @@ const state = {
   user: null,
   activities: loadLS(LS.activities, null) || DEFAULT_ACTIVITIES.map(a => ({
     id: uid(), name:a.name, category:a.category, color: paletteColor(a.name),
-    instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), is_pinned:true, synced:false, updated_at: new Date().toISOString(),
+    instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name), is_pinned:true, synced:false, updated_at: new Date().toISOString(),
   })),
   events: loadLS(LS.events, []),
   pendingDeletes: loadLS(LS.deletes, []),
   offgridDays: loadLS(LS.offgridDays, {}),
+  people: loadLS(LS.people, []),
   editingId: null,
   historyDaysShown: 7,
   authMode: 'signin',
@@ -724,6 +758,7 @@ state.activities.forEach(a=>{
   a.color = paletteColor(a.name);
   if(a.instant === undefined) a.instant = (a.name === 'Wake Up');
   if(a.needsDetail === undefined) a.needsDetail = defaultNeedsDetail(a.name);
+  if(a.peoplePicker === undefined) a.peoplePicker = defaultPeoplePicker(a.name);
 });
 saveLS(LS.activities, state.activities);
 
@@ -732,6 +767,7 @@ function persistEvents(){ saveLS(LS.events, state.events); }
 function persistDeletes(){ saveLS(LS.deletes, state.pendingDeletes); }
 function persistOffgrid(){ saveLS(LS.offgridDays, state.offgridDays); }
 function persistSettings(){ saveLS(LS.settings, userSettings); }
+function persistPeople(){ saveLS(LS.people, state.people); }
 
 /* ============================= CORE ACTIONS ============================= */
 function currentEvent(){
@@ -807,7 +843,12 @@ function deleteEvent(id){
 
 function defaultNeedsDetail(name){
   const n = (name||'').toLowerCase().trim();
-  return n === 'call' || n === 'timepass';
+  return n === 'timepass';
+}
+
+function defaultPeoplePicker(name){
+  const n = (name||'').toLowerCase().trim();
+  return n === 'call';
 }
 
 function addActivity(opts){
@@ -818,6 +859,7 @@ function addActivity(opts){
     if(opts.pin) existing.is_pinned = true;
     if(opts.instant !== undefined) existing.instant = !!opts.instant;
     if(opts.needsDetail !== undefined) existing.needsDetail = !!opts.needsDetail;
+    if(opts.peoplePicker !== undefined) existing.peoplePicker = !!opts.peoplePicker;
     if(opts.category !== undefined) existing.category = opts.category;
     existing.synced = false;
     existing.updated_at = new Date().toISOString();
@@ -829,11 +871,26 @@ function addActivity(opts){
     color: paletteColor(name),
     instant: !!opts.instant,
     needsDetail: opts.needsDetail !== undefined ? !!opts.needsDetail : defaultNeedsDetail(name),
+    peoplePicker: opts.peoplePicker !== undefined ? !!opts.peoplePicker : defaultPeoplePicker(name),
     is_pinned: !!opts.pin, synced:false, updated_at: new Date().toISOString(),
   };
   state.activities.push(act);
   persistActivities();
   return act;
+}
+
+/* PEOPLE / CONTACTS — used by the group-call picker (and any other
+   activity marked as peoplePicker) so users can select who was involved,
+   including adding someone new on the fly. */
+function addPerson(name){
+  name = (name||'').trim();
+  if(!name) return null;
+  const existing = state.people.find(p => p.name.toLowerCase() === name.toLowerCase());
+  if(existing) return existing;
+  const p = { id: uid(), name, synced:false, updated_at: new Date().toISOString() };
+  state.people.push(p);
+  persistPeople();
+  return p;
 }
 
 /* SMART CONTIGUOUS SEGMENTS & SLEEP RECOGNITION */
@@ -1307,6 +1364,7 @@ function renderManageList(){
       '<span class="manage-cat">'+CATEGORY_LABELS[a.category]+'</span>' +
       '<span class="manage-actions">' +
         '<button data-action="togglePin" data-id="'+a.id+'" title="'+(a.is_pinned?'Unpin':'Pin')+'">'+(a.is_pinned?'📌':'📍')+'</button>' +
+        '<button data-action="togglePeoplePicker" data-id="'+a.id+'" title="'+(a.peoplePicker?'Turn off group picker':'Turn on group picker (pick multiple people, e.g. for group calls)')+'">'+(a.peoplePicker?'👥':'👤')+'</button>' +
         '<button data-action="cycleCat" data-id="'+a.id+'" title="Change category">↻</button>' +
         '<button data-action="deleteAct" data-id="'+a.id+'" title="Delete">🗑</button>' +
       '</span>' +
@@ -1326,6 +1384,13 @@ document.getElementById('manageList').addEventListener('click', (e)=>{
     persistActivities();
     renderManageList();
     renderQuickAdd();
+  } else if(btn.dataset.action === 'togglePeoplePicker'){
+    act.peoplePicker = !act.peoplePicker;
+    act.synced = false;
+    persistActivities();
+    renderManageList();
+    renderQuickAdd();
+    queueSync();
   } else if(btn.dataset.action === 'cycleCat'){
     const order = ['study','social','essential'];
     const idx = order.indexOf(act.category);
@@ -1364,7 +1429,8 @@ function exportJson(){
     exported_at: new Date().toISOString(),
     day_start_hour: getDayStartHour(),
     offgrid_days: state.offgridDays,
-    activities: state.activities.map(a=>({ id:a.id, name:a.name, category:a.category, instant:!!a.instant, needsDetail:!!a.needsDetail })),
+    people: state.people.map(p=>({ id:p.id, name:p.name })),
+    activities: state.activities.map(a=>({ id:a.id, name:a.name, category:a.category, instant:!!a.instant, needsDetail:!!a.needsDetail, peoplePicker:!!a.peoplePicker })),
     events: events.map(e=>({ id:e.id, activity_name:e.activity_name, category:e.category, detail:e.detail||'', instant:!!e.instant, interruptions:e.interruptions||[], start_time:e.start_time, date:e.date }))
   };
   downloadBlob('chrono-export-'+localDateStr()+'.json', JSON.stringify(payload, null, 2), 'application/json');
@@ -1747,6 +1813,7 @@ document.getElementById('quickAdd').addEventListener('click', (e)=>{
     document.getElementById('actPin').checked = true;
     document.getElementById('actInstant').checked = false;
     document.getElementById('actNeedsDetail').checked = false;
+    document.getElementById('actPeoplePicker').checked = false;
     document.querySelectorAll('#catPills .pill').forEach(p=>p.classList.remove('active'));
     document.querySelector('#catPills .pill[data-cat="study"]').classList.add('active');
     openModal('addModal');
@@ -1762,7 +1829,9 @@ document.getElementById('quickAdd').addEventListener('click', (e)=>{
       showToast(act.name + ' is already active');
       return;
     }
-    if(act.needsDetail){
+    if(act.peoplePicker){
+      openPeopleModal(act, new Date());
+    } else if(act.needsDetail){
       openDetailModal(act, new Date());
     } else {
       logActivity(act, new Date());
@@ -1775,13 +1844,93 @@ function openDetailModal(act, atDate){
   pendingDetailAct = act; pendingDetailTime = atDate;
   document.getElementById('detailModalTitle').textContent = act.name;
   document.getElementById('detailModalLabel').textContent =
-    act.name.toLowerCase() === 'call' ? 'Who are you calling?' :
     act.name.toLowerCase() === 'timepass' ? 'What exactly are you doing?' : 'Note';
   const input = document.getElementById('detailModalInput');
   input.value = '';
   openModal('detailModal');
   setTimeout(()=> input.focus(), 150);
 }
+
+/* ============================= PEOPLE PICKER (group calls etc.) ============================= */
+let pendingPeopleAct = null, pendingPeopleTime = null;
+let selectedPeopleIds = new Set();
+
+function renderPeopleCheckList(){
+  const container = document.getElementById('peopleCheckList');
+  const people = state.people.slice().sort((a,b)=> a.name.localeCompare(b.name));
+  if(!people.length){
+    container.innerHTML = '<div class="person-empty">No one saved yet — add someone below.</div>';
+    return;
+  }
+  container.innerHTML = people.map(p=>
+    '<div class="person-row">' +
+      '<label style="display:flex;align-items:center;gap:9px;flex:1;min-width:0;">' +
+        '<input type="checkbox" data-id="'+p.id+'" '+(selectedPeopleIds.has(p.id)?'checked':'')+'>' +
+        '<span>'+escapeHtml(p.name)+'</span>' +
+      '</label>' +
+      '<button type="button" data-del="'+p.id+'" title="Remove from list">🗑</button>' +
+    '</div>'
+  ).join('');
+}
+
+function openPeopleModal(act, atDate){
+  pendingPeopleAct = act; pendingPeopleTime = atDate;
+  selectedPeopleIds = new Set();
+  document.getElementById('peopleModalTitle').textContent =
+    act.name.toLowerCase() === 'call' ? "Who's on the call?" : "Who's involved — " + act.name;
+  document.getElementById('newPersonInput').value = '';
+  renderPeopleCheckList();
+  openModal('peopleModal');
+  setTimeout(()=> document.getElementById('newPersonInput').focus(), 150);
+}
+
+function resolvePendingPeople(skip){
+  if(!pendingPeopleAct) return;
+  let detail = '';
+  if(!skip){
+    const names = state.people.filter(p => selectedPeopleIds.has(p.id)).map(p=>p.name);
+    detail = names.join(', ');
+  }
+  logActivity(pendingPeopleAct, pendingPeopleTime, detail);
+  pendingPeopleAct = null; pendingPeopleTime = null;
+  closeModal('peopleModal');
+}
+
+document.getElementById('peopleCheckList').addEventListener('change', (e)=>{
+  const cb = e.target.closest('input[type=checkbox]');
+  if(!cb) return;
+  if(cb.checked) selectedPeopleIds.add(cb.dataset.id);
+  else selectedPeopleIds.delete(cb.dataset.id);
+});
+
+document.getElementById('peopleCheckList').addEventListener('click', (e)=>{
+  const delBtn = e.target.closest('button[data-del]');
+  if(!delBtn) return;
+  const id = delBtn.dataset.del;
+  if(!confirm('Remove this person from your list? Past logged entries will keep their name.')) return;
+  state.people = state.people.filter(p=>p.id!==id);
+  selectedPeopleIds.delete(id);
+  persistPeople();
+  renderPeopleCheckList();
+  queueSync();
+});
+
+document.getElementById('addPersonBtn').addEventListener('click', ()=>{
+  const input = document.getElementById('newPersonInput');
+  const p = addPerson(input.value);
+  if(p){
+    selectedPeopleIds.add(p.id);
+    input.value = '';
+    renderPeopleCheckList();
+    queueSync();
+    input.focus();
+  }
+});
+document.getElementById('newPersonInput').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('addPersonBtn').click(); }
+});
+document.getElementById('peopleLogBtn').addEventListener('click', ()=> resolvePendingPeople(false));
+document.getElementById('peopleSkipBtn').addEventListener('click', ()=> resolvePendingPeople(true));
 function resolvePendingDetail(detail){
   if(!pendingDetailAct) return;
   logActivity(pendingDetailAct, pendingDetailTime, detail);
@@ -1834,7 +1983,7 @@ document.getElementById('actName').addEventListener('keydown', (e)=>{
 document.getElementById('saveOnlyBtn').addEventListener('click', ()=>{
   const name = document.getElementById('actName').value.trim();
   if(!name){ return; }
-  addActivity({ name, category:getSelectedCat(), pin: document.getElementById('actPin').checked, instant: document.getElementById('actInstant').checked, needsDetail: document.getElementById('actNeedsDetail').checked });
+  addActivity({ name, category:getSelectedCat(), pin: document.getElementById('actPin').checked, instant: document.getElementById('actInstant').checked, needsDetail: document.getElementById('actNeedsDetail').checked, peoplePicker: document.getElementById('actPeoplePicker').checked });
   renderAll();
   closeModal('addModal');
   showToast('Saved ' + name);
@@ -1844,11 +1993,12 @@ document.getElementById('saveOnlyBtn').addEventListener('click', ()=>{
 document.getElementById('saveLogBtn').addEventListener('click', ()=>{
   const name = document.getElementById('actName').value.trim();
   if(!name){ return; }
-  const act = addActivity({ name, category:getSelectedCat(), pin: document.getElementById('actPin').checked, instant: document.getElementById('actInstant').checked, needsDetail: document.getElementById('actNeedsDetail').checked });
+  const act = addActivity({ name, category:getSelectedCat(), pin: document.getElementById('actPin').checked, instant: document.getElementById('actInstant').checked, needsDetail: document.getElementById('actNeedsDetail').checked, peoplePicker: document.getElementById('actPeoplePicker').checked });
   const when = timeInputToDate(document.getElementById('actTime').value);
   closeModal('addModal');
   if(!act) return;
-  if(act.needsDetail) openDetailModal(act, when);
+  if(act.peoplePicker) openPeopleModal(act, when);
+  else if(act.needsDetail) openDetailModal(act, when);
   else logActivity(act, when);
 });
 
@@ -2087,6 +2237,16 @@ async function syncPush(){
       }, { merge: true });
     });
 
+    const unsyncedPeople = state.people.filter(p => !p.synced);
+    unsyncedPeople.forEach(p => {
+      const ref = db.collection('users').doc(uid).collection('people').doc(p.id);
+      batch.set(ref, {
+        id: p.id,
+        name: p.name,
+        updated_at: p.updated_at
+      }, { merge: true });
+    });
+
     if(state.pendingDeletes.length){
       state.pendingDeletes.forEach(id => {
         const ref = db.collection('users').doc(uid).collection('events').doc(id);
@@ -2106,11 +2266,13 @@ async function syncPush(){
 
     unsyncedActs.forEach(a => a.synced = true);
     unsyncedEvs.forEach(e => e.synced = true);
+    unsyncedPeople.forEach(p => p.synced = true);
     state.pendingDeletes = [];
 
     persistActivities();
     persistEvents();
     persistDeletes();
+    persistPeople();
   } catch(err) {
     console.error('Firebase sync push failed', err);
   }
@@ -2122,10 +2284,11 @@ async function syncPull(){
   setSyncBusy(true);
   try {
     const uid = state.user.uid;
-    const [actsSnap, evsSnap, metaSnap] = await Promise.all([
+    const [actsSnap, evsSnap, metaSnap, peopleSnap] = await Promise.all([
       db.collection('users').doc(uid).collection('activities').get(),
       db.collection('users').doc(uid).collection('events').get(),
-      db.collection('users').doc(uid).collection('meta').doc('settings').get()
+      db.collection('users').doc(uid).collection('meta').doc('settings').get(),
+      db.collection('users').doc(uid).collection('people').get()
     ]);
 
     if(!actsSnap.empty){
@@ -2135,6 +2298,10 @@ async function syncPull(){
     if(!evsSnap.empty){
       const remoteEvs = evsSnap.docs.map(doc => doc.data());
       mergeEvents(remoteEvs);
+    }
+    if(!peopleSnap.empty){
+      const remotePeople = peopleSnap.docs.map(doc => doc.data());
+      mergePeople(remotePeople);
     }
     if(metaSnap.exists){
       const remoteOffgrid = metaSnap.data().offgrid_days;
@@ -2146,10 +2313,24 @@ async function syncPull(){
 
     persistActivities();
     persistEvents();
+    persistPeople();
   } catch(err) {
     console.error('Firebase sync pull failed', err);
   }
   setSyncBusy(false);
+}
+
+function mergePeople(remoteRows){
+  const byId = new Map(state.people.map(p=>[p.id, p]));
+  remoteRows.forEach(r=>{
+    const local = byId.get(r.id);
+    if(!local){
+      byId.set(r.id, { id:r.id, name:r.name, synced:true, updated_at:r.updated_at });
+    } else if(local.synced){
+      Object.assign(local, { name:r.name, synced:true, updated_at:r.updated_at });
+    }
+  });
+  state.people = Array.from(byId.values());
 }
 
 function mergeActivities(remoteRows){
