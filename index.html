@@ -700,7 +700,24 @@ function hashStr(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h*31+str.charC
 function paletteColor(name){ return PALETTE[hashStr((name||'').toLowerCase().trim()) % PALETTE.length]; }
 
 function colorForEntry(activity, detail){
-  return activity.color;
+  if (!detail || !detail.trim()) return activity.color;
+  
+  let hex = activity.color.replace('#', '');
+  if(hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
+  
+  const seed = hashStr(detail.trim().toLowerCase());
+  
+  // Generate a shift amount between 30 and 70 for clear visibility
+  const amount = 30 + (seed % 40); 
+  const direction = (seed % 2 === 0) ? 1 : -1;
+  const shift = amount * direction;
+
+  let num = parseInt(hex, 16);
+  let r = Math.min(255, Math.max(0, (num >> 16) + shift));
+  let g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + shift));
+  let b = Math.min(255, Math.max(0, (num & 0x0000FF) + shift));
+  
+  return '#' + (r << 16 | g << 8 | b).toString(16).padStart(6, '0');
 }
 
 function categoryColor(cat){ return 'hsl(' + CATEGORY_HUE[cat] + ' ' + CATEGORY_SAT[cat] + '% 46%)'; }
@@ -945,7 +962,12 @@ function propagateActivityColor(activityId, newColor){
   let changed = false;
   state.events.forEach(e=>{
     if(e.activity_id !== activityId) return;
-    if(e.color !== newColor){ e.color = newColor; e.synced = false; changed = true; }
+    const targetColor = colorForEntry({color: newColor}, e.detail);
+    if(e.color !== targetColor){ 
+      e.color = targetColor; 
+      e.synced = false; 
+      changed = true; 
+    }
   });
   if(changed){ persistEvents(); }
 }
@@ -1623,7 +1645,7 @@ function buildChatContext(){
     const segs = segmentsForDay(ds, ranges);
     if(!segs.length) return dayLabel(ds)+': no data';
     const isOffgrid = state.offgridDays[ds] ? ' (Out of town / travel)' : '';
-    const parts = segs.map(s => s.activity_name + (s.detail?' ('+s.detail+')':'') + ' ' + fmt12(s.start)+'-'+fmt12(s.end));
+    const parts = segs.map(s => s.activity_name + (s.detail?' ('+s.detail+')':'') + ' ' + fmt12(s.start)+'-fmt12(s.end)');
     return dayLabel(ds) + isOffgrid + ': ' + parts.join(', ');
   }).join('\n');
   return [
