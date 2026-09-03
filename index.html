@@ -718,7 +718,7 @@ function renderColorGrid(containerId, selected, includeAuto){
     html += '<button type="button" class="color-swatch auto'+(!selected?' selected':'')+'" data-color="" title="Auto">?</button>';
   }
   html += PALETTE.map(c=>
-    '<button type="button" class="color-swatch'+(c===selected?' selected':'')+'" data-color="'+c+'" style="background:'+c+'" title="'+c+'"></button>'
+    '<button type="button" class="color-swatch'+(c===selected?' selected':'')+'" data-color="'+c+'" style="background:'c+'" title="'+c+'"></button>'
   ).join('');
   el.innerHTML = html;
 }
@@ -909,7 +909,10 @@ function addActivity(opts){
     if(opts.needsDetail !== undefined) existing.needsDetail = !!opts.needsDetail;
     if(opts.peoplePicker !== undefined) existing.peoplePicker = !!opts.peoplePicker;
     if(opts.category !== undefined) existing.category = opts.category;
-    if(opts.color) existing.color = opts.color;
+    if(opts.color && opts.color !== existing.color){
+      existing.color = opts.color;
+      propagateActivityColor(existing.id, opts.color);
+    }
     existing.synced = false;
     existing.updated_at = new Date().toISOString();
     persistActivities();
