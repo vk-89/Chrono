@@ -93,7 +93,7 @@
   .tl-seg{position:absolute;top:0;bottom:0;min-width:3px;border-radius:3px;}
   .tl-seg.live::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,0.35);animation:pulse 1.6s ease-in-out infinite;border-radius:3px;}
   .tl-marker{position:absolute;top:-4px;width:2px;height:30px;border-radius:1px;z-index:3;background:var(--mc,var(--ink));}
-  .tl-marker::after{content:"";position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:var(--mc,var(--ink));}
+  .tl-marker::after{content:"absolute";top:-4px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:var(--mc,var(--ink));}
   .tl-now{position:absolute;top:0;width:2px;background:var(--accent);z-index:5;pointer-events:none;}
   .tl-now::before{content:"now";position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--accent);font-weight:700;font-family:"JetBrains Mono";white-space:nowrap;}
   @keyframes pulse{0%,100%{opacity:0.15;}50%{opacity:0;}}
@@ -238,7 +238,7 @@
   .modal h2{font-size:17px;margin:0 0 14px;}
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:6px;font-weight:600;}
-  .field input[type=text],.field input[type=email],.field input[type=password],.field input[type=time],.field input[type=number],.field select{
+  .field input[type=text],.field input[type=email],.field input[type=password],.field input[type=time],.field input[type=number],.field input[type=date],.field select{
     width:100%;border:1px solid var(--border-strong);border-radius:999px;padding:11px 12px;font-size:15px;font-family:inherit;background:var(--paper);
   }
   .field-hint{font-size:11.5px;color:var(--ink-faint);margin-top:5px;}
@@ -382,6 +382,7 @@
 
   <!-- History -->
   <div class="tab-panel" id="tab-history">
+    <button class="qa-add" id="openPastAddBtn" style="margin-top:16px;">+ Log missed activity</button>
     <div style="margin-top:16px;" id="historyList"></div>
     <button class="load-more" id="loadMoreBtn">Load earlier days</button>
   </div>
@@ -413,6 +414,33 @@
 </div>
 
 <div id="toast"></div>
+
+<!-- Log Missed Past Activity Modal -->
+<div class="modal-backdrop" id="pastAddModal">
+  <div class="modal">
+    <button class="modal-close" data-close="pastAddModal">✕</button>
+    <h2>Log missed activity</h2>
+    <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;">Insert a past activity you forgot to track.</div>
+    <div class="field">
+      <label>Activity</label>
+      <select id="pastActSelect"></select>
+    </div>
+    <div class="field">
+      <label>Date & Time</label>
+      <div style="display:flex;gap:8px;">
+        <input type="date" id="pastActDate" style="flex:1;">
+        <input type="time" id="pastActTime" style="flex:1;">
+      </div>
+    </div>
+    <div class="field">
+      <label>Details / Notes (Optional)</label>
+      <input type="text" id="pastActDetail" placeholder="e.g. what you actually did" maxlength="60">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="savePastActBtn" style="width:100%;">Log to history</button>
+    </div>
+  </div>
+</div>
 
 <!-- Interruption Tag Modal -->
 <div class="modal-backdrop" id="interruptModal">
@@ -1645,7 +1673,7 @@ function buildChatContext(){
     const segs = segmentsForDay(ds, ranges);
     if(!segs.length) return dayLabel(ds)+': no data';
     const isOffgrid = state.offgridDays[ds] ? ' (Out of town / travel)' : '';
-    const parts = segs.map(s => s.activity_name + (s.detail?' ('+s.detail+')':'') + ' ' + fmt12(s.start)+'-fmt12(s.end)');
+    const parts = segs.map(s => s.activity_name + (s.detail?' ('+s.detail+')':'') + ' ' + fmt12(s.start)+'-'+fmt12(s.end));
     return dayLabel(ds) + isOffgrid + ': ' + parts.join(', ');
   }).join('\n');
   return [
@@ -1941,6 +1969,35 @@ document.getElementById('quickAdd').addEventListener('click', (e)=>{
       logActivity(act, new Date());
     }
   }
+});
+
+/* Past Activity Form */
+document.getElementById('openPastAddBtn').addEventListener('click', ()=>{
+  const sel = document.getElementById('pastActSelect');
+  sel.innerHTML = state.activities.map(a => '<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
+  
+  const now = new Date();
+  document.getElementById('pastActDate').value = localDateStr(now);
+  document.getElementById('pastActTime').value = pad(now.getHours())+':'+pad(now.getMinutes());
+  document.getElementById('pastActDetail').value = '';
+  
+  openModal('pastAddModal');
+});
+
+document.getElementById('savePastActBtn').addEventListener('click', ()=>{
+  const actId = document.getElementById('pastActSelect').value;
+  const act = state.activities.find(a=>a.id===actId);
+  if(!act) return;
+  
+  const dateVal = document.getElementById('pastActDate').value; 
+  const timeVal = document.getElementById('pastActTime').value; 
+  if(!dateVal || !timeVal) return;
+  
+  const d = new Date(dateVal + 'T' + timeVal + ':00');
+  const detail = document.getElementById('pastActDetail').value;
+  
+  logActivity(act, d, detail);
+  closeModal('pastAddModal');
 });
 
 let pendingDetailAct = null, pendingDetailTime = null;
