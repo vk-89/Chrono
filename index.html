@@ -245,6 +245,11 @@
   .pill-row{display:flex;gap:8px;}
   .pill{flex:1;border:1.5px solid var(--border-strong);border-radius:9px;padding:10px 8px;text-align:center;font-size:12.5px;font-weight:600;background:var(--surface);}
   .pill.active{border-color:var(--ink);background:var(--paper);}
+  .color-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:7px;margin-top:2px;}
+  .color-swatch{width:100%;aspect-ratio:1;border-radius:50%;border:2px solid transparent;padding:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08);}
+  .color-swatch.selected{border-color:var(--ink);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink);}
+  .color-swatch.auto{background:var(--paper)!important;border:1.5px dashed var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:none;}
+  .color-swatch.auto.selected{border-color:var(--ink);border-style:solid;}
   .pill i{display:block;width:10px;height:10px;border-radius:50%;margin:0 auto 5px;}
   .check-row{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-soft);margin-bottom:8px;}
   .modal-actions{display:flex;gap:8px;margin-top:16px;}
@@ -476,6 +481,10 @@
         <button class="pill" data-cat="essential" type="button"><i style="background:hsl(var(--essential-h) var(--essential-s) 40%)"></i>Essential</button>
       </div>
     </div>
+    <div class="field">
+      <label>Color</label>
+      <div class="color-grid" id="actColorGrid"></div>
+    </div>
     <div class="field" id="actTimeField">
       <label>Time</label>
       <input type="time" id="actTime">
@@ -510,6 +519,17 @@
     <h2>Manage activities</h2>
     <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;">Rename, recategorize, unpin, or delete activities you've created. Deleting only removes it from this list — past logged entries are kept.</div>
     <div id="manageList"></div>
+  </div>
+</div>
+
+<!-- Change color modal (for existing activities, from Manage list) -->
+<div class="modal-backdrop" id="colorModal">
+  <div class="modal">
+    <button class="modal-close" data-close="colorModal">✕</button>
+    <h2 id="colorModalTitle">Change color</h2>
+    <div class="field">
+      <div class="color-grid" id="colorModalGrid"></div>
+    </div>
   </div>
 </div>
 
@@ -608,7 +628,11 @@ const PALETTE = [
   '#2563EB','#DC2626','#059669','#D97706','#7C3AED','#DB2777',
   '#0891B2','#65A30D','#EA580C','#4F46E5','#0D9488','#C026D3',
   '#B45309','#1D4ED8','#BE123C','#15803D','#9333EA','#0EA5E9',
-  '#CA8A04','#E11D48','#166534','#7E22CE','#0369A1','#A16207'
+  '#CA8A04','#E11D48','#166534','#7E22CE','#0369A1','#A16207',
+  '#F43F5E','#FB923C','#FACC15','#84CC16','#22C55E','#10B981',
+  '#14B8A6','#06B6D4','#3B82F6','#6366F1','#8B5CF6','#A855F7',
+  '#D946EF','#EC4899','#F472B6','#FBBF24','#F97316','#EF4444',
+  '#64748B','#78716C','#57534E','#44403C','#7C2D12','#134E4A'
 ];
 
 const QUOTES = [
@@ -675,6 +699,18 @@ function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;',
 function hashStr(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h*31+str.charCodeAt(i))>>>0; } return h; }
 function paletteColor(name){ return PALETTE[hashStr((name||'').toLowerCase().trim()) % PALETTE.length]; }
 function categoryColor(cat){ return 'hsl(' + CATEGORY_HUE[cat] + ' ' + CATEGORY_SAT[cat] + '% 46%)'; }
+function renderColorGrid(containerId, selected, includeAuto){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  let html = '';
+  if(includeAuto){
+    html += '<button type="button" class="color-swatch auto'+(!selected?' selected':'')+'" data-color="" title="Auto">?</button>';
+  }
+  html += PALETTE.map(c=>
+    '<button type="button" class="color-swatch'+(c===selected?' selected':'')+'" data-color="'+c+'" style="background:'+c+'" title="'+c+'"></button>'
+  ).join('');
+  el.innerHTML = html;
+}
 function loadLS(key, fallback){ try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } }
 function saveLS(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){ console.error('localStorage save failed', e); } }
 function debounce(fn, ms){ let t; return function(){ clearTimeout(t); const a=arguments; t=setTimeout(()=>fn.apply(null,a), ms); }; }
@@ -755,7 +791,7 @@ const state = {
 };
 
 state.activities.forEach(a=>{
-  a.color = paletteColor(a.name);
+  if(!a.color) a.color = paletteColor(a.name);
   if(a.instant === undefined) a.instant = (a.name === 'Wake Up');
   if(a.needsDetail === undefined) a.needsDetail = defaultNeedsDetail(a.name);
   if(a.peoplePicker === undefined) a.peoplePicker = defaultPeoplePicker(a.name);
@@ -861,6 +897,7 @@ function addActivity(opts){
     if(opts.needsDetail !== undefined) existing.needsDetail = !!opts.needsDetail;
     if(opts.peoplePicker !== undefined) existing.peoplePicker = !!opts.peoplePicker;
     if(opts.category !== undefined) existing.category = opts.category;
+    if(opts.color) existing.color = opts.color;
     existing.synced = false;
     existing.updated_at = new Date().toISOString();
     persistActivities();
@@ -868,7 +905,7 @@ function addActivity(opts){
   }
   const act = {
     id: uid(), name, category: opts.category || 'essential',
-    color: paletteColor(name),
+    color: opts.color || paletteColor(name),
     instant: !!opts.instant,
     needsDetail: opts.needsDetail !== undefined ? !!opts.needsDetail : defaultNeedsDetail(name),
     peoplePicker: opts.peoplePicker !== undefined ? !!opts.peoplePicker : defaultPeoplePicker(name),
@@ -1363,6 +1400,7 @@ function renderManageList(){
       '<span class="manage-name">'+escapeHtml(a.name)+(a.is_pinned?'':' <span style="color:var(--ink-faint);font-weight:400;">(unpinned)</span>')+'</span>' +
       '<span class="manage-cat">'+CATEGORY_LABELS[a.category]+'</span>' +
       '<span class="manage-actions">' +
+        '<button data-action="changeColor" data-id="'+a.id+'" title="Change color">🎨</button>' +
         '<button data-action="togglePin" data-id="'+a.id+'" title="'+(a.is_pinned?'Unpin':'Pin')+'">'+(a.is_pinned?'📌':'📍')+'</button>' +
         '<button data-action="togglePeoplePicker" data-id="'+a.id+'" title="'+(a.peoplePicker?'Turn off group picker':'Turn on group picker (pick multiple people, e.g. for group calls)')+'">'+(a.peoplePicker?'👥':'👤')+'</button>' +
         '<button data-action="cycleCat" data-id="'+a.id+'" title="Change category">↻</button>' +
@@ -1378,7 +1416,12 @@ document.getElementById('manageList').addEventListener('click', (e)=>{
   const id = btn.dataset.id;
   const act = state.activities.find(a=>a.id===id);
   if(!act) return;
-  if(btn.dataset.action === 'togglePin'){
+  if(btn.dataset.action === 'changeColor'){
+    colorPickTargetId = id;
+    document.getElementById('colorModalTitle').textContent = 'Change color — ' + act.name;
+    renderColorGrid('colorModalGrid', act.color, false);
+    openModal('colorModal');
+  } else if(btn.dataset.action === 'togglePin'){
     act.is_pinned = !act.is_pinned;
     act.synced = false;
     persistActivities();
@@ -1412,6 +1455,22 @@ document.getElementById('manageList').addEventListener('click', (e)=>{
     renderQuickAdd();
     showToast('Removed ' + act.name);
   }
+});
+
+let colorPickTargetId = null;
+document.getElementById('colorModalGrid').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.color-swatch');
+  if(!btn || !btn.dataset.color) return;
+  const act = state.activities.find(a=>a.id===colorPickTargetId);
+  if(!act) return;
+  act.color = btn.dataset.color;
+  act.synced = false;
+  act.updated_at = new Date().toISOString();
+  persistActivities();
+  closeModal('colorModal');
+  renderManageList();
+  renderAll();
+  queueSync();
 });
 
 /* ============================= EXPORT ============================= */
@@ -1816,6 +1875,8 @@ document.getElementById('quickAdd').addEventListener('click', (e)=>{
     document.getElementById('actPeoplePicker').checked = false;
     document.querySelectorAll('#catPills .pill').forEach(p=>p.classList.remove('active'));
     document.querySelector('#catPills .pill[data-cat="study"]').classList.add('active');
+    selectedActColor = null;
+    renderColorGrid('actColorGrid', null, true);
     openModal('addModal');
     setTimeout(()=> document.getElementById('actName').focus(), 150);
     return;
@@ -1825,7 +1886,7 @@ document.getElementById('quickAdd').addEventListener('click', (e)=>{
     const act = state.activities.find(a=>a.id===qb.dataset.id);
     if(!act) return;
     const cur = currentEvent();
-    if(cur && cur.activity_id === act.id){
+    if(cur && cur.activity_id === act.id && !act.needsDetail && !act.peoplePicker){
       showToast(act.name + ' is already active');
       return;
     }
@@ -1947,6 +2008,15 @@ document.getElementById('detailModalInput').addEventListener('keydown', (e)=>{
   if(e.key === 'Enter') resolvePendingDetail(e.target.value);
 });
 
+let selectedActColor = null;
+document.getElementById('actColorGrid').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.color-swatch');
+  if(!btn) return;
+  selectedActColor = btn.dataset.color || null;
+  document.querySelectorAll('#actColorGrid .color-swatch').forEach(s=>s.classList.remove('selected'));
+  btn.classList.add('selected');
+});
+
 document.getElementById('catPills').addEventListener('click', (e)=>{
   const p = e.target.closest('.pill');
   if(!p) return;
@@ -1983,7 +2053,7 @@ document.getElementById('actName').addEventListener('keydown', (e)=>{
 document.getElementById('saveOnlyBtn').addEventListener('click', ()=>{
   const name = document.getElementById('actName').value.trim();
   if(!name){ return; }
-  addActivity({ name, category:getSelectedCat(), pin: document.getElementById('actPin').checked, instant: document.getElementById('actInstant').checked, needsDetail: document.getElementById('actNeedsDetail').checked, peoplePicker: document.getElementById('actPeoplePicker').checked });
+  addActivity({ name, category:getSelectedCat(), color: selectedActColor, pin: document.getElementById('actPin').checked, instant: document.getElementById('actInstant').checked, needsDetail: document.getElementById('actNeedsDetail').checked, peoplePicker: document.getElementById('actPeoplePicker').checked });
   renderAll();
   closeModal('addModal');
   showToast('Saved ' + name);
@@ -1993,7 +2063,7 @@ document.getElementById('saveOnlyBtn').addEventListener('click', ()=>{
 document.getElementById('saveLogBtn').addEventListener('click', ()=>{
   const name = document.getElementById('actName').value.trim();
   if(!name){ return; }
-  const act = addActivity({ name, category:getSelectedCat(), pin: document.getElementById('actPin').checked, instant: document.getElementById('actInstant').checked, needsDetail: document.getElementById('actNeedsDetail').checked, peoplePicker: document.getElementById('actPeoplePicker').checked });
+  const act = addActivity({ name, category:getSelectedCat(), color: selectedActColor, pin: document.getElementById('actPin').checked, instant: document.getElementById('actInstant').checked, needsDetail: document.getElementById('actNeedsDetail').checked, peoplePicker: document.getElementById('actPeoplePicker').checked });
   const when = timeInputToDate(document.getElementById('actTime').value);
   closeModal('addModal');
   if(!act) return;
