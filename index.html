@@ -698,6 +698,17 @@ function durationLabel(mins){ mins = Math.max(0,Math.round(mins)); const h=Math.
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function hashStr(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h*31+str.charCodeAt(i))>>>0; } return h; }
 function paletteColor(name){ return PALETTE[hashStr((name||'').toLowerCase().trim()) % PALETTE.length]; }
+
+function subActivityColor(activityName, detail){
+  return paletteColor(activityName.toLowerCase().trim() + '::' + detail.toLowerCase().trim());
+}
+function colorForEntry(activity, detail){
+  if((activity.peoplePicker || activity.needsDetail) && detail && detail.trim()){
+    return subActivityColor(activity.name, detail);
+  }
+  return activity.color;
+}
+
 function categoryColor(cat){ return 'hsl(' + CATEGORY_HUE[cat] + ' ' + CATEGORY_SAT[cat] + '% 46%)'; }
 function renderColorGrid(containerId, selected, includeAuto){
   const el = document.getElementById(containerId);
@@ -776,6 +787,7 @@ function renderQuoteBanner(){
 /* ============================= STATE ============================= */
 const state = {
   user: null,
+  openHistoryDays: new Set(),
   activities: loadLS(LS.activities, null) || DEFAULT_ACTIVITIES.map(a => ({
     id: uid(), name:a.name, category:a.category, color: paletteColor(a.name),
     instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name), is_pinned:true, synced:false, updated_at: new Date().toISOString(),
@@ -819,7 +831,7 @@ function logActivity(activity, atDate, detail){
   const ev = {
     id: uid(), client_id: uid(),
     activity_id: activity.id, activity_name: activity.name,
-    category: activity.category, color: activity.color,
+    category: activity.category, color: colorForEntry(activity, detail),
     instant: !!activity.instant,
     detail: (detail||'').trim(),
     interruptions: [],
@@ -928,6 +940,19 @@ function addPerson(name){
   state.people.push(p);
   persistPeople();
   return p;
+}
+
+function propagateActivityColor(activityId, newColor){
+  const act = state.activities.find(a=>a.id===activityId);
+  if(!act) return;
+  let changed = false;
+  state.events.forEach(e=>{
+    if(e.activity_id !== activityId) return;
+    const usesSubColor = (act.peoplePicker || act.needsDetail) && e.detail && e.detail.trim();
+    if(usesSubColor) return;
+    if(e.color !== newColor){ e.color = newColor; e.synced = false; changed = true; }
+  });
+  if(changed){ persistEvents(); }
 }
 
 /* SMART CONTIGUOUS SEGMENTS & SLEEP RECOGNITION */
@@ -1313,7 +1338,7 @@ function renderHistory(){
     return '<div class="hist-day" data-date="'+dateStr+'">' +
       '<div class="hist-day-head"><span class="hist-date"><span>'+dayLabel(dateStr)+'</span>'+offgridTag+'</span><span class="hist-total mono">'+(totalMins?durationLabel(totalMins):'')+'</span></div>' +
       '<div class="hist-strip">'+stripHtml+'</div>' +
-      '<div class="hist-detail" id="detail-'+dateStr+'">'+detailHtml+'</div>' +
+      '<div class="hist-detail'+(state.openHistoryDays.has(dateStr)?' open':'')+'" id="detail-'+dateStr+'">'+detailHtml+'</div>' +
       '</div>';
   }).join('');
 }
@@ -1467,6 +1492,7 @@ document.getElementById('colorModalGrid').addEventListener('click', (e)=>{
   act.synced = false;
   act.updated_at = new Date().toISOString();
   persistActivities();
+  propagateActivityColor(act.id, act.color);
   closeModal('colorModal');
   renderManageList();
   renderAll();
@@ -2110,8 +2136,10 @@ document.getElementById('historyList').addEventListener('click', (e)=>{
   if(!toggleZone) return;
   const day = e.target.closest('.hist-day');
   if(!day) return;
-  const detail = document.getElementById('detail-'+day.dataset.date);
-  if(detail) detail.classList.toggle('open');
+  const ds = day.dataset.date;
+  if(state.openHistoryDays.has(ds)) state.openHistoryDays.delete(ds);
+  else state.openHistoryDays.add(ds);
+  renderHistory();
 });
 
 document.getElementById('loadMoreBtn').addEventListener('click', ()=>{
