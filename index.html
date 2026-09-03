@@ -92,8 +92,11 @@
   .tl-track.offgrid-track{background:repeating-linear-gradient(45deg, var(--paper), var(--paper) 10px, #EBE9DF 10px, #EBE9DF 20px);opacity:0.75;}
   .tl-seg{position:absolute;top:0;bottom:0;min-width:3px;border-radius:3px;}
   .tl-seg.live::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,0.35);animation:pulse 1.6s ease-in-out infinite;border-radius:3px;}
+  
+  /* FIXED: Changed content:"absolute" to content:""; position:absolute; */
   .tl-marker{position:absolute;top:-4px;width:2px;height:30px;border-radius:1px;z-index:3;background:var(--mc,var(--ink));}
-  .tl-marker::after{content:"absolute";top:-4px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:var(--mc,var(--ink));}
+  .tl-marker::after{content:"";position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:var(--mc,var(--ink));}
+  
   .tl-now{position:absolute;top:0;width:2px;background:var(--accent);z-index:5;pointer-events:none;}
   .tl-now::before{content:"now";position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--accent);font-weight:700;font-family:"JetBrains Mono";white-space:nowrap;}
   @keyframes pulse{0%,100%{opacity:0.15;}50%{opacity:0;}}
@@ -160,8 +163,11 @@
   .log-name{flex:1;font-size:14px;}
   .log-time{font-size:12.5px;color:var(--ink-soft);}
   .log-edit,.log-del{background:none;border:none;font-size:13px;padding:4px 5px;color:var(--ink-faint);}
-  .log-editrow{display:flex;align-items:center;gap:8px;padding:9px 2px;}
+  
+  /* ENHANCED: Inline edit styles */
+  .log-editrow{display:flex;align-items:center;gap:8px;padding:9px 2px;flex-wrap:wrap;}
   .log-editrow input[type=time]{font-family:"JetBrains Mono";border:1px solid var(--border-strong);border-radius:7px;padding:5px 7px;font-size:13px;}
+  .log-editrow input[type=text]{font-family:inherit;border:1px solid var(--border-strong);border-radius:7px;padding:5px 7px;font-size:13px;flex:1;min-width:100px;}
   .log-editrow button{border:none;border-radius:7px;padding:6px 10px;font-size:12.5px;font-weight:600;}
   .btn-save{background:var(--ink);color:#fff;}
   .btn-cancel{background:var(--paper);color:var(--ink-soft);}
@@ -382,7 +388,21 @@
 
   <!-- History -->
   <div class="tab-panel" id="tab-history">
-    <button class="qa-add" id="openPastAddBtn" style="margin-top:16px;">+ Log missed activity</button>
+    
+    <!-- ENHANCED: Inline Quick Log for Past Activity (Replaces Modal) -->
+    <div class="hist-day" style="margin-top:16px; background:var(--paper); border:1.5px dashed var(--border-strong);">
+      <div style="font-size:13px; font-weight:600; margin-bottom:10px; color:var(--ink-soft); font-family:'Space Grotesk';">Quick Log Past Activity</div>
+      <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+        <select id="inlinePastActSelect" style="flex:1; min-width:120px; border:1px solid var(--border-strong); border-radius:7px; padding:7px; font-size:13px; background:var(--surface);"></select>
+        <input type="date" id="inlinePastActDate" style="flex:1; min-width:110px; border:1px solid var(--border-strong); border-radius:7px; padding:7px; font-size:13px; background:var(--surface);">
+        <input type="time" id="inlinePastActTime" style="flex:1; min-width:90px; border:1px solid var(--border-strong); border-radius:7px; padding:7px; font-size:13px; background:var(--surface);">
+      </div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="inlinePastActDetail" placeholder="Notes (optional)" style="flex:1; border:1px solid var(--border-strong); border-radius:7px; padding:7px; font-size:13px; background:var(--surface);">
+        <button class="btn-save" id="inlinePastSaveBtn" style="padding:7px 14px; border:none; border-radius:7px; font-weight:600;">Log it</button>
+      </div>
+    </div>
+
     <div style="margin-top:16px;" id="historyList"></div>
     <button class="load-more" id="loadMoreBtn">Load earlier days</button>
   </div>
@@ -414,33 +434,6 @@
 </div>
 
 <div id="toast"></div>
-
-<!-- Log Missed Past Activity Modal -->
-<div class="modal-backdrop" id="pastAddModal">
-  <div class="modal">
-    <button class="modal-close" data-close="pastAddModal">✕</button>
-    <h2>Log missed activity</h2>
-    <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;">Insert a past activity you forgot to track.</div>
-    <div class="field">
-      <label>Activity</label>
-      <select id="pastActSelect"></select>
-    </div>
-    <div class="field">
-      <label>Date & Time</label>
-      <div style="display:flex;gap:8px;">
-        <input type="date" id="pastActDate" style="flex:1;">
-        <input type="time" id="pastActTime" style="flex:1;">
-      </div>
-    </div>
-    <div class="field">
-      <label>Details / Notes (Optional)</label>
-      <input type="text" id="pastActDetail" placeholder="e.g. what you actually did" maxlength="60">
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-primary" id="savePastActBtn" style="width:100%;">Log to history</button>
-    </div>
-  </div>
-</div>
 
 <!-- Interruption Tag Modal -->
 <div class="modal-backdrop" id="interruptModal">
@@ -550,7 +543,7 @@
   </div>
 </div>
 
-<!-- Change color modal (for existing activities, from Manage list) -->
+<!-- Change color modal -->
 <div class="modal-backdrop" id="colorModal">
   <div class="modal">
     <button class="modal-close" data-close="colorModal">✕</button>
@@ -561,7 +554,7 @@
   </div>
 </div>
 
-<!-- Detail prompt modal (for activities like Call / Timepass) -->
+<!-- Detail prompt modal -->
 <div class="modal-backdrop" id="detailModal">
   <div class="modal">
     <button class="modal-close" data-close="detailModal">✕</button>
@@ -577,7 +570,7 @@
   </div>
 </div>
 
-<!-- People / group picker modal (Call and any other multi-person activity) -->
+<!-- People / group picker modal -->
 <div class="modal-backdrop" id="peopleModal">
   <div class="modal">
     <button class="modal-close" data-close="peopleModal">✕</button>
@@ -734,8 +727,6 @@ function colorForEntry(activity, detail){
   if(hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
   
   const seed = hashStr(detail.trim().toLowerCase());
-  
-  // Generate a shift amount between 30 and 70 for clear visibility
   const amount = 30 + (seed % 40); 
   const direction = (seed % 2 === 0) ? 1 : -1;
   const shift = amount * direction;
@@ -902,7 +893,8 @@ function addInterruptionToActive(note, mins){
   queueSync();
 }
 
-function updateEventTime(id, hh, mm){
+// ENHANCED: Takes both Time AND new Detail text for inline editing
+function updateEvent(id, hh, mm, newDetail){
   const ev = state.events.find(e=>e.id===id);
   if(!ev) return;
   const logicalDate = ev.date || logicalDateStr(new Date(ev.start_time));
@@ -911,6 +903,7 @@ function updateEventTime(id, hh, mm){
   d.setHours(hh, mm, 0, 0);
   ev.start_time = d.toISOString();
   ev.date = logicalDateStr(d);
+  if(newDetail !== undefined) ev.detail = newDetail.trim();
   ev.synced = false;
   state.events.sort((a,b)=> new Date(a.start_time) - new Date(b.start_time));
   persistEvents();
@@ -950,7 +943,7 @@ function addActivity(opts){
     if(opts.category !== undefined) existing.category = opts.category;
     if(opts.color && opts.color !== existing.color){
       existing.color = opts.color;
-      propagateActivityColor(existing.id, opts.color); // <-- push new color to every past log
+      propagateActivityColor(existing.id, opts.color); 
     }
     existing.synced = false;
     existing.updated_at = new Date().toISOString();
@@ -970,9 +963,6 @@ function addActivity(opts){
   return act;
 }
 
-/* PEOPLE / CONTACTS — used by the group-call picker (and any other
-   activity marked as peoplePicker) so users can select who was involved,
-   including adding someone new on the fly. */
 function addPerson(name){
   name = (name||'').trim();
   if(!name) return null;
@@ -1000,7 +990,6 @@ function propagateActivityColor(activityId, newColor){
   if(changed){ persistEvents(); }
 }
 
-/* SMART CONTIGUOUS SEGMENTS & SLEEP RECOGNITION */
 function computeGlobalSegments(){
   const events = state.events.slice().sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
   const ranges = [], markers = [];
@@ -1022,7 +1011,6 @@ function computeGlobalSegments(){
       if(evLogical === nowLogical){
         end = now; live = true;
       } else {
-        // Multi-day & overnight continuous span: don't chop arbitrarily
         end = new Date(dayBoundaryStart(evLogical).getTime() + 24*3600000);
       }
     }
@@ -1052,9 +1040,6 @@ function markersForDay(dateStr, markers){
   return markers.filter(m=> m.start >= ds && m.start < de);
 }
 
-/* Earliest "start of day" moment — prefers an instant marker (e.g. Wake Up) if
-   the user logged one, since that's the true wake moment; otherwise falls
-   back to the first ranged activity of the day. */
 function firstMomentOfDay(dateStr, ranges, markers){
   const segs = segmentsForDay(dateStr, ranges);
   const mks = markersForDay(dateStr, markers);
@@ -1066,7 +1051,6 @@ function firstMomentOfDay(dateStr, ranges, markers){
   return earliest;
 }
 
-/* SMART SLEEP CYCLE CALCULATION */
 function getLatestSleepCycle(){
   const {ranges} = computeGlobalSegments();
   const sleepRanges = ranges.filter(r => r.isSleep);
@@ -1082,7 +1066,6 @@ function getLatestSleepCycle(){
   };
 }
 
-/* FRAGMENTATION DETECTION */
 function checkDayFragmentation(dateStr){
   const {ranges} = computeGlobalSegments();
   const segs = segmentsForDay(dateStr, ranges);
@@ -1097,7 +1080,6 @@ function checkDayFragmentation(dateStr){
   return null;
 }
 
-/* AUTO-GROUPING DETECTION (3-10m switches) */
 function checkMicroSwitchSequence(){
   if(!userSettings.autoGroupPrompt || state.dismissedGroupPrompt) return null;
   const todayL = todayLogicalDate();
@@ -1107,7 +1089,6 @@ function checkMicroSwitchSequence(){
   
   if(dayEvents.length < 3) return null;
 
-  // Check last 3 events
   const slice = dayEvents.slice(-3);
   const now = Date.now();
   const times = slice.map((e, idx) => {
@@ -1129,9 +1110,6 @@ function applyAutoGroup(eventsToGroup){
   const combinedNotes = eventsToGroup.map(e => e.activity_name + (e.detail ? ' ('+e.detail+')' : '')).join(' → ');
   const adminAct = state.activities.find(a => a.name.toLowerCase() === 'admin / switching') || addActivity({ name:'Admin / Switching', category:'essential', pin:true });
 
-  // Remove individual rapid events. Any that were already synced to the
-  // cloud need to be queued for deletion there too, or they'll resurrect
-  // on the next pull from Firestore.
   const idsToRemove = new Set(eventsToGroup.map(e => e.id));
   eventsToGroup.forEach(e=>{
     if(e.synced) state.pendingDeletes.push(e.id);
@@ -1139,7 +1117,6 @@ function applyAutoGroup(eventsToGroup){
   persistDeletes();
   state.events = state.events.filter(e => !idsToRemove.has(e.id));
 
-  // Add bundled block
   logActivity(adminAct, new Date(first.start_time), combinedNotes);
   state.dismissedGroupPrompt = true;
   renderAll();
@@ -1310,14 +1287,17 @@ function renderTodayLog(){
     .filter(e => logicalDateStr(new Date(e.start_time)) === todayL)
     .sort((a,b)=> new Date(b.start_time)-new Date(a.start_time));
   if(!dayEvents.length){ container.innerHTML = '<div class="empty-note">Nothing logged yet today.</div>'; return; }
+  
   container.innerHTML = dayEvents.map(e=>{
+    // ENHANCED: Rendering inline text editing fields for Time AND Detail
     if(state.editingId === e.id){
       const d = new Date(e.start_time);
       const val = pad(d.getHours())+':'+pad(d.getMinutes());
       return '<div class="log-editrow" data-id="'+e.id+'">' +
-        '<input type="time" id="editTimeInput" value="'+val+'">' +
+        '<input type="time" class="editTimeInput" value="'+val+'">' +
+        '<input type="text" class="editDetailInput" value="'+escapeHtml(e.detail||'')+'" placeholder="Note (optional)">' +
         '<button class="btn-save" data-action="saveEdit" data-id="'+e.id+'">Save</button>' +
-        '<button class="btn-cancel" data-action="cancelEdit">Cancel</button></div>';
+        '<button class="btn-cancel" data-action="cancelEdit">✕</button></div>';
     }
     const interTags = (e.interruptions && e.interruptions.length)
       ? e.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(it.note)+'</span>').join('')
@@ -1338,7 +1318,26 @@ function allDatesWithData(limit){
   return Array.from(set).sort().reverse().slice(0, limit);
 }
 
+// ENHANCED: Update Inline History Activity Selection dynamically
+function renderInlinePastAdd(){
+  const sel = document.getElementById('inlinePastActSelect');
+  if(!sel) return;
+  const currentVal = sel.value;
+  sel.innerHTML = state.activities.map(a => '<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
+  if(currentVal && state.activities.find(a=>a.id===currentVal)) sel.value = currentVal;
+  else if(state.activities.length) sel.value = state.activities[0].id;
+
+  const now = new Date();
+  if(!document.getElementById('inlinePastActDate').value){
+      document.getElementById('inlinePastActDate').value = localDateStr(now);
+  }
+  if(!document.getElementById('inlinePastActTime').value){
+      document.getElementById('inlinePastActTime').value = pad(now.getHours())+':'+pad(now.getMinutes());
+  }
+}
+
 function renderHistory(){
+  renderInlinePastAdd(); // Make sure dropdown matches current activities
   const container = document.getElementById('historyList');
   const dates = allDatesWithData(state.historyDaysShown);
   const {ranges, markers} = computeGlobalSegments();
@@ -1359,8 +1358,9 @@ function renderHistory(){
         const val = pad(d.getHours())+':'+pad(d.getMinutes());
         return '<div class="log-editrow" data-id="'+s.id+'">' +
           '<input type="time" class="editTimeInput" value="'+val+'">' +
+          '<input type="text" class="editDetailInput" value="'+escapeHtml(s.detail||'')+'" placeholder="Note (optional)">' +
           '<button class="btn-save" data-action="saveEdit" data-id="'+s.id+'">Save</button>' +
-          '<button class="btn-cancel" data-action="cancelEdit">Cancel</button></div>';
+          '<button class="btn-cancel" data-action="cancelEdit">✕</button></div>';
       }
       const interTags = (s.interruptions && s.interruptions.length)
         ? s.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(it.note)+'</span>').join('')
@@ -1373,8 +1373,9 @@ function renderHistory(){
         const val = pad(d.getHours())+':'+pad(d.getMinutes());
         return '<div class="log-editrow" data-id="'+m.id+'">' +
           '<input type="time" class="editTimeInput" value="'+val+'">' +
+          '<input type="text" class="editDetailInput" value="'+escapeHtml(m.detail||'')+'" placeholder="Note (optional)">' +
           '<button class="btn-save" data-action="saveEdit" data-id="'+m.id+'">Save</button>' +
-          '<button class="btn-cancel" data-action="cancelEdit">Cancel</button></div>';
+          '<button class="btn-cancel" data-action="cancelEdit">✕</button></div>';
       }
       return '<div class="log-row"><span class="log-dot" style="background:'+m.color+'"></span><span class="log-name">'+escapeHtml(m.activity_name)+(m.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(m.detail)+'</span>':'')+' ⚡</span><span class="log-time mono">'+fmt12(m.start)+'</span><button class="log-edit" data-action="edit" data-id="'+m.id+'">✎</button><button class="log-del" data-action="del" data-id="'+m.id+'">🗑</button></div>';
     }).join('');
@@ -1523,6 +1524,7 @@ document.getElementById('manageList').addEventListener('click', (e)=>{
     persistActivities();
     renderManageList();
     renderQuickAdd();
+    renderInlinePastAdd();
     showToast('Removed ' + act.name);
   }
 });
@@ -1587,7 +1589,7 @@ function computePersonalAverages(days, filterOffgrid){
   const totals = {study:[], social:[], essential:[]};
   const wakeMinutesArr = [];
   dates.forEach(ds=>{
-    if(filterOffgrid && state.offgridDays[ds]) return; // Exclude travel / off-grid days from routine averages
+    if(filterOffgrid && state.offgridDays[ds]) return;
     const segs = segmentsForDay(ds, ranges);
     if(!segs.length) return;
     const dayTotals = {study:0, social:0, essential:0};
@@ -1701,10 +1703,6 @@ function renderChatLog(){
   el.scrollTop = el.scrollHeight;
 }
 
-/* Pull a usable reply string out of whatever shape the worker responds with.
-   Different backends (raw Gemini REST, a wrapped proxy, OpenAI-style, etc.)
-   name the text field differently — this checks the common shapes instead
-   of assuming just data.text, which was silently failing before. */
 function extractReplyText(data){
   if(!data || typeof data !== 'object') return null;
   if(typeof data.text === 'string' && data.text.trim()) return data.text;
@@ -1765,10 +1763,6 @@ async function sendChatMessage(text){
       console.error('Chat worker returned non-JSON response', rawText);
     }
 
-    // Log the full raw exchange to the console so a stuck "couldn't generate
-    // a response" issue can actually be diagnosed from devtools.
-    console.debug('Chrono chat worker response', {status: res.status, ok: res.ok, data, rawText});
-
     if (!res.ok) {
       const detail = (data && (data.error || data.message)) || rawText || res.statusText;
       state.chatMessages[state.chatMessages.length - 1] = {
@@ -1784,7 +1778,7 @@ async function sendChatMessage(text){
       const reply = extractReplyText(data);
       state.chatMessages[state.chatMessages.length - 1] = {
         role: 'ai',
-        text: reply || "Sorry, I couldn't generate a response just now. (Check the browser console for the raw worker response.)"
+        text: reply || "Sorry, I couldn't generate a response just now."
       };
     }
   } catch(err){
@@ -1971,33 +1965,21 @@ document.getElementById('quickAdd').addEventListener('click', (e)=>{
   }
 });
 
-/* Past Activity Form */
-document.getElementById('openPastAddBtn').addEventListener('click', ()=>{
-  const sel = document.getElementById('pastActSelect');
-  sel.innerHTML = state.activities.map(a => '<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
-  
-  const now = new Date();
-  document.getElementById('pastActDate').value = localDateStr(now);
-  document.getElementById('pastActTime').value = pad(now.getHours())+':'+pad(now.getMinutes());
-  document.getElementById('pastActDetail').value = '';
-  
-  openModal('pastAddModal');
-});
-
-document.getElementById('savePastActBtn').addEventListener('click', ()=>{
-  const actId = document.getElementById('pastActSelect').value;
+// ENHANCED: Event listener for the new Inline Quick Log Past Activity Feature
+document.getElementById('inlinePastSaveBtn').addEventListener('click', ()=>{
+  const actId = document.getElementById('inlinePastActSelect').value;
   const act = state.activities.find(a=>a.id===actId);
   if(!act) return;
   
-  const dateVal = document.getElementById('pastActDate').value; 
-  const timeVal = document.getElementById('pastActTime').value; 
+  const dateVal = document.getElementById('inlinePastActDate').value; 
+  const timeVal = document.getElementById('inlinePastActTime').value; 
   if(!dateVal || !timeVal) return;
   
   const d = new Date(dateVal + 'T' + timeVal + ':00');
-  const detail = document.getElementById('pastActDetail').value;
+  const detail = document.getElementById('inlinePastActDetail').value;
   
   logActivity(act, d, detail);
-  closeModal('pastAddModal');
+  document.getElementById('inlinePastActDetail').value = ''; // clear note text after saving
 });
 
 let pendingDetailAct = null, pendingDetailTime = null;
@@ -2012,7 +1994,7 @@ function openDetailModal(act, atDate){
   setTimeout(()=> input.focus(), 150);
 }
 
-/* ============================= PEOPLE PICKER (group calls etc.) ============================= */
+/* ============================= PEOPLE PICKER ============================= */
 let pendingPeopleAct = null, pendingPeopleTime = null;
 let selectedPeopleIds = new Set();
 
@@ -2185,9 +2167,12 @@ document.getElementById('todayLog').addEventListener('click', (e)=>{
   else if(action === 'del'){ deleteEvent(btn.dataset.id); }
   else if(action === 'cancelEdit'){ state.editingId = null; renderTodayLog(); }
   else if(action === 'saveEdit'){
-    const input = document.getElementById('editTimeInput');
-    const parts = input.value.split(':');
-    updateEventTime(btn.dataset.id, parseInt(parts[0],10), parseInt(parts[1],10));
+    // ENHANCED: Extracting both time and detail info during edit save
+    const row = btn.closest('.log-editrow');
+    const timeInput = row.querySelector('.editTimeInput');
+    const detailInput = row.querySelector('.editDetailInput');
+    const parts = timeInput.value.split(':');
+    updateEvent(btn.dataset.id, parseInt(parts[0],10), parseInt(parts[1],10), detailInput.value);
   }
 });
 
@@ -2199,10 +2184,12 @@ document.getElementById('historyList').addEventListener('click', (e)=>{
     else if(action === 'del'){ deleteEvent(actionBtn.dataset.id); }
     else if(action === 'cancelEdit'){ state.editingId = null; renderHistory(); }
     else if(action === 'saveEdit'){
+      // ENHANCED: Extracting both time and detail info during edit save
       const row = actionBtn.closest('.log-editrow');
-      const input = row.querySelector('.editTimeInput');
-      const parts = input.value.split(':');
-      updateEventTime(actionBtn.dataset.id, parseInt(parts[0],10), parseInt(parts[1],10));
+      const timeInput = row.querySelector('.editTimeInput');
+      const detailInput = row.querySelector('.editDetailInput');
+      const parts = timeInput.value.split(':');
+      updateEvent(actionBtn.dataset.id, parseInt(parts[0],10), parseInt(parts[1],10), detailInput.value);
     }
     return;
   }
@@ -2282,8 +2269,6 @@ if(CLOUD_ENABLED){
       closeModal('authModal');
     } catch(err) {
       if(popupFallbackCodes.has(err.code)){
-        // Mobile browsers (and in-app browsers) frequently block/kill popups.
-        // Redirect flow works everywhere popups don't.
         try {
           msgEl.textContent = 'Redirecting to Google…';
           await auth.signInWithRedirect(provider);
@@ -2296,7 +2281,6 @@ if(CLOUD_ENABLED){
     }
   });
 
-  // Complete the redirect-based sign-in on page load, if one was in progress.
   auth.getRedirectResult().then((result)=>{
     if(result && result.user){
       closeModal('authModal');
@@ -2352,8 +2336,6 @@ if(CLOUD_ENABLED){
     }
   });
 
-  // Keep devices reasonably in sync: pull periodically and whenever the tab
-  // regains focus, not just once at sign-in.
   setInterval(()=>{ if(state.user) syncPull().then(renderAll); }, 5*60*1000);
   document.addEventListener('visibilitychange', ()=>{
     if(document.visibilityState === 'visible' && state.user) syncPull().then(renderAll);
@@ -2426,8 +2408,6 @@ async function syncPush(){
       });
     }
 
-    // Sync the offgrid/travel day map as a single small doc so it's not lost
-    // when the same account is used from more than one device.
     const settingsRef = db.collection('users').doc(uid).collection('meta').doc('settings');
     batch.set(settingsRef, {
       offgrid_days: state.offgridDays,
