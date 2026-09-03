@@ -699,13 +699,7 @@ function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;',
 function hashStr(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h*31+str.charCodeAt(i))>>>0; } return h; }
 function paletteColor(name){ return PALETTE[hashStr((name||'').toLowerCase().trim()) % PALETTE.length]; }
 
-function subActivityColor(activityName, detail){
-  return paletteColor(activityName.toLowerCase().trim() + '::' + detail.toLowerCase().trim());
-}
 function colorForEntry(activity, detail){
-  if((activity.peoplePicker || activity.needsDetail) && detail && detail.trim()){
-    return subActivityColor(activity.name, detail);
-  }
   return activity.color;
 }
 
@@ -951,8 +945,6 @@ function propagateActivityColor(activityId, newColor){
   let changed = false;
   state.events.forEach(e=>{
     if(e.activity_id !== activityId) return;
-    const usesSubColor = (act.peoplePicker || act.needsDetail) && e.detail && e.detail.trim();
-    if(usesSubColor) return;
     if(e.color !== newColor){ e.color = newColor; e.synced = false; changed = true; }
   });
   if(changed){ persistEvents(); }
