@@ -93,7 +93,6 @@
   .tl-seg{position:absolute;top:0;bottom:0;min-width:3px;border-radius:3px;}
   .tl-seg.live::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,0.35);animation:pulse 1.6s ease-in-out infinite;border-radius:3px;}
   
-  /* FIXED: Changed content:"absolute" to content:""; position:absolute; */
   .tl-marker{position:absolute;top:-4px;width:2px;height:30px;border-radius:1px;z-index:3;background:var(--mc,var(--ink));}
   .tl-marker::after{content:"";position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:var(--mc,var(--ink));}
   
@@ -164,7 +163,7 @@
   .log-time{font-size:12.5px;color:var(--ink-soft);}
   .log-edit,.log-del{background:none;border:none;font-size:13px;padding:4px 5px;color:var(--ink-faint);}
   
-  /* ENHANCED: Inline edit styles */
+  /* Inline edit styles */
   .log-editrow{display:flex;align-items:center;gap:8px;padding:9px 2px;flex-wrap:wrap;}
   .log-editrow input[type=time]{font-family:"JetBrains Mono";border:1px solid var(--border-strong);border-radius:7px;padding:5px 7px;font-size:13px;}
   .log-editrow input[type=text]{font-family:inherit;border:1px solid var(--border-strong);border-radius:7px;padding:5px 7px;font-size:13px;flex:1;min-width:100px;}
@@ -251,11 +250,14 @@
   .pill-row{display:flex;gap:8px;}
   .pill{flex:1;border:1.5px solid var(--border-strong);border-radius:9px;padding:10px 8px;text-align:center;font-size:12.5px;font-weight:600;background:var(--surface);}
   .pill.active{border-color:var(--ink);background:var(--paper);}
+  
+  /* Color Grid Styles */
   .color-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:7px;margin-top:2px;}
   .color-swatch{width:100%;aspect-ratio:1;border-radius:50%;border:2px solid transparent;padding:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08);}
   .color-swatch.selected{border-color:var(--ink);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink);}
   .color-swatch.auto{background:var(--paper)!important;border:1.5px dashed var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:none;}
   .color-swatch.auto.selected{border-color:var(--ink);border-style:solid;}
+  
   .pill i{display:block;width:10px;height:10px;border-radius:50%;margin:0 auto 5px;}
   .check-row{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-soft);margin-bottom:8px;}
   .modal-actions{display:flex;gap:8px;margin-top:16px;}
@@ -389,7 +391,6 @@
   <!-- History -->
   <div class="tab-panel" id="tab-history">
     
-    <!-- ENHANCED: Inline Quick Log for Past Activity (Replaces Modal) -->
     <div class="hist-day" style="margin-top:16px; background:var(--paper); border:1.5px dashed var(--border-strong);">
       <div style="font-size:13px; font-weight:600; margin-bottom:10px; color:var(--ink-soft); font-family:'Space Grotesk';">Quick Log Past Activity</div>
       <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
@@ -524,7 +525,7 @@
     </div>
     <div class="field check-row">
       <input type="checkbox" id="actPeoplePicker" style="width:16px;height:16px;">
-      <label style="margin:0;font-weight:400;">Multi-person picker (choose who's involved — pick multiple, or add someone new on the fly, e.g. for group calls)</label>
+      <label style="margin:0;font-weight:400;">Multi-person picker (choose who's involved)</label>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="saveOnlyBtn">Save only</button>
@@ -645,16 +646,35 @@ const CATEGORY_LABELS = { study:'Study', social:'Social & Fun', essential:'Essen
 const CATEGORY_HUE = { study:208, social:16, essential:150 };
 const CATEGORY_SAT = { study:62, social:72, essential:32 };
 
-const PALETTE = [
-  '#2563EB','#DC2626','#059669','#D97706','#7C3AED','#DB2777',
+/* Extended Raw Palette */
+const RAW_PALETTE = Array.from(new Set([
+  '#09090b', '#171717', '#1e1b4b', '#14532d', '#450a0a', '#4a044e',
+  '#27272a', '#312e81', '#1e3a8a', '#115e59', '#7f1d1d', '#701a75', '#831843',
+  '#3f3f46', '#4338ca', '#1d4ed8', '#0f766e', '#b91c1c', '#a21caf', '#be185d', '#b45309', '#4d7c0f',
+  '#52525b', '#6366f1', '#3b82f6', '#14b8a6', '#ef4444', '#d946ef', '#ec4899', '#f59e0b', '#84cc16', '#10b981',
+  '#71717a', '#818cf8', '#60a5fa', '#2dd4bf', '#f87171', '#e879f9', '#f472b6', '#fbbf24', '#a3e635', '#34d399',
+  '#a1a1aa', '#a5b4fc', '#93c5fd', '#5eead4', '#fca5a5', '#f0abfc', '#f9a8d4', '#fcd34d', '#d9f99d', '#6ee7b7',
+  '#d4d4d8', '#c7d2fe', '#bfdbfe', '#99f6e4', '#fecaca', '#fae8ff', '#fbcfe8', '#fde68a', '#ecfccb', '#a7f3d0',
+  '#1C1E1B','#2563EB','#DC2626','#059669','#D97706','#7C3AED','#DB2777',
   '#0891B2','#65A30D','#EA580C','#4F46E5','#0D9488','#C026D3',
-  '#B45309','#1D4ED8','#BE123C','#15803D','#9333EA','#0EA5E9',
-  '#CA8A04','#E11D48','#166534','#7E22CE','#0369A1','#A16207',
-  '#F43F5E','#FB923C','#FACC15','#84CC16','#22C55E','#10B981',
-  '#14B8A6','#06B6D4','#3B82F6','#6366F1','#8B5CF6','#A855F7',
-  '#D946EF','#EC4899','#F472B6','#FBBF24','#F97316','#EF4444',
+  '#BE123C','#15803D','#9333EA','#0EA5E9','#CA8A04','#E11D48',
+  '#166534','#7E22CE','#0369A1','#A16207','#F43F5E','#FB923C',
+  '#FACC15','#22C55E','#06B6D4','#8B5CF6','#A855F7','#F97316',
   '#64748B','#78716C','#57534E','#44403C','#7C2D12','#134E4A'
-];
+]));
+
+/* Helper to calculate luminance for sorting colors from dark to light */
+function getLuminance(hex) {
+    if (hex.startsWith('#')) hex = hex.substring(1);
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    let r = parseInt(hex.substring(0, 2), 16);
+    let g = parseInt(hex.substring(2, 4), 16);
+    let b = parseInt(hex.substring(4, 6), 16);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/* Palette sorted dark to light based on relative luminance */
+const PALETTE = RAW_PALETTE.slice().sort((a, b) => getLuminance(a) - getLuminance(b));
 
 const QUOTES = [
   "Discipline is choosing between what you want now and what you want most.",
@@ -893,7 +913,6 @@ function addInterruptionToActive(note, mins){
   queueSync();
 }
 
-// ENHANCED: Takes both Time AND new Detail text for inline editing
 function updateEvent(id, hh, mm, newDetail){
   const ev = state.events.find(e=>e.id===id);
   if(!ev) return;
@@ -1289,7 +1308,6 @@ function renderTodayLog(){
   if(!dayEvents.length){ container.innerHTML = '<div class="empty-note">Nothing logged yet today.</div>'; return; }
   
   container.innerHTML = dayEvents.map(e=>{
-    // ENHANCED: Rendering inline text editing fields for Time AND Detail
     if(state.editingId === e.id){
       const d = new Date(e.start_time);
       const val = pad(d.getHours())+':'+pad(d.getMinutes());
@@ -1318,7 +1336,6 @@ function allDatesWithData(limit){
   return Array.from(set).sort().reverse().slice(0, limit);
 }
 
-// ENHANCED: Update Inline History Activity Selection dynamically
 function renderInlinePastAdd(){
   const sel = document.getElementById('inlinePastActSelect');
   if(!sel) return;
@@ -1337,7 +1354,7 @@ function renderInlinePastAdd(){
 }
 
 function renderHistory(){
-  renderInlinePastAdd(); // Make sure dropdown matches current activities
+  renderInlinePastAdd();
   const container = document.getElementById('historyList');
   const dates = allDatesWithData(state.historyDaysShown);
   const {ranges, markers} = computeGlobalSegments();
@@ -1965,7 +1982,6 @@ document.getElementById('quickAdd').addEventListener('click', (e)=>{
   }
 });
 
-// ENHANCED: Event listener for the new Inline Quick Log Past Activity Feature
 document.getElementById('inlinePastSaveBtn').addEventListener('click', ()=>{
   const actId = document.getElementById('inlinePastActSelect').value;
   const act = state.activities.find(a=>a.id===actId);
@@ -1979,7 +1995,7 @@ document.getElementById('inlinePastSaveBtn').addEventListener('click', ()=>{
   const detail = document.getElementById('inlinePastActDetail').value;
   
   logActivity(act, d, detail);
-  document.getElementById('inlinePastActDetail').value = ''; // clear note text after saving
+  document.getElementById('inlinePastActDetail').value = '';
 });
 
 let pendingDetailAct = null, pendingDetailTime = null;
@@ -2167,7 +2183,6 @@ document.getElementById('todayLog').addEventListener('click', (e)=>{
   else if(action === 'del'){ deleteEvent(btn.dataset.id); }
   else if(action === 'cancelEdit'){ state.editingId = null; renderTodayLog(); }
   else if(action === 'saveEdit'){
-    // ENHANCED: Extracting both time and detail info during edit save
     const row = btn.closest('.log-editrow');
     const timeInput = row.querySelector('.editTimeInput');
     const detailInput = row.querySelector('.editDetailInput');
@@ -2184,7 +2199,6 @@ document.getElementById('historyList').addEventListener('click', (e)=>{
     else if(action === 'del'){ deleteEvent(actionBtn.dataset.id); }
     else if(action === 'cancelEdit'){ state.editingId = null; renderHistory(); }
     else if(action === 'saveEdit'){
-      // ENHANCED: Extracting both time and detail info during edit save
       const row = actionBtn.closest('.log-editrow');
       const timeInput = row.querySelector('.editTimeInput');
       const detailInput = row.querySelector('.editDetailInput');
