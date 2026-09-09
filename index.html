@@ -480,8 +480,9 @@
       <label style="margin:0;font-weight:400;">Enable auto-grouping prompts for rapid task switching (&lt;10m)</label>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+      <button class="btn btn-primary" id="saveSettingsBtn" style="width:100%;">Save Settings</button>
     </div>
+    <button class="btn btn-outline" id="restoreCloudBtn" style="width:100%;margin-top:10px;">Restore from Cloud</button>
   </div>
 </div>
 
@@ -731,6 +732,7 @@ const LS = {
 
 /* ============================= UTIL & SETTINGS ============================= */
 function uid(){ return (crypto.randomUUID ? crypto.randomUUID() : 'id-'+Date.now()+'-'+Math.random().toString(16).slice(2)); }
+function slugId(name){ return 'default-' + String(name).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-'); }
 function pad(n){ return String(n).padStart(2,'0'); }
 function localDateStr(d){ d = d || new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
 function fmt12(d){ let h=d.getHours(), m=d.getMinutes(); const ap=h>=12?'PM':'AM'; h=h%12; if(h===0)h=12; return h+':'+pad(m)+' '+ap; }
@@ -839,7 +841,7 @@ const state = {
   user: null,
   openHistoryDays: new Set(),
   activities: loadLS(LS.activities, null) || DEFAULT_ACTIVITIES.map(a => ({
-    id: uid(), name:a.name, category:a.category, color: paletteColor(a.name),
+    id: slugId(a.name), name:a.name, category:a.category, color: paletteColor(a.name),
     instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name), is_pinned:true, synced:false, updated_at: new Date().toISOString(),
   })),
   events: loadLS(LS.events, []),
@@ -1910,6 +1912,19 @@ document.getElementById('saveSettingsBtn').addEventListener('click', ()=>{
   showToast('Saved settings');
 });
 
+document.getElementById('restoreCloudBtn').addEventListener('click', async ()=>{
+  if(!CLOUD_ENABLED || !state.user){
+    showToast('Sign in first to restore from the cloud');
+    return;
+  }
+  if(!confirm('Pull the latest data from the cloud and merge it into this device? This will not delete anything currently on this device.')) return;
+  showToast('Restoring…');
+  await syncPull();
+  renderAll();
+  closeModal('settingsModal');
+  showToast('Restore complete');
+});
+
 /* Interruption Modal */
 document.getElementById('interruptBtn').addEventListener('click', ()=>{
   document.getElementById('interruptDetail').value = '';
@@ -2338,12 +2353,21 @@ if(CLOUD_ENABLED){
     if(user && !prevUser){
       const migratedKey = 'chrono_migrated_v2_' + user.uid;
       const alreadyMigrated = loadLS(migratedKey, false);
-      if(!alreadyMigrated){
+
+      // Only treat this as "local data needs uploading" if there's actually
+      // something local worth uploading. An empty/fresh-default local state
+      // (e.g. right after clearing browser data) should NOT push before pulling.
+      const hasLocalDataToMigrate = !alreadyMigrated &&
+        (state.events.length > 0 || state.people.length > 0);
+
+      if(hasLocalDataToMigrate){
         state.activities.forEach(a=>a.synced=false);
         state.events.forEach(e=>e.synced=false);
+        state.people.forEach(p=>p.synced=false);
         await syncPush();
-        saveLS(migratedKey, true);
       }
+      saveLS(migratedKey, true);
+
       await syncPull();
       await syncPush();
       renderAll();
