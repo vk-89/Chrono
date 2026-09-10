@@ -621,10 +621,15 @@
 
 /* ============================= CONFIG & SETTINGS ============================= */
 function getFirebaseConfig() {
-  if (window.APP_CONFIG && window.APP_CONFIG.firebase) {
-    return window.APP_CONFIG.firebase;
-  }
-  return null;
+  // REPLACE THESE WITH YOUR ACTUAL FIREBASE PROJECT KEYS
+  return {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
 }
 
 const firebaseConfig = getFirebaseConfig();
