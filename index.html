@@ -621,7 +621,6 @@
 
 /* ============================= CONFIG & SETTINGS ============================= */
 function getFirebaseConfig() {
-  // REPLACE THESE WITH YOUR ACTUAL FIREBASE PROJECT KEYS
   return {
     apiKey: "AIzaSyBkqINVQDvotNAlwezK6_fXhHduT7E2M_4",
     authDomain: "chrono-e6497.firebaseapp.com",
@@ -1029,7 +1028,11 @@ function computeGlobalSegments(){
       markers.push(Object.assign({}, ev, {start}));
       continue;
     }
+    
     let end, live=false;
+    const isSleep = isSleepOrRest(ev.activity_name);
+    const maxMs = isSleep ? (14 * 3600000) : (6 * 3600000);
+
     if(i < events.length-1){
       end = new Date(events[i+1].start_time);
     } else {
@@ -1040,8 +1043,15 @@ function computeGlobalSegments(){
         end = new Date(dayBoundaryStart(evLogical).getTime() + 24*3600000);
       }
     }
+
+    // Auto-stop cap to prevent massive idle blocks
+    if (end.getTime() - start.getTime() > maxMs) {
+      end = new Date(start.getTime() + maxMs);
+      if (live) live = false;
+    }
+
     if(end <= start) end = new Date(start.getTime()+60000);
-    ranges.push(Object.assign({}, ev, {start, end, live, isSleep: isSleepOrRest(ev.activity_name)}));
+    ranges.push(Object.assign({}, ev, {start, end, live, isSleep}));
   }
   return {ranges, markers};
 }
@@ -1212,13 +1222,19 @@ function renderStatus(){
   const undoBtn = document.getElementById('undoBtn');
   const interruptBtn = document.getElementById('interruptBtn');
   const ev = currentEvent();
+  
   if(!ev){
     el.innerHTML = '<div class="status-empty">Tap an activity below to start tracking.</div>';
     undoBtn.style.display = 'none';
     interruptBtn.style.display = 'none';
     return;
   }
+  
   const start = new Date(ev.start_time);
+  const isSleep = isSleepOrRest(ev.activity_name);
+  const maxMs = isSleep ? (14 * 3600000) : (6 * 3600000);
+  const timedOut = !ev.instant && (Date.now() - start.getTime() > maxMs);
+
   const interTags = (ev.interruptions && ev.interruptions.length) 
     ? ev.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(it.note)+' ('+it.mins+'m)</span>').join('')
     : '';
@@ -1228,6 +1244,12 @@ function renderStatus(){
       '<span class="status-dot" style="background:'+ev.color+'"></span>' +
       '<div><div class="status-name">'+escapeHtml(ev.activity_name)+'</div>' +
       '<div class="status-since mono">at '+fmt12(start)+' · log what\'s next</div></div>';
+    interruptBtn.style.display = 'none';
+  } else if (timedOut) {
+    el.innerHTML =
+      '<span class="status-dot" style="background:#ccc"></span>' +
+      '<div><div class="status-name" style="color:var(--ink-faint);">'+escapeHtml(ev.activity_name)+' (Auto-stopped)</div>' +
+      '<div class="status-since mono">Ran for '+(isSleep?14:6)+'h limit. Tap below to start new.</div></div>';
     interruptBtn.style.display = 'none';
   } else {
     el.innerHTML =
@@ -1873,6 +1895,7 @@ setInterval(()=>{
   const elEl = document.getElementById('statusElapsed');
   if(ev && !ev.instant && elEl){ elEl.textContent = durationLabel((Date.now()-new Date(ev.start_time))/60000); }
   renderTimeline();
+  renderStatus(); /* Keep status auto-stop checked in real-time */
   renderSleepBanner();
 }, 30000);
 
