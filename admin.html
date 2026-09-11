@@ -422,26 +422,19 @@ let allUsers = [];
 async function loadUsers(){
   const listEl = document.getElementById('usersList');
   try{
-    // Every user gets a users/{uid}/meta/settings doc the first time they sync,
-    // so a collection-group query on 'meta' discovers every user's uid.
-    const metaSnap = await db.collectionGroup('meta').get();
-    const uids = Array.from(new Set(metaSnap.docs.map(d => d.ref.parent.parent.id)));
-
-    const profiles = await Promise.all(uids.map(async uid => {
-      try{
-        const profSnap = await db.collection('users').doc(uid).get();
-        return { uid, ...(profSnap.exists ? profSnap.data() : {}) };
-      } catch(e){ return { uid }; }
-    }));
+    // Fetch users directly from the top-level users collection (no special index required)
+    const usersSnap = await db.collection('users').get();
+    const profiles = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() }));
 
     profiles.sort((a,b) => new Date(b.lastLogin||0) - new Date(a.lastLogin||0));
     allUsers = profiles;
     renderUsers(allUsers);
   } catch(err){
     console.error('Failed to load users', err);
-    listEl.innerHTML = '<div class="empty-note">Could not load users. Check the browser console and your Firestore rules/indexes.</div>';
+    listEl.innerHTML = '<div class="empty-note">Could not load users. Check your Firestore rules.</div>';
   }
 }
+
 
 function renderUsers(list){
   const el = document.getElementById('usersList');
