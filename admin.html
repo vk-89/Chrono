@@ -1,1 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Admin · Chrono</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+<style>
+  :root{
+    --paper:#F4F3EC; --surface:#FFFFFF; --ink:#1C1E1B; --ink-soft:#63655D; --ink-faint:#9A9C92;
+    --border:#E1DFD2; --border-strong:#CFCDBD;
+    --study-h:208; --study-s:62%; --social-h:16; --social-s:72%; --essential-h:150; --essential-s:32%;
+    --danger:#B3492F; --accent:#B3492F; --radius:14px; --radius-sm:9px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent;}
+  h1,h2,h3{font-family:"Space Grotesk",sans-serif;margin:0;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select{font-family:inherit;}
+  .hidden{display:none!important;}
+
+  /* ---- Login ---- */
+  #loginView{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;width:100%;max-width:360px;}
+  .login-card h1{font-size:20px;margin-bottom:4px;}
+  .login-card p{color:var(--ink-soft);font-size:13px;margin:0 0 18px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:6px;font-weight:600;}
+  .field input,.field select{width:100%;background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;color:var(--ink);}
+  .btn{border:none;border-radius:999px;padding:11px 16px;font-size:13.5px;font-weight:600;font-family:"Space Grotesk";width:100%;}
+  .btn-primary{background:var(--ink);color:#fff;}
+  .btn-ghost{background:var(--paper);color:var(--ink-soft);border:1px solid var(--border);}
+  .btn-danger{background:none;color:var(--danger);border:1px solid var(--danger);}
+  .btn-sm{width:auto;padding:7px 12px;font-size:12.5px;border-radius:8px;}
+  .auth-msg{font-size:12.5px;color:var(--danger);margin-top:8px;min-height:1em;}
+  .authtoggle{font-size:12.5px;color:var(--ink-soft);margin-top:14px;text-align:center;}
+  .authtoggle b{color:var(--ink);cursor:pointer;text-decoration:underline;}
+
+  /* ---- Shell ---- */
+  #adminApp{max-width:920px;margin:0 auto;padding:16px 16px 60px;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:6px 2px 18px;}
+  .topbar h1{font-size:18px;}
+  .topbar .sub{font-size:11.5px;color:var(--ink-soft);}
+  .icon-btn{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:7px 14px;font-size:12.5px;color:var(--ink-soft);font-weight:600;}
+
+  .tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px;margin-bottom:18px;}
+  .tab-btn{flex:1;border:none;background:none;padding:9px 0;border-radius:999px;font-size:13px;font-weight:600;color:var(--ink-soft);font-family:"Space Grotesk";}
+  .tab-btn.active{background:var(--ink);color:#fff;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
+  .card h2{font-size:14px;margin-bottom:2px;}
+  .card .hint{font-size:12px;color:var(--ink-soft);margin:4px 0 14px;}
+
+  .row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .row:last-child{border-bottom:none;}
+  .swatch{width:22px;height:22px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08);}
+  .row .name{font-weight:600;font-size:13.5px;flex:1;}
+  .cat-badge{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;font-weight:700;padding:3px 8px;border-radius:999px;flex:none;}
+  .cat-study{background:hsla(var(--study-h),var(--study-s),88%,1);color:hsla(var(--study-h),var(--study-s),30%,1);}
+  .cat-social{background:hsla(var(--social-h),var(--social-s),90%,1);color:hsla(var(--social-h),var(--social-s),34%,1);}
+  .cat-essential{background:hsla(var(--essential-h),var(--essential-s),88%,1);color:hsla(var(--essential-h),var(--essential-s),26%,1);}
+  .row-actions{display:flex;gap:4px;flex:none;}
+  .row-actions button{background:none;border:none;font-size:14px;padding:5px 6px;color:var(--ink-faint);}
+
+  .add-fab{width:100%;border:1.5px dashed var(--border-strong);background:none;border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;color:var(--ink-soft);margin-top:6px;}
+
+  .color-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:7px;margin-top:2px;}
+  .color-swatch{width:100%;aspect-ratio:1;border-radius:50%;border:2px solid transparent;padding:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08);}
+  .color-swatch.selected{border-color:var(--ink);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink);}
+  .pill-row{display:flex;gap:8px;}
+  .pill{flex:1;border:1px solid var(--border-strong);background:var(--paper);border-radius:var(--radius-sm);padding:9px;font-size:12.5px;font-weight:600;color:var(--ink-soft);text-align:center;}
+  .pill.active{border-color:var(--ink);background:var(--surface);color:var(--ink);}
+
+  /* ---- Users list ---- */
+  .search-input{width:100%;background:var(--paper);border:1px solid var(--border);border-radius:999px;padding:10px 14px;font-size:13.5px;margin-bottom:12px;}
+  .user-row{display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid var(--border);}
+  .user-row:last-child{border-bottom:none;}
+  .user-av{width:34px;height:34px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex:none;}
+  .user-info{flex:1;min-width:0;}
+  .user-email{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .user-meta{font-size:11.5px;color:var(--ink-soft);}
+  .empty-note{font-size:13px;color:var(--ink-faint);padding:14px 2px;text-align:center;}
+  .loading-note{font-size:13px;color:var(--ink-soft);padding:14px 2px;text-align:center;}
+
+  /* ---- Modal ---- */
+  .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(28,30,27,0.45);z-index:50;align-items:flex-end;justify-content:center;}
+  .modal-backdrop.open{display:flex;}
+  .modal{background:var(--surface);border-radius:18px 18px 0 0;padding:20px 18px 26px;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;position:relative;}
+  @media(min-width:520px){.modal-backdrop{align-items:center;}.modal{border-radius:var(--radius);}}
+  .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:15px;color:var(--ink-faint);}
+  .modal h2{font-size:16px;margin-bottom:14px;padding-right:20px;}
+  .btn-row{display:flex;gap:10px;margin-top:16px;}
+
+  /* ---- Detail sections ---- */
+  .detail-section{margin-bottom:16px;}
+  .detail-section h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin-bottom:8px;}
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .stat-box{background:var(--paper);border-radius:var(--radius-sm);padding:10px;text-align:center;}
+  .stat-box .num{font-size:17px;font-weight:700;font-family:"Space Grotesk";}
+  .stat-box .lbl{font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;}
+  .ev-row{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px;}
+  .ev-row:last-child{border-bottom:none;}
+  .ev-time{color:var(--ink-faint);flex:none;width:70px;font-family:"JetBrains Mono";font-size:11px;}
+  .ev-name{flex:1;font-weight:600;}
+  .ev-detail{color:var(--ink-soft);}
+  .raw-json{background:var(--paper);border-radius:var(--radius-sm);padding:10px;font-family:"JetBrains Mono";font-size:10.5px;white-space:pre-wrap;word-break:break-all;color:var(--ink-soft);max-height:180px;overflow-y:auto;}
+</style>
+</head>
+<body>
+
+<div id="loginView">
+  <div class="login-card">
+    <h1>Admin · Chrono</h1>
+    <p id="loginSub">Sign in with your admin account to continue.</p>
+    <div class="field"><label>Email</label><input type="email" id="loginEmail" autocomplete="username"></div>
+    <div class="field"><label>Password</label><input type="password" id="loginPassword" autocomplete="current-password"></div>
+    <button class="btn btn-primary" id="loginBtn">Sign in</button>
+    <div class="auth-msg" id="loginMsg"></div>
+    <div class="authtoggle">Need an admin account? <b id="toggleSignup">Create one</b></div>
+  </div>
+</div>
+
+<div id="adminApp" class="hidden">
+  <div class="topbar">
+    <div>
+      <h1>Admin · Chrono</h1>
+      <div class="sub" id="adminWhoami"></div>
+    </div>
+    <button class="icon-btn" id="signOutBtn">Sign out</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="activitiesTab">Default activities</button>
+    <button class="tab-btn" data-tab="usersTab">Users</button>
+  </div>
+
+  <div class="tab-panel active" id="activitiesTab">
+    <div class="card">
+      <h2>Default activities</h2>
+      <div class="hint">These are the activities (and colors) every new user starts with. Editing here does not change activities existing users have already customized.</div>
+      <div id="defaultsList"></div>
+      <button class="add-fab" id="addDefaultBtn">+ Add default activity</button>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="usersTab">
+    <div class="card">
+      <h2>Users</h2>
+      <div class="hint">Everyone who has ever signed in to Chrono.</div>
+      <input type="text" class="search-input" id="userSearch" placeholder="Search by email...">
+      <div id="usersList"><div class="loading-note">Loading users…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit default activity modal -->
+<div class="modal-backdrop" id="actModal">
+  <div class="modal">
+    <button class="modal-close" data-close="actModal">✕</button>
+    <h2 id="actModalTitle">Add default activity</h2>
+    <div class="field"><label>Name</label><input type="text" id="actName" placeholder="e.g. Gym"></div>
+    <div class="field">
+      <label>Category</label>
+      <div class="pill-row" id="actCatRow">
+        <button type="button" class="pill" data-cat="study">Study</button>
+        <button type="button" class="pill" data-cat="social">Social & Fun</button>
+        <button type="button" class="pill" data-cat="essential">Essential</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Color</label>
+      <div class="color-grid" id="actColorGrid"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" data-close="actModal">Cancel</button>
+      <button class="btn btn-primary" id="actSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- User detail modal -->
+<div class="modal-backdrop" id="userModal">
+  <div class="modal">
+    <button class="modal-close" data-close="userModal">✕</button>
+    <h2 id="userModalTitle">User</h2>
+    <div id="userModalBody"><div class="loading-note">Loading…</div></div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================= CONFIG ============================= */
+// Same Firebase project as the user-facing Chrono app.
+const firebaseConfig = {
+  apiKey: "AIzaSyBkqINVQDvotNAlwezK6_fXhHduT7E2M_4",
+  authDomain: "chrono-e6497.firebaseapp.com",
+  projectId: "chrono-e6497",
+  storageBucket: "chrono-e6497.firebasestorage.app",
+  messagingSenderId: "954295376775",
+  appId: "1:954295376775:web:5383634ba4a04e61289122"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+const CATEGORY_LABELS = { study:'Study', social:'Social & Fun', essential:'Essential' };
+
+const PALETTE = ['#09090b','#1e1b4b','#14532d','#450a0a','#4a044e','#312e81','#1e3a8a','#115e59',
+  '#7f1d1d','#701a75','#831843','#4338ca','#1d4ed8','#0f766e','#b91c1c','#a21caf','#be185d','#b45309',
+  '#4d7c0f','#6366f1','#3b82f6','#14b8a6','#ef4444','#d946ef','#ec4899','#f59e0b','#84cc16','#10b981',
+  '#818cf8','#60a5fa','#2dd4bf','#f87171','#e879f9','#f472b6','#fbbf24','#a3e635','#34d399',
+  '#2563EB','#DC2626','#059669','#D97706','#7C3AED','#DB2777','#0891B2','#65A30D','#EA580C',
+  '#0EA5E9','#CA8A04','#E11D48','#FACC15','#22C55E','#06B6D4','#8B5CF6','#A855F7','#F97316'];
+
+function slugId(name){ return 'default-' + String(name).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-'); }
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDate(iso){ if(!iso) return '—'; const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleString(); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+document.querySelectorAll('[data-close]').forEach(btn=>{
+  btn.addEventListener('click', ()=> closeModal(btn.getAttribute('data-close')));
+});
+
+/* ============================= AUTH ============================= */
+let isSignupMode = false;
+const loginMsg = document.getElementById('loginMsg');
+const loginSub = document.getElementById('loginSub');
+
+document.getElementById('toggleSignup').addEventListener('click', ()=>{
+  isSignupMode = !isSignupMode;
+  document.getElementById('toggleSignup').textContent = isSignupMode ? 'Sign in instead' : 'Create one';
+  loginSub.textContent = isSignupMode
+    ? 'Create the admin account (must be an email in the allowlist).'
+    : 'Sign in with your admin account to continue.';
+  loginMsg.textContent = '';
+});
+
+document.getElementById('loginBtn').addEventListener('click', async ()=>{
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  loginMsg.textContent = '';
+  if(!email || !password){ loginMsg.textContent = 'Enter an email and password.'; return; }
+  try{
+    if(isSignupMode){
+      await auth.createUserWithEmailAndPassword(email, password);
+    } else {
+      await auth.signInWithEmailAndPassword(email, password);
+    }
+  } catch(err){
+    loginMsg.textContent = err.message || 'Something went wrong.';
+  }
+});
+
+document.getElementById('signOutBtn').addEventListener('click', ()=> auth.signOut());
+
+auth.onAuthStateChanged(async user => {
+  if (user && user.email) {
+    const emailLower = user.email.toLowerCase();
+    try {
+      // Attempt to read their specific admin document
+      const adminDoc = await db.collection('admins').doc(emailLower).get();
+      
+      if (adminDoc.exists) {
+        // Success: User is an admin
+        document.getElementById('loginView').classList.add('hidden');
+        document.getElementById('adminApp').classList.remove('hidden');
+        document.getElementById('adminWhoami').textContent = user.email;
+        loadDefaults();
+        loadUsers();
+        return;
+      }
+    } catch (err) {
+      console.log("Permission denied or not an admin.", err);
+    }
+    
+    // Fallback: If document doesn't exist or read fails, deny access
+    loginMsg.textContent = 'This account (' + user.email + ') is not authorized for admin access.';
+    auth.signOut();
+    
+  } else {
+    // Logged out state
+    document.getElementById('loginView').classList.remove('hidden');
+    document.getElementById('adminApp').classList.add('hidden');
+  }
+});
+
+/* ============================= TABS ============================= */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ============================= DEFAULT ACTIVITIES ============================= */
+const DEFAULTS_REF = db.collection('config').doc('defaults');
+let defaultActivities = [];
+let editingActId = null;
+
+const FALLBACK_DEFAULTS = [
+  {name:'Wake Up', category:'essential', instant:true},
+  {name:'Ready', category:'essential'}, {name:'Bath', category:'essential'},
+  {name:'Breakfast', category:'essential'}, {name:'Lunch', category:'essential'},
+  {name:'Dinner', category:'essential'}, {name:'Commute', category:'essential'},
+  {name:'Rest', category:'essential'}, {name:'Cooking', category:'essential'},
+  {name:'Sleep', category:'essential'}, {name:'Admin / Switching', category:'essential'},
+  {name:'Library', category:'study'}, {name:'Coaching', category:'study'},
+  {name:'Newspaper', category:'study'}, {name:'Website Work', category:'study'},
+  {name:'Call', category:'social'}, {name:'Timepass', category:'social'}, {name:'Hobby', category:'social'}
+];
+
+async function loadDefaults(){
+  try{
+    const snap = await DEFAULTS_REF.get();
+    if(snap.exists && Array.isArray(snap.data().activities) && snap.data().activities.length){
+      defaultActivities = snap.data().activities;
+    } else {
+      defaultActivities = FALLBACK_DEFAULTS.map(a=>({id:slugId(a.name), name:a.name, category:a.category, color:PALETTE[0], instant:!!a.instant}));
+    }
+  } catch(err){
+    console.error('Failed to load defaults', err);
+    defaultActivities = [];
+  }
+  renderDefaults();
+}
+
+function renderDefaults(){
+  const el = document.getElementById('defaultsList');
+  if(!defaultActivities.length){ el.innerHTML = '<div class="empty-note">No default activities yet.</div>'; return; }
+  el.innerHTML = defaultActivities.map(a => `
+    <div class="row">
+      <div class="swatch" style="background:${a.color}"></div>
+      <div class="name">${escapeHtml(a.name)}</div>
+      <div class="cat-badge cat-${a.category}">${CATEGORY_LABELS[a.category]||a.category}</div>
+      <div class="row-actions">
+        <button data-edit="${a.id}" title="Edit">✎</button>
+        <button data-del="${a.id}" title="Delete">✕</button>
+      </div>
+    </div>
+  `).join('');
+  el.querySelectorAll('[data-edit]').forEach(b=> b.addEventListener('click', ()=> openActModal(b.dataset.edit)));
+  el.querySelectorAll('[data-del]').forEach(b=> b.addEventListener('click', ()=> deleteDefault(b.dataset.del)));
+}
+
+async function persistDefaults(){
+  await DEFAULTS_REF.set({ activities: defaultActivities, updated_at: new Date().toISOString() }, { merge: true });
+}
+
+async function deleteDefault(id){
+  if(!confirm('Remove this default activity? Existing users keep it; only new signups are affected.')) return;
+  defaultActivities = defaultActivities.filter(a=>a.id!==id);
+  renderDefaults();
+  await persistDefaults();
+}
+
+document.getElementById('addDefaultBtn').addEventListener('click', ()=> openActModal(null));
+
+function openActModal(id){
+  editingActId = id;
+  const existing = id ? defaultActivities.find(a=>a.id===id) : null;
+  document.getElementById('actModalTitle').textContent = existing ? 'Edit default activity' : 'Add default activity';
+  document.getElementById('actName').value = existing ? existing.name : '';
+  const cat = existing ? existing.category : 'essential';
+  document.querySelectorAll('#actCatRow .pill').forEach(p=> p.classList.toggle('active', p.dataset.cat===cat));
+
+  const grid = document.getElementById('actColorGrid');
+  const selectedColor = existing ? existing.color : PALETTE[Math.floor(Math.random()*PALETTE.length)];
+  grid.innerHTML = PALETTE.map(c => `<button type="button" class="color-swatch${c===selectedColor?' selected':''}" data-color="${c}" style="background:${c}"></button>`).join('');
+  grid.querySelectorAll('.color-swatch').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      grid.querySelectorAll('.color-swatch').forEach(x=>x.classList.remove('selected'));
+      b.classList.add('selected');
+    });
+  });
+  openModal('actModal');
+}
+
+document.querySelectorAll('#actCatRow .pill').forEach(p=>{
+  p.addEventListener('click', ()=>{
+    document.querySelectorAll('#actCatRow .pill').forEach(x=>x.classList.remove('active'));
+    p.classList.add('active');
+  });
+});
+
+document.getElementById('actSaveBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('actName').value.trim();
+  if(!name){ alert('Enter a name.'); return; }
+  const cat = document.querySelector('#actCatRow .pill.active').dataset.cat;
+  const colorBtn = document.querySelector('#actColorGrid .color-swatch.selected');
+  const color = colorBtn ? colorBtn.dataset.color : PALETTE[0];
+
+  if(editingActId){
+    const a = defaultActivities.find(x=>x.id===editingActId);
+    if(a){ a.name = name; a.category = cat; a.color = color; }
+  } else {
+    const id = slugId(name) + '-' + Date.now().toString(36);
+    defaultActivities.push({ id, name, category: cat, color, instant: false });
+  }
+  renderDefaults();
+  closeModal('actModal');
+  await persistDefaults();
+});
+
+/* ============================= USERS ============================= */
+let allUsers = [];
+
+async function loadUsers(){
+  const listEl = document.getElementById('usersList');
+  try{
+    // Every user gets a users/{uid}/meta/settings doc the first time they sync,
+    // so a collection-group query on 'meta' discovers every user's uid.
+    const metaSnap = await db.collectionGroup('meta').get();
+    const uids = Array.from(new Set(metaSnap.docs.map(d => d.ref.parent.parent.id)));
+
+    const profiles = await Promise.all(uids.map(async uid => {
+      try{
+        const profSnap = await db.collection('users').doc(uid).get();
+        return { uid, ...(profSnap.exists ? profSnap.data() : {}) };
+      } catch(e){ return { uid }; }
+    }));
+
+    profiles.sort((a,b) => new Date(b.lastLogin||0) - new Date(a.lastLogin||0));
+    allUsers = profiles;
+    renderUsers(allUsers);
+  } catch(err){
+    console.error('Failed to load users', err);
+    listEl.innerHTML = '<div class="empty-note">Could not load users. Check the browser console and your Firestore rules/indexes.</div>';
+  }
+}
+
+function renderUsers(list){
+  const el = document.getElementById('usersList');
+  if(!list.length){ el.innerHTML = '<div class="empty-note">No users yet.</div>'; return; }
+  el.innerHTML = list.map(u => `
+    <div class="user-row" data-uid="${u.uid}">
+      <div class="user-av">${escapeHtml((u.email||u.uid||'?').slice(0,1).toUpperCase())}</div>
+      <div class="user-info">
+        <div class="user-email">${escapeHtml(u.email || u.uid)}</div>
+        <div class="user-meta">Last active ${fmtDate(u.lastLogin)}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" data-view="${u.uid}">View</button>
+    </div>
+  `).join('');
+  el.querySelectorAll('[data-view]').forEach(b=> b.addEventListener('click', ()=> openUserDetail(b.dataset.view)));
+}
+
+document.getElementById('userSearch').addEventListener('input', (e)=>{
+  const q = e.target.value.trim().toLowerCase();
+  if(!q){ renderUsers(allUsers); return; }
+  renderUsers(allUsers.filter(u => (u.email||'').toLowerCase().includes(q) || u.uid.toLowerCase().includes(q)));
+});
+
+async function openUserDetail(uid){
+  document.getElementById('userModalTitle').textContent = 'User';
+  document.getElementById('userModalBody').innerHTML = '<div class="loading-note">Loading…</div>';
+  openModal('userModal');
+
+  try{
+    const [profSnap, actsSnap, evsSnap, peopleSnap, settingsSnap] = await Promise.all([
+      db.collection('users').doc(uid).get(),
+      db.collection('users').doc(uid).collection('activities').get(),
+      db.collection('users').doc(uid).collection('events').get(),
+      db.collection('users').doc(uid).collection('people').get(),
+      db.collection('users').doc(uid).collection('meta').doc('settings').get()
+    ]);
+
+    const profile = profSnap.exists ? profSnap.data() : {};
+    const acts = actsSnap.docs.map(d=>d.data());
+    const evs = evsSnap.docs.map(d=>d.data()).sort((a,b)=> new Date(b.start_time) - new Date(a.start_time));
+    const people = peopleSnap.docs.map(d=>d.data());
+    const settings = settingsSnap.exists ? settingsSnap.data() : {};
+
+    document.getElementById('userModalTitle').textContent = profile.email || uid;
+
+    const catCounts = {};
+    evs.forEach(e => { catCounts[e.category] = (catCounts[e.category]||0) + 1; });
+
+    const actsHtml = acts.length ? acts.map(a => `
+      <div class="row">
+        <div class="swatch" style="background:${a.color||'#ccc'}"></div>
+        <div class="name">${escapeHtml(a.name)}</div>
+        <div class="cat-badge cat-${a.category}">${CATEGORY_LABELS[a.category]||a.category}</div>
+      </div>`).join('') : '<div class="empty-note">No custom activities.</div>';
+
+    const evsHtml = evs.slice(0, 40).map(e => `
+      <div class="ev-row">
+        <div class="ev-time">${e.start_time ? new Date(e.start_time).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : '—'}</div>
+        <div class="ev-name">${escapeHtml(e.activity_name)}</div>
+        <div class="ev-detail">${escapeHtml(e.detail||'')}</div>
+      </div>`).join('') || '<div class="empty-note">No activity logged yet.</div>';
+
+    const peopleHtml = people.length ? people.map(p=>escapeHtml(p.name)).join(', ') : '—';
+    const offgridCount = settings.offgrid_days ? Object.keys(settings.offgrid_days).length : 0;
+
+    document.getElementById('userModalBody').innerHTML = `
+      <div class="detail-section">
+        <h3>Profile</h3>
+        <div class="user-meta">UID: ${escapeHtml(uid)}</div>
+        <div class="user-meta">Created ${fmtDate(profile.createdAt)} · Last active ${fmtDate(profile.lastLogin)}</div>
+      </div>
+      <div class="detail-section">
+        <h3>Overview</h3>
+        <div class="stat-grid">
+          <div class="stat-box"><div class="num">${evs.length}</div><div class="lbl">Events logged</div></div>
+          <div class="stat-box"><div class="num">${acts.length}</div><div class="lbl">Activities</div></div>
+          <div class="stat-box"><div class="num">${offgridCount}</div><div class="lbl">Off-grid days</div></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <h3>Activities</h3>
+        ${actsHtml}
+      </div>
+      <div class="detail-section">
+        <h3>Recent activity log (up to 40)</h3>
+        ${evsHtml}
+      </div>
+      <div class="detail-section">
+        <h3>People tagged</h3>
+        <div class="user-meta">${peopleHtml}</div>
+      </div>
+    `;
+  } catch(err){
+    console.error('Failed to load user detail', err);
+    document.getElementById('userModalBody').innerHTML = '<div class="empty-note">Could not load this user\'s data.</div>';
+  }
+}
+
+})();
+</script>
+</body>
+</html>
