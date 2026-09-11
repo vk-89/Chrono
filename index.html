@@ -2600,6 +2600,26 @@ function mergeEvents(remoteRows){
 renderAuthUI();
 renderAll();
 
+/* ============================= INIT ============================= */
+renderAuthUI();
+renderAll();
+
+// Force fresh app loads to fetch admin defaults if no data exists yet
+if (CLOUD_ENABLED && !state.user && state.events.length === 0) {
+  db.collection('config').doc('defaults').get().then(snap => {
+    const remoteDefaults = snap.exists ? snap.data().activities : null;
+    if(Array.isArray(remoteDefaults) && remoteDefaults.length){
+      state.activities = remoteDefaults.map(a => ({
+        id: a.id || slugId(a.name), name: a.name, category: a.category,
+        color: a.color || paletteColor(a.name), instant: !!a.instant,
+        needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name),
+        is_pinned: true, synced: false, updated_at: new Date().toISOString(),
+      }));
+      persistActivities();
+      renderAll();
+    }
+  }).catch(e => console.log('Guest defaults check skipped', e));
+}
 })();
 </script>
 </body>
