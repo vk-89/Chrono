@@ -2509,10 +2509,27 @@ async function syncPull(){
       db.collection('users').doc(uid).collection('people').get()
     ]);
 
-    if(!actsSnap.empty){
+        if(!actsSnap.empty){
       const remoteActs = actsSnap.docs.map(doc => doc.data());
       mergeActivities(remoteActs);
+    } else {
+      // Brand-new user: pull from admin defaults
+      try {
+        const defaultsSnap = await db.collection('config').doc('defaults').get();
+        const remoteDefaults = defaultsSnap.exists ? defaultsSnap.data().activities : null;
+        if(Array.isArray(remoteDefaults) && remoteDefaults.length){
+          state.activities = remoteDefaults.map(a => ({
+            id: a.id || slugId(a.name), name: a.name, category: a.category,
+            color: a.color || paletteColor(a.name), instant: !!a.instant,
+            needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name),
+            is_pinned: true, synced: false, updated_at: new Date().toISOString(),
+          }));
+        }
+      } catch(err) {
+        console.error('Failed to load admin defaults', err);
+      }
     }
+
     if(!evsSnap.empty){
       const remoteEvs = evsSnap.docs.map(doc => doc.data());
       mergeEvents(remoteEvs);
