@@ -321,7 +321,7 @@
     <div class="topbar-row">
       <div class="brand"><span class="brand-mark"></span><h1>Chrono</h1></div>
       <div class="top-actions">
-        <button class="icon-btn" id="settingsBtn" title="Preferences & Day Boundary">⚙</button>
+        <button class="icon-btn" id="settingsBtn" title="Preferences">⚙</button>
         <button class="authchip" id="authChip">
           <span class="cloud-badge" id="cloudBadge"></span>
           <span id="authChipLabel">Guest</span>
@@ -356,7 +356,7 @@
     <div class="tl-card">
       <div class="tl-head">
         <div class="tl-title">Timeline</div>
-        <div class="tl-sub" id="tlSubLabel">day starts 4:00 AM · scroll ↔</div>
+        <div class="tl-sub" id="tlSubLabel">scroll ↔</div>
       </div>
       <div class="tl-scroll" id="tlScroll">
         <div class="tl-inner" id="tlInner">
@@ -457,24 +457,11 @@
   </div>
 </div>
 
-<!-- Settings & Day Boundary Modal -->
+<!-- Settings Modal -->
 <div class="modal-backdrop" id="settingsModal">
   <div class="modal">
     <button class="modal-close" data-close="settingsModal">✕</button>
-    <h2>Routine & Day Boundary</h2>
-    <div class="field">
-      <label>Start-of-day hour (when your "day" resets)</label>
-      <select id="settingDayStartHour">
-        <option value="0">12:00 AM (Midnight)</option>
-        <option value="3">3:00 AM</option>
-        <option value="4" selected>4:00 AM (Default)</option>
-        <option value="5">5:00 AM</option>
-        <option value="6">6:00 AM</option>
-        <option value="7">7:00 AM</option>
-        <option value="8">8:00 AM</option>
-      </select>
-      <div class="field-hint">Activities logged before this hour count toward the previous day — useful if you're up past midnight.</div>
-    </div>
+    <h2>Preferences</h2>
     <div class="field check-row">
       <input type="checkbox" id="settingAutoGroup" checked style="width:16px;height:16px;">
       <label style="margin:0;font-weight:400;">Enable auto-grouping prompts for rapid task switching (&lt;10m)</label>
@@ -784,12 +771,12 @@ function debounce(fn, ms){ let t; return function(){ clearTimeout(t); const a=ar
 
 /* Load User Settings */
 const userSettings = Object.assign({
-  dayStartHour: 4,
+  dayStartHour: 0,
   autoGroupPrompt: true,
   excludeOffgridFromStats: true
 }, loadLS(LS.settings, {}));
 
-function getDayStartHour(){ return userSettings.dayStartHour; }
+function getDayStartHour(){ return 0; }
 
 function logicalDateStr(d){
   const shifted = new Date(d.getTime() - getDayStartHour()*3600000);
@@ -837,7 +824,7 @@ function quoteForToday(){
 function renderQuoteBanner(){
   const el = document.getElementById('quoteBanner');
   if(!el) return;
-  el.innerHTML = '"'+escapeHtml(quoteForToday())+'"<span class="qtag">Today\'s reflection · day starts '+fmtHour12(getDayStartHour())+'</span>';
+  el.innerHTML = '"'+escapeHtml(quoteForToday())+'"<span class="qtag">Today\'s reflection</span>';
 }
 
 /* ============================= STATE ============================= */
@@ -1174,7 +1161,6 @@ function renderRuler(){
 
 function renderTimeline(){
   renderRuler();
-  document.getElementById('tlSubLabel').textContent = 'day starts ' + fmtHour12(getDayStartHour()) + ' · scroll ↔';
   const {ranges, markers} = computeGlobalSegments();
   const dates = last7LogicalDates();
   const rowsEl = document.getElementById('tlRows');
@@ -1926,13 +1912,11 @@ function nowTimeValue(){
 
 /* Settings Modal */
 document.getElementById('settingsBtn').addEventListener('click', ()=>{
-  document.getElementById('settingDayStartHour').value = String(userSettings.dayStartHour);
   document.getElementById('settingAutoGroup').checked = !!userSettings.autoGroupPrompt;
   openModal('settingsModal');
 });
 
 document.getElementById('saveSettingsBtn').addEventListener('click', ()=>{
-  userSettings.dayStartHour = parseInt(document.getElementById('settingDayStartHour').value, 10);
   userSettings.autoGroupPrompt = document.getElementById('settingAutoGroup').checked;
   persistSettings();
   closeModal('settingsModal');
