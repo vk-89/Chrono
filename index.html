@@ -195,6 +195,938 @@
   .btn-ghost{background:var(--paper);color:var(--ink-soft);}
   .btn-outline{background:none;border:1.5px solid var(--border-strong);color:var(--ink);}
   .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:15px;color:var(--ink-faint);}
+  .quote-banner{margin-top:12px;padding:14px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-style:italic;color:var(--ink-soft);}
+  .pill.active{background:var(--ink);color:#fff;border-color:var(--ink) !important;}
+  .load-more{width:100%;padding:14px;background:none;border:none;color:var(--ink-faint);font-size:13px;font-weight:600;}
+</style>
+</head>
+<body class="auth-mode">
+
+<div id="authWrapper">
+  <div class="auth-hero">
+    <svg id="dayArc" viewBox="0 0 200 200" aria-hidden="true">
+      <defs>
+        <linearGradient id="dayGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FF7A59"/>
+          <stop offset="50%" stop-color="#FFC24B"/>
+          <stop offset="100%" stop-color="#7C6CF0"/>
+        </linearGradient>
+      </defs>
+      <line class="tick" x1="100" y1="4" x2="100" y2="18"/>
+      <line class="tick" x1="183" y1="100" x2="197" y2="100"/>
+      <line class="tick" x1="100" y1="182" x2="100" y2="196"/>
+      <line class="tick" x1="3" y1="100" x2="17" y2="100"/>
+      <circle cx="100" cy="100" r="90" class="arc-track"/>
+      <circle cx="100" cy="100" r="90" class="arc-progress" id="arcProgress" transform="rotate(-90 100 100)"/>
+      <circle class="now-dot-halo" id="nowDotHalo" r="5"/>
+      <circle class="now-dot" id="nowDot" r="5"/>
+    </svg>
+    <h1 class="wordmark">Chrono</h1>
+    <p class="tagline">Sign in to pick up your day where you left it.</p>
+  </div>
+  <div id="authErrorBanner" class="auth-error-banner" role="alert" hidden></div>
+  <div class="auth-view" id="view-methods">
+    <button class="auth-row" type="button" data-provider="google">
+      <span class="auth-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4a8 8 0 108 8" stroke-linecap="round"/><path d="M12 12h7" stroke-linecap="round"/></svg></span>
+      <span>Continue with Google</span>
+      <span class="auth-row-chevron">›</span>
+      <span class="spinner" id="googleSpinner"></span>
+    </button>
+    <button class="auth-row" type="button" data-provider="apple">
+      <span class="auth-row-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.7 12.7c0 2.6 2.3 3.5 2.3 3.5s-1.8 3.9-3.7 3.9c-.9 0-1.4-.6-2.5-.6s-1.7.6-2.5.6c-1.9 0-4.1-4-4.1-7.2 0-3.2 2-4.9 3.9-4.9 1 0 1.9.7 2.5.7s1.6-.7 2.8-.7c1 0 2.6.4 3.5 2-.1.1-2.2 1.3-2.2 2.7ZM13.9 5.3c.6-.7 1-1.7.9-2.7-.9 0-1.9.5-2.6 1.2-.6.6-1.1 1.6-.9 2.6.9.1 1.9-.4 2.6-1.1Z"/></svg></span>
+      <span>Continue with Apple</span>
+      <span class="auth-row-chevron">›</span>
+      <span class="spinner" id="appleSpinner"></span>
+    </button>
+    <button class="auth-row" type="button" data-provider="phone">
+      <span class="auth-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3h5l1.5 4-2 1.5a11 11 0 005.5 5.5l1.5-2 4 1.5v5a2 2 0 01-2 2C11.6 21 3 12.4 3 5a2 2 0 013-2Z" stroke-linejoin="round"/></svg></span>
+      <span>Continue with phone</span>
+      <span class="auth-row-chevron">›</span>
+    </button>
+    <button class="auth-btn-text" style="margin-top:16px;" id="authGuestBtn">Continue as guest</button>
+  </div>
+  <div class="auth-view" id="view-phone" hidden>
+    <label class="auth-field-label" for="phoneInput">Phone number, with country code</label>
+    <input class="auth-field-input" id="phoneInput" type="tel" placeholder="+1 555 123 4567">
+    <button class="auth-btn-primary" id="sendCodeBtn">
+      <span>Send code</span>
+      <span class="spinner" id="sendSpinner"></span>
+    </button>
+    <button class="auth-btn-text" id="phoneBackBtn">Back</button>
+  </div>
+  <div class="auth-view" id="view-otp" hidden>
+    <p class="auth-field-label" style="text-align:center;">Enter the 6-digit code we sent</p>
+    <div class="otp-row">
+      <input class="otp-box" type="tel" maxlength="1">
+      <input class="otp-box" type="tel" maxlength="1">
+      <input class="otp-box" type="tel" maxlength="1">
+      <input class="otp-box" type="tel" maxlength="1">
+      <input class="otp-box" type="tel" maxlength="1">
+      <input class="otp-box" type="tel" maxlength="1">
+    </div>
+    <button class="auth-btn-primary" id="verifyBtn">
+      <span>Verify</span>
+      <span class="spinner" id="verifySpinner"></span>
+    </button>
+    <div style="display:flex; justify-content:space-between;">
+      <button class="auth-btn-text" id="resendBtn">Resend code</button>
+      <button class="auth-btn-text" id="otpBackBtn">Back</button>
+    </div>
+  </div>
+  <p class="auth-footnote">By continuing, you're signing in to track your day in Chrono. Returning on the same account brings your data back with you.</p>
+</div>
+<div id="recaptcha-container"></div>
+
+<div id="mainApp">
+  <div class="wrap">
+    <div class="topbar" id="topbar">
+      <div class="topbar-row">
+        <div class="brand"><span class="brand-mark"></span><h1>Chrono</h1></div>
+        <div class="top-actions">
+          <button class="icon-btn" id="settingsBtn" title="Preferences">⚙</button>
+          <button class="authchip" id="authChip">
+            <span class="cloud-badge" id="cloudBadge"></span>
+            <span id="authChipLabel">Guest</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="today">Today</button>
+      <button class="tab-btn" data-tab="chat">Chat</button>
+      <button class="tab-btn" data-tab="history">History</button>
+      <button class="tab-btn" data-tab="stats">Stats</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-today">
+      <div class="quote-banner" id="quoteBanner"></div>
+      <div id="fragWarningContainer"></div>
+      <div id="sleepBannerContainer"></div>
+      <div id="autoGroupOfferContainer"></div>
+      <div class="tl-card">
+        <div class="tl-head">
+          <div class="tl-title">Timeline</div>
+          <div class="tl-sub" id="tlSubLabel">scroll ↔</div>
+        </div>
+        <div class="tl-scroll" id="tlScroll">
+          <div class="tl-inner" id="tlInner" style="width:1000px;">
+            <div class="tl-ruler" id="tlRuler"></div>
+            <div id="tlRows"></div>
+            <div class="tl-now" id="tlNow"></div>
+          </div>
+        </div>
+      </div>
+      <div class="status-card">
+        <div class="status-row">
+          <div class="status-main" id="statusCard"></div>
+          <div class="status-actions">
+            <button class="status-interrupt" id="interruptBtn" style="display:none;">+ Interruption</button>
+            <button class="status-undo" id="undoBtn" style="display:none;">Undo</button>
+          </div>
+        </div>
+      </div>
+      <div id="quickAdd"></div>
+      <div class="log-section">
+        <div class="section-title">
+          <span>Today's log</span>
+          <button class="btn-ghost" id="markDayOffgridBtn" style="font-size:11.5px;padding:4px 8px;border-radius:6px;font-weight:600;">Mark Out-of-Town</button>
+        </div>
+        <div id="todayLog"></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-history">
+      <div class="hist-day" style="margin-top:16px; background:var(--paper); border:1.5px dashed var(--border-strong);">
+        <div style="font-size:13px; font-weight:600; margin-bottom:10px; color:var(--ink-soft);">Quick Log Past Activity</div>
+        <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+          <select id="inlinePastActSelect" style="flex:1; border:1px solid var(--border-strong); border-radius:7px; padding:7px;"></select>
+          <input type="date" id="inlinePastActDate" style="flex:1; border:1px solid var(--border-strong); border-radius:7px; padding:7px;">
+          <input type="time" id="inlinePastActTime" style="flex:1; border:1px solid var(--border-strong); border-radius:7px; padding:7px;">
+        </div>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="inlinePastActDetail" placeholder="Notes (optional)" style="flex:1; border:1px solid var(--border-strong); border-radius:7px; padding:7px;">
+          <button class="btn btn-primary" id="inlinePastSaveBtn" style="padding:7px 14px; flex:none;">Log it</button>
+        </div>
+      </div>
+      <div id="historyList"></div>
+      <button class="load-more" id="loadMoreBtn">Load earlier days</button>
+    </div>
+
+    <div class="tab-panel" id="tab-stats">
+      <div id="statsPanel"></div>
+      <div class="stat-card">
+        <h3>Export your data</h3>
+        <div class="modal-actions" style="margin-top:0;">
+          <button class="btn btn-outline" id="exportJsonBtn">Export JSON</button>
+          <button class="btn btn-outline" id="exportCsvBtn">Export CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-chat">
+      <div id="chatInsightPanel"></div>
+      <div class="chat-card">
+        <div class="chat-log" id="chatLog"></div>
+        <div class="chat-input-row">
+          <input type="text" id="chatInput" placeholder="Ask about your routine…" maxlength="400">
+          <button id="chatSendBtn">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div class="modal-backdrop" id="interruptModal">
+  <div class="modal">
+    <button class="modal-close" data-close="interruptModal">✕</button>
+    <h2>Log quick interruption</h2>
+    <div class="field">
+      <label>Interruption detail</label>
+      <input type="text" id="interruptDetail" placeholder="e.g. Quick call" maxlength="60">
+    </div>
+    <div class="field">
+      <label>Duration (approx minutes)</label>
+      <input type="number" id="interruptDuration" value="2" min="1" max="30">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close="interruptModal">Cancel</button>
+      <button class="btn btn-primary" id="saveInterruptBtn">Tag interruption</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="settingsModal">
+  <div class="modal">
+    <button class="modal-close" data-close="settingsModal">✕</button>
+    <h2>Preferences</h2>
+    <div class="field" style="display:flex; align-items:center; gap:8px;">
+      <input type="checkbox" id="settingAutoGroup" checked style="width:16px;height:16px;">
+      <label style="margin:0;font-weight:400;">Enable auto-grouping prompts</label>
+    </div>
+    <button class="btn btn-primary" id="saveSettingsBtn" style="width:100%;">Save Settings</button>
+    <button class="btn btn-outline" id="signOutBtn" style="width:100%;margin-top:10px;">Sign Out</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="addModal">
+  <div class="modal">
+    <button class="modal-close" data-close="addModal">✕</button>
+    <h2 id="addModalTitle">Add activity</h2>
+    <div class="field"><label>Name</label><input type="text" id="actName" maxlength="40"></div>
+    <div class="field">
+      <label>Category</label>
+      <div style="display:flex;gap:8px;" id="catPills">
+        <button class="pill active" data-cat="study" style="flex:1;padding:10px;border-radius:8px;border:1px solid #ccc;background:none;">Study</button>
+        <button class="pill" data-cat="social" style="flex:1;padding:10px;border-radius:8px;border:1px solid #ccc;background:none;">Social</button>
+        <button class="pill" data-cat="essential" style="flex:1;padding:10px;border-radius:8px;border:1px solid #ccc;background:none;">Essential</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="saveOnlyBtn">Save only</button>
+      <button class="btn btn-primary" id="saveLogBtn">Save & log</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBkqINVQDvotNAlwezK6_fXhHduT7E2M_4",
+  authDomain: "chrono-e6497.firebaseapp.com",
+  projectId: "chrono-e6497",
+  storageBucket: "chrono-e6497.firebasestorage.app",
+  messagingSenderId: "954295376775",
+  appId: "1:954295376775:web:5383634ba4a04e61289122"
+};
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+/* ============================= STATE & LS ============================= */
+const LS = { activities:'chrono_activities_v2', events:'chrono_events_v2', deletes:'chrono_pending_deletes_v2', settings:'chrono_user_settings_v2', offgridDays:'chrono_offgrid_days_v1' };
+function loadLS(k, d){ try{ let v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){return d;} }
+function saveLS(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function uid(){ return crypto.randomUUID(); }
+function localDateStr(d){ d=d||new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+const state = {
+  user: null,
+  activities: loadLS(LS.activities, [
+    {id:'1', name:'Deep Work', category:'study', color:'hsl(208, 62%, 50%)'},
+    {id:'2', name:'Social / Calls', category:'social', color:'hsl(16, 72%, 55%)'},
+    {id:'3', name:'Self Care', category:'essential', color:'hsl(150, 32%, 45%)'}
+  ]),
+  events: loadLS(LS.events, []),
+  offgridDays: loadLS(LS.offgridDays, {}),
+  settings: loadLS(LS.settings, {autoGroup:true}),
+  historyDaysShown: 7,
+  openHistoryDays: new Set()
+};
+
+/* ============================= CORE LOGIC ============================= */
+
+function logActivity(act, at, detail){
+  const ev = { 
+    id:uid(), 
+    activity_id:act.id, 
+    activity_name:act.name, 
+    category:act.category, 
+    color:act.color, 
+    start_time:(at||new Date()).toISOString(), 
+    date:localDateStr(at), 
+    detail:detail||'', 
+    synced:false 
+  };
+  state.events.push(ev);
+  saveLS(LS.events, state.events);
+  renderAll();
+  queueSync();
+}
+
+function deleteEvent(id){
+  state.events = state.events.filter(e => e.id !== id);
+  saveLS(LS.events, state.events);
+  if(state.user) db.collection('users').doc(state.user.uid).collection('events').doc(id).delete();
+  renderAll();
+}
+
+function undoLast(){
+  const today = localDateStr();
+  const evs = state.events.filter(e => e.date === today).sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
+  if(evs.length) deleteEvent(evs[evs.length-1].id);
+}
+
+const queueSync = (function(){
+  let t; return () => { clearTimeout(t); t = setTimeout(() => { if(state.user) syncPush(); }, 3000); };
+})();
+
+async function syncPush(){
+  if(!state.user) return;
+  const badge = document.getElementById('cloudBadge');
+  badge.classList.add('busy');
+  try {
+    const batch = db.batch();
+    const userRef = db.collection('users').doc(state.user.uid);
+    state.activities.forEach(a => batch.set(userRef.collection('activities').doc(a.id), a));
+    state.events.filter(e => !e.synced).forEach(e => {
+      batch.set(userRef.collection('events').doc(e.id), e);
+    });
+    await batch.commit();
+    state.events.forEach(e => e.synced = true);
+    saveLS(LS.events, state.events);
+    badge.classList.remove('busy');
+  } catch(e) { 
+    console.error(e); 
+    badge.classList.remove('busy');
+  }
+}
+
+async function syncPull(){
+  if(!state.user) return;
+  const userRef = db.collection('users').doc(state.user.uid);
+  const [actSnap, evSnap] = await Promise.all([
+    userRef.collection('activities').get(),
+    userRef.collection('events').orderBy('start_time','desc').limit(200).get()
+  ]);
+  if(!actSnap.empty) state.activities = actSnap.docs.map(d => d.data());
+  if(!evSnap.empty) {
+    const pulled = evSnap.docs.map(d => ({...d.data(), synced:true}));
+    const localMap = new Map(state.events.map(e => [e.id, e]));
+    pulled.forEach(p => localMap.set(p.id, p));
+    state.events = Array.from(localMap.values());
+  }
+  saveLS(LS.activities, state.activities);
+  saveLS(LS.events, state.events);
+  renderAll();
+}
+
+/* ============================= UI RENDERING ============================= */
+
+function renderAll(){
+  renderTimeline();
+  renderStatus();
+  renderQuickAdd();
+  renderTodayLog();
+  renderHistory();
+  renderStats();
+  updateQuote();
+  populatePastSelect();
+}
+
+function renderTimeline(){
+  const today = localDateStr();
+  const ruler = document.getElementById('tlRuler');
+  const rows = document.getElementById('tlRows');
+  const nowPos = document.getElementById('tlNow');
+  
+  // Ruler
+  let ticks = '';
+  for(let i=0; i<=24; i+=3){
+    ticks += `<div class="tl-tick" style="left:${(i/24)*1000}px">${i}:00</div>`;
+  }
+  ruler.innerHTML = ticks;
+
+  // Row
+  const isOffgrid = state.offgridDays[today];
+  let html = `<div class="tl-day"><div class="tl-day-label"><span>Today</span></div>`;
+  html += `<div class="tl-track ${isOffgrid?'offgrid-track':''}" id="track-today">`;
+  
+  const todayEvs = state.events.filter(e => e.date === today).sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
+  todayEvs.forEach((ev, i) => {
+    const start = new Date(ev.start_time);
+    const end = (i < todayEvs.length-1) ? new Date(todayEvs[i+1].start_time) : new Date();
+    const left = ((start.getHours()*60 + start.getMinutes())/1440)*1000;
+    const width = Math.max(2, ((end - start)/60000/1440)*1000);
+    html += `<div class="tl-seg ${i===todayEvs.length-1?'live':''}" style="left:${left}px; width:${width}px; background:${ev.color};" title="${ev.activity_name}"></div>`;
+  });
+  html += `</div></div>`;
+  rows.innerHTML = html;
+
+  // Now Marker
+  const now = new Date();
+  const nowLeft = ((now.getHours()*60 + now.getMinutes())/1440)*1000;
+  nowPos.style.left = nowLeft + 'px';
+  
+  // Scroll to now
+  if(!window.hasScrolledTimeline){
+    document.getElementById('tlScroll').scrollLeft = nowLeft - 100;
+    window.hasScrolledTimeline = true;
+  }
+}
+
+function renderStatus(){
+  const container = document.getElementById('statusCard');
+  const undo = document.getElementById('undoBtn');
+  const intr = document.getElementById('interruptBtn');
+  const today = localDateStr();
+  const evs = state.events.filter(e => e.date === today).sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
+  const current = evs[evs.length-1];
+
+  if(!current){
+    container.innerHTML = `<div class="status-empty">Tap an activity to begin tracking.</div>`;
+    undo.style.display = 'none';
+    intr.style.display = 'none';
+    return;
+  }
+
+  const start = new Date(current.start_time);
+  const diff = Math.floor((new Date() - start)/60000);
+  container.innerHTML = `
+    <div class="status-dot" style="background:${current.color}"></div>
+    <div>
+      <div class="status-name">${current.activity_name}${current.detail?`<span class="interrupt-tag">${current.detail}</span>`:''}</div>
+      <div class="status-since">${diff}m since started</div>
+    </div>
+  `;
+  undo.style.display = 'block';
+  intr.style.display = 'block';
+}
+
+function renderQuickAdd(){
+  const container = document.getElementById('quickAdd');
+  const cats = { study:[], social:[], essential:[] };
+  state.activities.forEach(a => cats[a.category].push(a));
+  
+  let html = '';
+  for(let cat in cats){
+    if(!cats[cat].length) continue;
+    html += `<div class="qa-group"><div class="qa-label">${cat}</div><div class="qa-grid">`;
+    cats[cat].forEach(a => {
+      html += `<button class="qa-btn" data-id="${a.id}" style="border-left-color:${a.color}"><span class="qa-dot" style="background:${a.color}"></span>${a.name}</button>`;
+    });
+    html += `</div></div>`;
+  }
+  html += `<button class="qa-add" id="addActOpenBtn">+ Custom Activity</button>`;
+  container.innerHTML = html;
+}
+
+function renderTodayLog(){
+  const container = document.getElementById('todayLog');
+  const today = localDateStr();
+  const evs = state.events.filter(e => e.date === today).sort((a,b)=> new Date(b.start_time)-new Date(a.start_time));
+  
+  if(!evs.length){ container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--ink-faint);font-size:13px;">No activities logged yet.</div>'; return; }
+  
+  container.innerHTML = evs.map(e => `
+    <div class="log-row">
+      <span class="log-dot" style="background:${e.color}"></span>
+      <span class="log-name">${e.activity_name} <span style="font-size:11px;color:var(--ink-faint)">${e.detail||''}</span></span>
+      <span class="log-time">${new Date(e.start_time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+      <button class="log-del" data-id="${e.id}">✕</button>
+    </div>
+  `).join('');
+}
+
+function renderHistory(){
+  const container = document.getElementById('historyList');
+  const grouped = {};
+  state.events.forEach(e => {
+    if(!grouped[e.date]) grouped[e.date] = [];
+    grouped[e.date].push(e);
+  });
+
+  const dates = Object.keys(grouped).sort().reverse().slice(0, state.historyDaysShown);
+  
+  container.innerHTML = dates.map(d => {
+    const evs = grouped[d].sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
+    let totalMins = 0;
+    let strip = '';
+    evs.forEach((ev, i) => {
+      const start = new Date(ev.start_time);
+      const end = (i < evs.length-1) ? new Date(evs[i+1].start_time) : (d === localDateStr() ? new Date() : new Date(start.getTime() + 30*60000));
+      const duration = Math.max(1, (end - start)/60000);
+      totalMins += duration;
+      strip += `<div class="strip-seg" style="flex:${duration}; background:${ev.color}"></div>`;
+    });
+
+    const h = Math.floor(totalMins/60);
+    const m = Math.floor(totalMins%60);
+
+    return `
+      <div class="hist-day">
+        <div class="hist-day-head">
+          <div class="hist-date">${d} ${state.offgridDays[d]?'✈️':''}</div>
+          <div class="hist-total">${h}h ${m}m tracked</div>
+        </div>
+        <div class="hist-strip">${strip}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderStats(){
+  const container = document.getElementById('statsPanel');
+  const catMins = { study:0, social:0, essential:0 };
+  const today = localDateStr();
+  
+  state.events.forEach(e => {
+    const idx = state.events.indexOf(e);
+    const next = state.events[idx+1];
+    const end = (next && next.date === e.date) ? new Date(next.start_time) : (e.date === today ? new Date() : new Date(new Date(e.start_time).getTime() + 30*60000));
+    catMins[e.category] += (end - new Date(e.start_time))/60000;
+  });
+
+  const total = Math.max(1, catMins.study + catMins.social + catMins.essential);
+  
+  container.innerHTML = `
+    <div class="stat-card">
+      <h3>All-time Breakdown</h3>
+      ${['study','social','essential'].map(cat => {
+        const perc = (catMins[cat]/total)*100;
+        const h = Math.floor(catMins[cat]/60);
+        return `
+          <div class="stat-bar-row">
+            <div class="stat-bar-label">${cat}</div>
+            <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${perc}%; background:var(--${cat}-h, 200), var(--${cat}-s, 50%), 50%"></div></div>
+            <div class="stat-bar-val">${h}h</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function updateQuote(){
+  const quotes = ["The secret of your future is hidden in your daily routine.", "Focus on being productive instead of busy.", "How we spend our days is how we spend our lives.", "The goal is not to be perfect, but to be intentional."];
+  document.getElementById('quoteBanner').textContent = quotes[new Date().getDate() % quotes.length];
+}
+
+function populatePastSelect(){
+  const sel = document.getElementById('inlinePastActSelect');
+  sel.innerHTML = state.activities.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+  document.getElementById('inlinePastActDate').value = localDateStr();
+}
+
+function showToast(m){
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+/* ============================= INTERACTION ============================= */
+
+document.addEventListener('click', e => {
+  const qaBtn = e.target.closest('.qa-btn');
+  if(qaBtn){
+    const act = state.activities.find(a => a.id === qaBtn.dataset.id);
+    logActivity(act);
+    return;
+  }
+
+  const logDel = e.target.closest('.log-del');
+  if(logDel){
+    deleteEvent(logDel.dataset.id);
+    return;
+  }
+
+  const tabBtn = e.target.closest('.tab-btn');
+  if(tabBtn){
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tabBtn.classList.add('active');
+    document.getElementById('tab-' + tabBtn.dataset.tab).classList.add('active');
+    return;
+  }
+});
+
+document.getElementById('addActOpenBtn').onclick = () => document.getElementById('addModal').classList.add('open');
+document.getElementById('undoBtn').onclick = undoLast;
+document.getElementById('interruptBtn').onclick = () => document.getElementById('interruptModal').classList.add('open');
+
+document.getElementById('saveLogBtn').onclick = () => {
+  const name = document.getElementById('actName').value.trim();
+  if(!name) return;
+  const cat = document.querySelector('#catPills .pill.active').dataset.cat;
+  const color = `hsl(var(--${cat}-h), var(--${cat}-s), 50%)`;
+  const act = { id:uid(), name, category:cat, color };
+  state.activities.push(act);
+  saveLS(LS.activities, state.activities);
+  logActivity(act);
+  document.getElementById('actName').value = '';
+  document.getElementById('addModal').classList.remove('open');
+};
+
+document.getElementById('saveInterruptBtn').onclick = () => {
+  const detail = document.getElementById('interruptDetail').value.trim();
+  const dur = parseInt(document.getElementById('interruptDuration').value) || 2;
+  const today = localDateStr();
+  const evs = state.events.filter(e => e.date === today).sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
+  const current = evs[evs.length-1];
+  if(!current) return;
+  
+  const originalStart = new Date(current.start_time);
+  const now = new Date();
+  
+  // Create interruption
+  const intr = { ...current, id:uid(), activity_name:'Interruption', detail: detail||'Interruption', color: 'var(--border-strong)', start_time: new Date(now.getTime() - dur*60000).toISOString(), synced:false };
+  // Resume original
+  const resume = { ...current, id:uid(), start_time: now.toISOString(), synced:false };
+  
+  state.events.push(intr, resume);
+  saveLS(LS.events, state.events);
+  document.getElementById('interruptModal').classList.remove('open');
+  renderAll();
+  queueSync();
+};
+
+document.getElementById('markDayOffgridBtn').onclick = () => {
+  const d = localDateStr();
+  state.offgridDays[d] = !state.offgridDays[d];
+  saveLS(LS.offgridDays, state.offgridDays);
+  renderAll();
+  showToast(state.offgridDays[d] ? 'Marked as Out-of-Town' : 'Marked as Local');
+};
+
+document.getElementById('inlinePastSaveBtn').onclick = () => {
+  const aid = document.getElementById('inlinePastActSelect').value;
+  const date = document.getElementById('inlinePastActDate').value;
+  const time = document.getElementById('inlinePastActTime').value;
+  const detail = document.getElementById('inlinePastActDetail').value;
+  if(!date || !time) return;
+  const act = state.activities.find(a => a.id === aid);
+  const dt = new Date(date + 'T' + time);
+  logActivity(act, dt, detail);
+  showToast('Logged to history');
+};
+
+document.getElementById('chatSendBtn').onclick = () => {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text) return;
+  
+  const log = document.getElementById('chatLog');
+  log.innerHTML += `<div class="chat-msg user">${text}</div>`;
+  input.value = '';
+
+  setTimeout(() => {
+    let reply = "I've analyzed your routine. ";
+    if(text.toLowerCase().includes('study')) reply += "You've been remarkably consistent with Deep Work lately.";
+    else if(text.toLowerCase().includes('social')) reply += "Your social time is increasing, which is great for balance.";
+    else reply += "Tracking your routine is the first step toward optimization. Keep it up!";
+    log.innerHTML += `<div class="chat-msg ai">${reply}</div>`;
+    log.scrollTop = log.scrollHeight;
+  }, 800);
+};
+
+/* ============================= AUTH & INITIALIZATION ============================= */
+
+auth.onAuthStateChanged(user => {
+  state.user = user;
+  if(user){
+    document.getElementById('authWrapper').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    document.body.classList.remove('auth-mode');
+    document.getElementById('authChipLabel').textContent = user.email || user.phoneNumber || 'User';
+    document.getElementById('cloudBadge').classList.add('on');
+    syncPull();
+  } else {
+    document.getElementById('authWrapper').style.display = 'flex';
+    document.getElementById('mainApp').style.display = 'none';
+    document.body.classList.add('auth-mode');
+    drawArc();
+  }
+});
+
+// Login handlers
+document.querySelector('[data-provider="google"]').onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+document.querySelector('[data-provider="apple"]').onclick = () => auth.signInWithPopup(new firebase.auth.OAuthProvider('apple.com'));
+document.getElementById('authGuestBtn').onclick = () => {
+  document.getElementById('authWrapper').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  document.body.classList.remove('auth-mode');
+  renderAll();
+};
+document.getElementById('signOutBtn').onclick = () => auth.signOut().then(()=>location.reload());
+
+// Ticker
+setInterval(() => {
+  if(state.user || document.getElementById('mainApp').style.display === 'block') {
+    renderStatus();
+    renderTimeline();
+  }
+  if(document.body.classList.contains('auth-mode')) drawArc();
+}, 30000);
+
+function drawArc(){
+  const arcProgress = document.getElementById('arcProgress');
+  const nowDot = document.getElementById('nowDot');
+  const nowDotHalo = document.getElementById('nowDotHalo');
+  const now = new Date();
+  const fraction = (now.getHours() * 60 + now.getMinutes()) / 1440;
+  const r = 90;
+  const circumference = 2 * Math.PI * r;
+  arcProgress.style.strokeDasharray = circumference;
+  arcProgress.style.strokeDashoffset = circumference * (1 - fraction);
+  const angle = fraction * 2 * Math.PI - Math.PI / 2;
+  const cx = 100 + r * Math.cos(angle);
+  const cy = 100 + r * Math.sin(angle);
+  nowDot.setAttribute('cx', cx); nowDot.setAttribute('cy', cy);
+  nowDotHalo.setAttribute('cx', cx); nowDotHalo.setAttribute('cy', cy);
+}
+
+// Category pill logic
+document.querySelectorAll('#catPills .pill').forEach(p => {
+  p.onclick = () => {
+    document.querySelectorAll('#catPills .pill').forEach(x => x.classList.remove('active'));
+    p.classList.add('active');
+  };
+});
+
+document.querySelectorAll('[data-close]').forEach(b => {
+  b.onclick = () => document.getElementById(b.dataset.close).classList.remove('open');
+});
+
+document.getElementById('settingsBtn').onclick = () => document.getElementById('settingsModal').classList.add('open');
+document.getElementById('authChip').onclick = () => document.getElementById('settingsModal').classList.add('open');
+
+renderAll();
+
+})();
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0E14">
+<title>Chrono — Routine Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+
+<style>
+  :root{
+    --paper:#F4F3EC;
+    --surface:#FFFFFF;
+    --ink:#1C1E1B;
+    --ink-soft:#63655D;
+    --ink-faint:#9A9C92;
+    --border:#E1DFD2;
+    --border-strong:#CFCDBD;
+    --study-h:208; --study-s:62%;
+    --social-h:16; --social-s:72%;
+    --essential-h:150; --essential-s:32%;
+    --danger:#B3492F;
+    --accent:#B3492F;
+    --radius:14px;
+    --radius-sm:9px;
+
+    /* Login specific tokens */
+    --auth-ink:#0B0E14;
+    --auth-dawn:#FF7A59;
+    --auth-gold:#FFC24B;
+    --auth-dusk:#7C6CF0;
+    --auth-paper:#F3EFE6;
+    --auth-mist:#A9B0C4;
+    --auth-line:rgba(255,255,255,0.10);
+    --auth-line-soft:rgba(255,255,255,0.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    -webkit-tap-highlight-color:transparent;
+  }
+  body.auth-mode{
+    background: radial-gradient(circle at 50% 18%, rgba(124,108,240,0.16), transparent 55%), var(--auth-ink);
+    color: var(--auth-paper);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  #mainApp{ padding-bottom:84px; display:none; }
+  .mono{font-family:"JetBrains Mono",ui-monospace,monospace;}
+  h1,h2,h3,.display{font-family:"Space Grotesk",-apple-system,sans-serif;}
+  button{font-family:inherit;cursor:pointer;}
+  .wrap{max-width:560px;margin:0 auto;padding:0 14px;}
+
+  /* ---- Login Styles ---- */
+  #authWrapper{ width:100%; max-width:380px; display:none; flex-direction:column; align-items:center; text-align:center; padding:32px 20px; font-family:'IBM Plex Sans', sans-serif; }
+  .auth-hero{ display:flex; flex-direction:column; align-items:center; margin-bottom:8px; }
+  #dayArc{ width:132px; height:132px; margin-bottom:18px; }
+  .arc-track{ fill:none; stroke:var(--auth-line); stroke-width:3; }
+  .arc-progress{ fill:none; stroke:url(#dayGradient); stroke-width:3; stroke-linecap:round; }
+  .tick{ stroke:rgba(255,255,255,0.22); stroke-width:2; }
+  .now-dot{ fill:var(--auth-gold); }
+  .now-dot-halo{ fill:var(--auth-gold); opacity:.45; transform-box:fill-box; transform-origin:center; animation:haloPulse 2.4s ease-out infinite; }
+  @keyframes haloPulse{ 0%{ transform:scale(1); opacity:.45; } 100%{ transform:scale(2.1); opacity:0; } }
+  .wordmark{ font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:28px; letter-spacing:-0.01em; margin:0 0 8px; color:var(--auth-paper); }
+  .tagline{ font-size:15px; line-height:1.5; color:var(--auth-mist); margin:0 0 30px; max-width:280px; }
+  .auth-view{ width:100%; }
+  .auth-row{ width:100%; display:flex; align-items:center; gap:14px; padding:15px 4px; background:none; border:none; border-bottom:1px solid var(--auth-line-soft); color:var(--auth-paper); font-family:inherit; font-size:15.5px; font-weight:500; cursor:pointer; text-align:left; transition:background-color .15s ease; }
+  .auth-row:first-child{ border-top:1px solid var(--auth-line-soft); }
+  .auth-row:hover{ background-color:var(--auth-line-soft); }
+  .auth-row-icon{ width:22px; height:22px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--auth-paper); }
+  .auth-row-icon svg{ width:100%; height:100%; }
+  .auth-row-chevron{ color:var(--auth-mist); font-size:18px; margin-left:auto; }
+  .auth-field-label{ display:block; font-size:13.5px; color:var(--auth-mist); text-align:left; margin:4px 2px 8px; }
+  .auth-field-input{ width:100%; padding:14px; background:rgba(255,255,255,0.04); border:1px solid var(--auth-line); border-radius:10px; color:var(--auth-paper); font-family:inherit; font-size:16px; margin-bottom:16px; }
+  .auth-btn-primary{ width:100%; padding:14px; background:var(--auth-dawn); border:none; border-radius:10px; color:#1A0E08; font-family:inherit; font-size:15.5px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:14px; }
+  .auth-btn-text{ background:none; border:none; color:var(--auth-mist); font-family:inherit; font-size:14px; cursor:pointer; padding:8px; }
+  .otp-row{ display:flex; gap:8px; justify-content:center; margin-bottom:20px; }
+  .otp-box{ width:40px; height:52px; text-align:center; font-size:20px; font-family:'Space Grotesk', sans-serif; background:rgba(255,255,255,0.04); border:1px solid var(--auth-line); border-radius:10px; color:var(--auth-paper); }
+  .auth-error-banner{ width:100%; background:rgba(255,122,89,0.12); border:1px solid rgba(255,122,89,0.35); color:#FFD9CC; font-size:13.5px; line-height:1.4; padding:11px 14px; border-radius:10px; margin-bottom:16px; text-align:left; }
+  .auth-footnote{ font-size:12.5px; color:rgba(169,176,196,0.7); margin-top:26px; max-width:300px; line-height:1.5; }
+  .spinner{ width:17px; height:17px; border-radius:50%; border:2px solid rgba(255,255,255,0.25); border-top-color:currentColor; animation:spin .7s linear infinite; display:none; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* ---- App UI Components ---- */
+  .topbar{ position:sticky;top:0;z-index:20; background:var(--paper); padding-top:14px;padding-bottom:8px; border-bottom:1px solid transparent; }
+  .topbar.scrolled{border-bottom-color:var(--border);}
+  .topbar-row{display:flex;align-items:center;justify-content:space-between;}
+  .brand{display:flex;align-items:baseline;gap:7px;}
+  .brand-mark{width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,hsl(var(--study-h) var(--study-s) 50%),hsl(var(--social-h) var(--social-s) 55%));display:inline-block;}
+  .brand h1{font-size:19px;font-weight:700;margin:0;letter-spacing:-0.01em;}
+  .top-actions{display:flex;align-items:center;gap:8px;}
+  .icon-btn{background:var(--surface);border:1px solid var(--border);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:14px;}
+  .authchip{ display:flex;align-items:center;gap:6px; background:var(--surface);border:1px solid var(--border); border-radius:999px;padding:6px 12px 6px 6px;font-size:12.5px;color:var(--ink-soft); }
+  .cloud-badge{width:6px;height:6px;border-radius:50%;background:var(--ink-faint);}
+  .cloud-badge.on{background:#3E8E5A;}
+  .cloud-badge.busy{background:#D3A227;animation:pulse 1s infinite;}
+  .tl-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-top:12px;padding:14px 0 14px 14px;overflow:hidden;}
+  .tl-head{display:flex;justify-content:space-between;align-items:baseline;padding-right:14px;margin-bottom:10px;}
+  .tl-title{font-family:"Space Grotesk";font-weight:600;font-size:14.5px;}
+  .tl-sub{font-size:11px;color:var(--ink-faint);}
+  .tl-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding-right:14px;}
+  .tl-inner{position:relative;}
+  .tl-ruler{position:relative;height:16px;margin-bottom:8px;}
+  .tl-tick{position:absolute;top:0;font-size:9.5px;color:var(--ink-faint);transform:translateX(-50%);white-space:nowrap;font-family:"JetBrains Mono";}
+  .tl-tick::after{content:"";position:absolute;left:50%;top:13px;width:1px;height:5px;background:var(--border-strong);}
+  .tl-day{margin-bottom:8px;}
+  .tl-day-label{font-size:10.5px;color:var(--ink-soft);margin-bottom:3px;font-weight:600;font-family:"Space Grotesk";display:flex;align-items:center;justify-content:space-between;padding-right:14px;}
+  .tl-track{position:relative;height:22px;border-radius:6px;background:var(--paper);overflow:visible;}
+  .tl-track.offgrid-track{background:repeating-linear-gradient(45deg, var(--paper), var(--paper) 10px, #EBE9DF 10px, #EBE9DF 20px);opacity:0.75;}
+  .tl-seg{position:absolute;top:0;bottom:0;min-width:3px;border-radius:3px;}
+  .tl-seg.live::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,0.35);animation:pulse 1.6s ease-in-out infinite;border-radius:3px;}
+  .tl-marker{position:absolute;top:-4px;width:2px;height:30px;border-radius:1px;z-index:3;background:var(--mc,var(--ink));}
+  .tl-marker::after{content:"";position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:var(--mc,var(--ink));}
+  .tl-now{position:absolute;top:0;width:2px;background:var(--accent);z-index:5;pointer-events:none;}
+  .tl-now::before{content:"now";position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--accent);font-weight:700;font-family:"JetBrains Mono";white-space:nowrap;}
+  @keyframes pulse{0%,100%{opacity:0.15;}50%{opacity:0;}}
+  .status-card{ background:var(--surface);border:1px solid var(--border);border-radius:var(--radius); padding:14px 14px 12px;margin-top:12px; }
+  .status-main{display:flex;align-items:center;gap:11px;}
+  .status-dot{width:13px;height:13px;border-radius:50%;flex:none;box-shadow:0 0 0 4px rgba(0,0,0,0.04);}
+  .status-name{font-family:"Space Grotesk";font-weight:600;font-size:16.5px;line-height:1.2;}
+  .status-since{color:var(--ink-soft);font-size:12.5px;margin-top:1px;}
+  .status-empty{color:var(--ink-soft);font-size:14px;}
+  .status-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .status-actions{display:flex;align-items:center;gap:8px;}
+  .status-undo,.status-interrupt{background:none;border:none;color:var(--ink-faint);font-size:12px;text-decoration:underline;padding:4px;}
+  .status-interrupt{color:var(--accent);font-weight:600;text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;background:var(--paper);}
+  .interrupt-tag{display:inline-block;font-size:11px;background:#FED7D7;color:#9B2C2C;padding:1px 5px;border-radius:4px;margin-left:4px;font-weight:500;}
+  .tabs{display:flex;gap:4px;margin-top:16px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:3px;}
+  .tab-btn{flex:1;border:none;background:none;padding:8px 0;border-radius:999px;font-size:13px;font-weight:600;color:var(--ink-soft);font-family:"Space Grotesk";}
+  .tab-btn.active{background:var(--ink);color:#fff;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+  .qa-group{margin-top:18px;}
+  .qa-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;}
+  .qa-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+  .qa-btn{ display:flex;align-items:center;gap:9px; background:var(--surface);border:1px solid var(--border);border-left:4px solid #ccc; border-radius:var(--radius-sm);padding:12px 12px;font-size:14px;font-weight:500;color:var(--ink); text-align:left; }
+  .qa-dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .qa-add{ margin-top:16px;width:100%;background:none;border:1.5px dashed var(--border-strong); border-radius:var(--radius-sm);padding:12px;font-size:13.5px;color:var(--ink-soft);font-weight:600;font-family:"Space Grotesk"; }
+  .log-section{margin-top:22px;}
+  .section-title{font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:8px;font-family:"Space Grotesk";display:flex;justify-content:space-between;align-items:center;}
+  .log-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--border);}
+  .log-dot{width:8px;height:8px;border-radius:50%;flex:none;}
+  .log-name{flex:1;font-size:14px;}
+  .log-time{font-size:12.5px;color:var(--ink-soft);}
+  .log-edit,.log-del{background:none;border:none;font-size:13px;padding:4px 5px;color:var(--ink-faint);}
+  .hist-day{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 12px;margin-bottom:9px;}
+  .hist-day-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .hist-date{font-weight:600;font-size:13.5px;font-family:"Space Grotesk";display:flex;align-items:center;gap:6px;}
+  .hist-total{font-size:11.5px;color:var(--ink-soft);}
+  .hist-strip{display:flex;height:14px;border-radius:999px;overflow:hidden;background:var(--paper);}
+  .strip-seg{min-width:2px;}
+  .hist-detail{margin-top:9px;display:none;}
+  .hist-detail.open{display:block;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;}
+  .stat-card h3{font-size:13px;margin:0 0 10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;font-weight:600;display:flex;justify-content:space-between;align-items:center;}
+  .stat-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:12.5px;}
+  .stat-bar-label{width:70px;flex:none;color:var(--ink-soft);}
+  .stat-bar-track{flex:1;height:9px;background:var(--paper);border-radius:999px;overflow:hidden;}
+  .stat-bar-fill{height:100%;border-radius:999px;}
+  .stat-bar-val{width:56px;flex:none;text-align:right;color:var(--ink-soft);}
+  .insight-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;}
+  .insight-text{font-size:13.5px;line-height:1.55;color:var(--ink);white-space:pre-wrap;}
+  .chat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-top:14px;display:flex;flex-direction:column;overflow:hidden;}
+  .chat-log{padding:12px;max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:9px;}
+  .chat-msg{max-width:84%;padding:9px 12px;border-radius:14px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;}
+  .chat-msg.user{align-self:flex-end;background:var(--ink);color:#fff;border-bottom-right-radius:4px;}
+  .chat-msg.ai{align-self:flex-start;background:var(--paper);color:var(--ink);border-bottom-left-radius:4px;}
+  .chat-input-row{display:flex;gap:8px;padding:10px;border-top:1px solid var(--border);}
+  .chat-input-row input{flex:1;border:1px solid var(--border-strong);border-radius:999px;padding:10px 14px;font-size:14px;font-family:inherit;background:var(--paper);}
+  .chat-input-row button{border:none;border-radius:999px;padding:10px 16px;font-size:13.5px;font-weight:600;background:var(--ink);color:#fff;font-family:"Space Grotesk";flex:none;}
+  #toast{ position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px); background:var(--ink);color:#fff;padding:10px 16px;border-radius:999px;font-size:13px; opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;z-index:100; }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .modal-backdrop{ position:fixed;inset:0;background:rgba(20,19,15,0.42);display:none; align-items:flex-end;justify-content:center;z-index:200; }
+  .modal-backdrop.open{display:flex;}
+  .modal{ background:var(--surface);width:100%;max-width:560px;border-radius:18px 18px 0 0; padding:20px 18px calc(20px + env(safe-area-inset-bottom)); animation:slideUp .22s ease;max-height:86vh;overflow-y:auto;position:relative; }
+  @keyframes slideUp{from{transform:translateY(24px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:6px;font-weight:600;}
+  .field input{ width:100%;border:1px solid var(--border-strong);border-radius:999px;padding:11px 12px;font-size:15px;font-family:inherit;background:var(--paper); }
+  .modal-actions{display:flex;gap:8px;margin-top:16px;}
+  .btn{flex:1;border:none;border-radius:10px;padding:13px;font-size:14.5px;font-weight:600;font-family:"Space Grotesk";}
+  .btn-primary{background:var(--ink);color:#fff;}
+  .btn-ghost{background:var(--paper);color:var(--ink-soft);}
+  .btn-outline{background:none;border:1.5px solid var(--border-strong);color:var(--ink);}
+  .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:15px;color:var(--ink-faint);}
 </style>
 </head>
 <body class="auth-mode">
@@ -326,7 +1258,7 @@
       </div>
       <div class="status-card">
         <div class="status-row">
-          <div class="status-main" id="statusCard"><div class="status-empty">Tap an activity below to start tracking.</div></div>
+          <div class="status-main" id="statusCard"></div>
           <div class="status-actions">
             <button class="status-interrupt" id="interruptBtn" style="display:none;">+ Interruption</button>
             <button class="status-undo" id="undoBtn" style="display:none;">Undo</button>
@@ -353,7 +1285,7 @@
         </div>
         <div style="display:flex; gap:8px;">
           <input type="text" id="inlinePastActDetail" placeholder="Notes (optional)" style="flex:1; border:1px solid var(--border-strong); border-radius:7px; padding:7px; font-size:13px; background:var(--surface);">
-          <button class="btn-save" id="inlinePastSaveBtn" style="padding:7px 14px; border:none; border-radius:7px; font-weight:600;">Log it</button>
+          <button class="btn btn-primary" id="inlinePastSaveBtn" style="padding:7px 14px; font-size:13px;">Log it</button>
         </div>
       </div>
       <div style="margin-top:16px;" id="historyList"></div>
@@ -429,9 +1361,9 @@
     <div class="field">
       <label>Category</label>
       <div style="display:flex;gap:8px;" id="catPills">
-        <button class="pill active" data-cat="study" style="flex:1;padding:10px;border-radius:8px;border:1px solid #ccc;">Study</button>
-        <button class="pill" data-cat="social" style="flex:1;padding:10px;border-radius:8px;border:1px solid #ccc;">Social</button>
-        <button class="pill" data-cat="essential" style="flex:1;padding:10px;border-radius:8px;border:1px solid #ccc;">Essential</button>
+        <button class="pill active" data-cat="study" style="flex:1;padding:10px;border-radius:8px;border:1px solid #ccc;background:none;">Study</button>
+        <button class="pill" data-cat="social" style="flex:1;padding:10px;border-radius:8px;border:1px solid #ccc;background:none;">Social</button>
+        <button class="pill" data-cat="essential" style="flex:1;padding:10px;border-radius:8px;border:1px solid #ccc;background:none;">Essential</button>
       </div>
     </div>
     <div class="modal-actions">
@@ -458,30 +1390,441 @@ firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-/* ============================= LOGIN LOGIC ============================= */
-const authWrapper = document.getElementById('authWrapper');
-const mainApp = document.getElementById('mainApp');
-const viewMethods = document.getElementById('view-methods');
-const viewPhone = document.getElementById('view-phone');
-const viewOtp = document.getElementById('view-otp');
-const authErrorBanner = document.getElementById('authErrorBanner');
-const phoneInput = document.getElementById('phoneInput');
-const otpBoxes = Array.from(document.querySelectorAll('.otp-box'));
+/* ============================= STATE & LS ============================= */
+const LS = { 
+  activities:'chrono_activities_v2', 
+  events:'chrono_events_v2', 
+  settings:'chrono_user_settings_v2', 
+  offgridDays:'chrono_offgrid_days_v1' 
+};
 
-let confirmationResultRef = null;
-let recaptchaVerifier = null;
+function loadLS(key, fallback){ try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } }
+function saveLS(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){ console.error(e); } }
+function uid(){ return crypto.randomUUID(); }
+function localDateStr(d){ d = d || new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
-function showAuthView(name){
-  viewMethods.hidden = name !== 'methods';
-  viewPhone.hidden = name !== 'phone';
-  viewOtp.hidden = name !== 'otp';
+const state = {
+  user: null,
+  activities: loadLS(LS.activities, [
+    {id:'1', name:'Deep Work', category:'study', color:'hsl(208, 62%, 50%)'},
+    {id:'2', name:'Social / Fun', category:'social', color:'hsl(16, 72%, 55%)'},
+    {id:'3', name:'Routine', category:'essential', color:'hsl(150, 32%, 45%)'}
+  ]),
+  events: loadLS(LS.events, []),
+  offgridDays: loadLS(LS.offgridDays, {}),
+  settings: loadLS(LS.settings, {autoGroup:true}),
+  historyDaysShown: 7,
+  openHistoryDays: new Set()
+};
+
+/* ============================= CORE LOGIC ============================= */
+
+function logActivity(act, at, detail){
+  const startTime = at || new Date();
+  const ev = { 
+    id:uid(), 
+    activity_id:act.id, 
+    activity_name:act.name, 
+    category:act.category, 
+    color:act.color, 
+    start_time:startTime.toISOString(), 
+    date:localDateStr(startTime), 
+    detail:detail||'', 
+    synced:false 
+  };
+  state.events.push(ev);
+  saveLS(LS.events, state.events);
+  renderAll();
+  queueSync();
 }
 
-function showAuthError(msg){
-  authErrorBanner.textContent = msg;
-  authErrorBanner.hidden = false;
-  setTimeout(()=> authErrorBanner.hidden = true, 5000);
+function deleteEvent(id){
+  state.events = state.events.filter(e => e.id !== id);
+  saveLS(LS.events, state.events);
+  if(state.user) db.collection('users').doc(state.user.uid).collection('events').doc(id).delete().catch(console.error);
+  renderAll();
 }
+
+const queueSync = (function(){
+  let t;
+  return function(){
+    clearTimeout(t);
+    t = setTimeout(() => { if(state.user) syncPush(); }, 3000);
+  };
+})();
+
+async function syncPush(){
+  if(!state.user) return;
+  const badge = document.getElementById('cloudBadge');
+  badge.classList.add('busy');
+  try {
+    const batch = db.batch();
+    const userRef = db.collection('users').doc(state.user.uid);
+    // Sync activities
+    state.activities.forEach(a => {
+      batch.set(userRef.collection('activities').doc(a.id), a);
+    });
+    // Sync unsynced events
+    state.events.filter(e => !e.synced).forEach(e => {
+      batch.set(userRef.collection('events').doc(e.id), e);
+    });
+    await batch.commit();
+    state.events.forEach(e => e.synced = true);
+    saveLS(LS.events, state.events);
+    badge.classList.remove('busy');
+    badge.classList.add('on');
+  } catch (err) {
+    console.error(err);
+    badge.classList.remove('busy');
+  }
+}
+
+async function syncPull(){
+  if(!state.user) return;
+  const userRef = db.collection('users').doc(state.user.uid);
+  try {
+    const [actSnap, evSnap] = await Promise.all([
+      userRef.collection('activities').get(),
+      userRef.collection('events').orderBy('start_time', 'desc').limit(300).get()
+    ]);
+    if(!actSnap.empty) state.activities = actSnap.docs.map(d => d.data());
+    if(!evSnap.empty) {
+      const serverEvents = evSnap.docs.map(d => ({...d.data(), synced:true}));
+      // Merge with logic: keep all from server, plus any local ones not yet pushed
+      const localUnsynced = state.events.filter(e => !e.synced);
+      const merged = [...serverEvents];
+      const serverIds = new Set(serverEvents.map(e => e.id));
+      localUnsynced.forEach(l => {
+        if(!serverIds.has(l.id)) merged.push(l);
+      });
+      state.events = merged;
+    }
+    saveLS(LS.activities, state.activities);
+    saveLS(LS.events, state.events);
+    renderAll();
+  } catch (err) { console.error(err); }
+}
+
+/* ============================= RENDERERS ============================= */
+
+function renderAll(){
+  renderTimeline();
+  renderStatus();
+  renderQuickAdd();
+  renderTodayLog();
+  renderHistory();
+  renderStats();
+  updateQuote();
+  populatePastSelect();
+}
+
+function renderTimeline(){
+  const container = document.getElementById('tlRows');
+  const ruler = document.getElementById('tlRuler');
+  const nowMarker = document.getElementById('tlNow');
+  const today = localDateStr();
+  
+  // 1440 mins in a day. 1000px width.
+  const pxPerMin = 1000 / 1440;
+
+  // Ruler
+  let rulerHtml = '';
+  for(let i=0; i<=24; i+=3){
+    rulerHtml += `<div class="tl-tick" style="left:${i*60*pxPerMin}px">${i}:00</div>`;
+  }
+  ruler.innerHTML = rulerHtml;
+
+  // Segments
+  const evs = state.events.filter(e => e.date === today).sort((a,b)=> new Date(a.start_time) - new Date(b.start_time));
+  const isOffgrid = state.offgridDays[today];
+  
+  let html = `<div class="tl-day"><div class="tl-day-label">${today}</div><div class="tl-track ${isOffgrid?'offgrid-track':''}" style="width:1000px">`;
+  evs.forEach((e, i) => {
+    const start = new Date(e.start_time);
+    const startMins = start.getHours()*60 + start.getMinutes();
+    const next = evs[i+1];
+    const end = next ? new Date(next.start_time) : new Date();
+    const endMins = end.getHours()*60 + end.getMinutes();
+    const width = Math.max(2, (endMins - startMins) * pxPerMin);
+    html += `<div class="tl-seg ${!next?'live':''}" style="left:${startMins*pxPerMin}px; width:${width}px; background:${e.color}" title="${e.activity_name}"></div>`;
+  });
+  html += `</div></div>`;
+  container.innerHTML = html;
+
+  // Now line
+  const now = new Date();
+  nowMarker.style.left = (now.getHours()*60 + now.getMinutes()) * pxPerMin + 'px';
+  
+  // Auto-scroll logic
+  if(!window.hasScrolled){
+    const scrollVal = (now.getHours()*60 + now.getMinutes()) * pxPerMin - 150;
+    document.getElementById('tlScroll').scrollLeft = scrollVal;
+    window.hasScrolled = true;
+  }
+}
+
+function renderStatus(){
+  const el = document.getElementById('statusCard');
+  const today = localDateStr();
+  const evs = state.events.filter(e => e.date === today).sort((a,b)=> new Date(a.start_time) - new Date(b.start_time));
+  const cur = evs[evs.length-1];
+
+  const undoBtn = document.getElementById('undoBtn');
+  const intrBtn = document.getElementById('interruptBtn');
+
+  if(!cur){
+    el.innerHTML = `<div class="status-empty">Nothing tracked yet today.</div>`;
+    undoBtn.style.display = 'none';
+    intrBtn.style.display = 'none';
+    return;
+  }
+
+  const start = new Date(cur.start_time);
+  const diffMins = Math.floor((new Date() - start)/60000);
+  el.innerHTML = `
+    <div class="status-dot" style="background:${cur.color}"></div>
+    <div>
+      <div class="status-name">${cur.activity_name}${cur.detail ? `<span class="interrupt-tag">${cur.detail}</span>` : ''}</div>
+      <div class="status-since">Active for ${diffMins}m</div>
+    </div>
+  `;
+  undoBtn.style.display = 'block';
+  intrBtn.style.display = 'block';
+}
+
+function renderQuickAdd(){
+  const container = document.getElementById('quickAdd');
+  const cats = { study:[], social:[], essential:[] };
+  state.activities.forEach(a => cats[a.category].push(a));
+  
+  let html = '';
+  for(let c in cats){
+    if(cats[c].length === 0) continue;
+    html += `<div class="qa-group"><div class="qa-label">${c}</div><div class="qa-grid">`;
+    cats[c].forEach(a => {
+      html += `<button class="qa-btn" data-id="${a.id}" style="border-left-color:${a.color}"><span class="qa-dot" style="background:${a.color}"></span>${a.name}</button>`;
+    });
+    html += `</div></div>`;
+  }
+  html += `<button class="qa-add" id="addActOpenBtn">+ Activity</button>`;
+  container.innerHTML = html;
+}
+
+function renderTodayLog(){
+  const container = document.getElementById('todayLog');
+  const today = localDateStr();
+  const evs = state.events.filter(e => e.date === today).sort((a,b)=> new Date(b.start_time) - new Date(a.start_time));
+  
+  container.innerHTML = evs.map(e => `
+    <div class="log-row">
+      <span class="log-dot" style="background:${e.color}"></span>
+      <span class="log-name">${e.activity_name} <span style="font-size:11px;color:var(--ink-faint)">${e.detail||''}</span></span>
+      <span class="log-time">${new Date(e.start_time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+      <button class="log-del" data-id="${e.id}">✕</button>
+    </div>
+  `).join('');
+}
+
+function renderHistory(){
+  const container = document.getElementById('historyList');
+  const grouped = {};
+  state.events.forEach(e => {
+    if(!grouped[e.date]) grouped[e.date] = [];
+    grouped[e.date].push(e);
+  });
+  
+  const dates = Object.keys(grouped).sort().reverse().slice(0, state.historyDaysShown);
+  container.innerHTML = dates.map(d => {
+    const evs = grouped[d].sort((a,b)=> new Date(a.start_time) - new Date(b.start_time));
+    let totalMins = 0;
+    let strip = '';
+    evs.forEach((e, i) => {
+      const next = evs[i+1];
+      const start = new Date(e.start_time);
+      const end = next ? new Date(next.start_time) : (d === localDateStr() ? new Date() : new Date(start.getTime() + 30*60000));
+      const dur = Math.max(1, (end - start)/60000);
+      totalMins += dur;
+      strip += `<div class="strip-seg" style="flex:${dur}; background:${e.color}"></div>`;
+    });
+    return `
+      <div class="hist-day">
+        <div class="hist-day-head">
+          <div class="hist-date">${d} ${state.offgridDays[d]?'✈️':''}</div>
+          <div class="hist-total">${Math.floor(totalMins/60)}h ${Math.floor(totalMins%60)}m</div>
+        </div>
+        <div class="hist-strip">${strip}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderStats(){
+  const container = document.getElementById('statsPanel');
+  const totals = { study:0, social:0, essential:0 };
+  state.events.forEach((e, i) => {
+    const next = state.events.find((ne, ni) => ni > i && ne.date === e.date);
+    const start = new Date(e.start_time);
+    const end = next ? new Date(next.start_time) : (e.date === localDateStr() ? new Date() : new Date(start.getTime() + 30*60000));
+    totals[e.category] += (end - start)/60000;
+  });
+
+  const grandTotal = Math.max(1, totals.study + totals.social + totals.essential);
+  container.innerHTML = `
+    <div class="stat-card">
+      <h3>Time Breakdown</h3>
+      ${['study','social','essential'].map(cat => {
+        const perc = (totals[cat]/grandTotal)*100;
+        return `
+          <div class="stat-bar-row">
+            <div class="stat-bar-label">${cat}</div>
+            <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${perc}%; background:var(--${cat}-h, 200), var(--${cat}-s, 50%), 50%"></div></div>
+            <div class="stat-bar-val">${Math.floor(totals[cat]/60)}h</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function updateQuote(){
+  const quotes = [
+    "Focus on being productive instead of busy.",
+    "The secret of your future is hidden in your daily routine.",
+    "Small steps in the right direction can turn out to be the biggest steps of your life.",
+    "Routine is not a cage, but a platform for freedom."
+  ];
+  document.getElementById('quoteBanner').textContent = quotes[new Date().getDate() % quotes.length];
+}
+
+function populatePastSelect(){
+  const sel = document.getElementById('inlinePastActSelect');
+  sel.innerHTML = state.activities.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+  document.getElementById('inlinePastActDate').value = localDateStr();
+}
+
+function showToast(m){
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+/* ============================= INTERACTION ============================= */
+
+document.addEventListener('click', e => {
+  const qaBtn = e.target.closest('.qa-btn');
+  if(qaBtn){
+    const act = state.activities.find(a => a.id === qaBtn.dataset.id);
+    logActivity(act);
+    return;
+  }
+  const logDel = e.target.closest('.log-del');
+  if(logDel){
+    deleteEvent(logDel.dataset.id);
+    return;
+  }
+  const tabBtn = e.target.closest('.tab-btn');
+  if(tabBtn){
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tabBtn.classList.add('active');
+    document.getElementById('tab-' + tabBtn.dataset.tab).classList.add('active');
+    return;
+  }
+});
+
+document.getElementById('addActOpenBtn').onclick = () => document.getElementById('addModal').classList.add('open');
+document.getElementById('undoBtn').onclick = () => {
+  const today = localDateStr();
+  const evs = state.events.filter(e => e.date === today).sort((a,b)=> new Date(a.start_time) - new Date(b.start_time));
+  if(evs.length) deleteEvent(evs[evs.length-1].id);
+};
+document.getElementById('interruptBtn').onclick = () => document.getElementById('interruptModal').classList.add('open');
+
+document.getElementById('saveLogBtn').onclick = () => {
+  const name = document.getElementById('actName').value.trim();
+  if(!name) return;
+  const cat = document.querySelector('#catPills .pill.active').dataset.cat;
+  const act = { id:uid(), name, category:cat, color: `hsl(var(--${cat}-h), var(--${cat}-s), 50%)` };
+  state.activities.push(act);
+  saveLS(LS.activities, state.activities);
+  logActivity(act);
+  document.getElementById('actName').value = '';
+  document.getElementById('addModal').classList.remove('open');
+};
+
+document.getElementById('saveOnlyBtn').onclick = () => {
+  const name = document.getElementById('actName').value.trim();
+  if(!name) return;
+  const cat = document.querySelector('#catPills .pill.active').dataset.cat;
+  const act = { id:uid(), name, category:cat, color: `hsl(var(--${cat}-h), var(--${cat}-s), 50%)` };
+  state.activities.push(act);
+  saveLS(LS.activities, state.activities);
+  renderQuickAdd();
+  document.getElementById('actName').value = '';
+  document.getElementById('addModal').classList.remove('open');
+};
+
+document.getElementById('saveInterruptBtn').onclick = () => {
+  const detail = document.getElementById('interruptDetail').value.trim();
+  const dur = parseInt(document.getElementById('interruptDuration').value) || 2;
+  const today = localDateStr();
+  const evs = state.events.filter(e => e.date === today).sort((a,b)=> new Date(a.start_time) - new Date(b.start_time));
+  const current = evs[evs.length-1];
+  if(!current) return;
+  
+  const now = new Date();
+  // Create interruption segment
+  const intr = { ...current, id:uid(), activity_name:'Interruption', detail: detail||'Intr', color: '#E1DFD2', start_time: new Date(now.getTime() - dur*60000).toISOString(), synced:false };
+  // Resume original activity
+  const resume = { ...current, id:uid(), start_time: now.toISOString(), synced:false };
+  
+  state.events.push(intr, resume);
+  saveLS(LS.events, state.events);
+  document.getElementById('interruptModal').classList.remove('open');
+  renderAll();
+  queueSync();
+};
+
+document.getElementById('markDayOffgridBtn').onclick = () => {
+  const d = localDateStr();
+  state.offgridDays[d] = !state.offgridDays[d];
+  saveLS(LS.offgridDays, state.offgridDays);
+  renderAll();
+  showToast(state.offgridDays[d] ? 'Day marked as Out-of-town' : 'Day marked as Local');
+};
+
+document.getElementById('inlinePastSaveBtn').onclick = () => {
+  const aid = document.getElementById('inlinePastActSelect').value;
+  const date = document.getElementById('inlinePastActDate').value;
+  const time = document.getElementById('inlinePastActTime').value;
+  const det = document.getElementById('inlinePastActDetail').value;
+  if(!date || !time) return;
+  const act = state.activities.find(a => a.id === aid);
+  const dt = new Date(date + 'T' + time);
+  logActivity(act, dt, det);
+  showToast('Event logged');
+};
+
+document.getElementById('chatSendBtn').onclick = () => {
+  const input = document.getElementById('chatInput');
+  const val = input.value.trim();
+  if(!val) return;
+  const log = document.getElementById('chatLog');
+  log.innerHTML += `<div class="chat-msg user">${val}</div>`;
+  input.value = '';
+  
+  // Mock AI response
+  setTimeout(() => {
+    let reply = "I've analyzed your logs. ";
+    if(val.toLowerCase().includes('study')) reply += "Your deep work sessions are getting longer. Nice job.";
+    else if(val.toLowerCase().includes('social')) reply += "You seem to be prioritizing connection today. Balance is key.";
+    else reply += "Consistency is the foundation of high performance. Keep tracking.";
+    log.innerHTML += `<div class="chat-msg ai">${reply}</div>`;
+    log.scrollTop = log.scrollHeight;
+  }, 700);
+};
+
+/* ============================= AUTH INIT ============================= */
 
 function drawArc(){
   const arcProgress = document.getElementById('arcProgress');
@@ -500,185 +1843,58 @@ function drawArc(){
   nowDotHalo.setAttribute('cx', cx); nowDotHalo.setAttribute('cy', cy);
 }
 
-async function handleAuthSuccess(user){
-  try {
-    const ref = db.collection('users').doc(user.uid);
-    const snap = await ref.get();
-    if (!snap.exists) {
-      await ref.set({
-        uid: user.uid, email: user.email || null, phoneNumber: user.phoneNumber || null,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    } else {
-      await ref.set({ lastLogin: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-    }
-  } catch (err) { console.error(err); }
-}
-
-document.querySelector('[data-provider="google"]').addEventListener('click', () => {
-  document.getElementById('googleSpinner').style.display = 'inline-block';
-  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(err => {
-    showAuthError(err.message);
-    document.getElementById('googleSpinner').style.display = 'none';
-  });
-});
-
-document.querySelector('[data-provider="apple"]').addEventListener('click', () => {
-  document.getElementById('appleSpinner').style.display = 'inline-block';
-  const provider = new firebase.auth.OAuthProvider('apple.com');
-  auth.signInWithPopup(provider).catch(err => {
-    showAuthError(err.message);
-    document.getElementById('appleSpinner').style.display = 'none';
-  });
-});
-
-document.querySelector('[data-provider="phone"]').addEventListener('click', () => showAuthView('phone'));
-document.getElementById('phoneBackBtn').addEventListener('click', () => showAuthView('methods'));
-document.getElementById('otpBackBtn').addEventListener('click', () => showAuthView('phone'));
-
-document.getElementById('sendCodeBtn').addEventListener('click', () => {
-  const num = phoneInput.value.trim();
-  if(!num) return showAuthError("Enter a valid phone number.");
-  document.getElementById('sendSpinner').style.display = 'inline-block';
-  if(!recaptchaVerifier) recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {size:'invisible'});
-  auth.signInWithPhoneNumber(num, recaptchaVerifier).then(result => {
-    confirmationResultRef = result;
-    document.getElementById('sendSpinner').style.display = 'none';
-    showAuthView('otp');
-  }).catch(err => {
-    showAuthError(err.message);
-    document.getElementById('sendSpinner').style.display = 'none';
-  });
-});
-
-document.getElementById('verifyBtn').addEventListener('click', () => {
-  const code = otpBoxes.map(b => b.value).join('');
-  if(code.length < 6) return showAuthError("Enter the 6-digit code.");
-  document.getElementById('verifySpinner').style.display = 'inline-block';
-  confirmationResultRef.confirm(code).catch(err => {
-    showAuthError(err.message);
-    document.getElementById('verifySpinner').style.display = 'none';
-  });
-});
-
-otpBoxes.forEach((box, i) => {
-  box.addEventListener('input', () => { if(box.value && i < 5) otpBoxes[i+1].focus(); });
-  box.addEventListener('keydown', e => { if(e.key === 'Backspace' && !box.value && i > 0) otpBoxes[i-1].focus(); });
-});
-
-document.getElementById('authGuestBtn').addEventListener('click', () => {
-  authWrapper.style.display = 'none';
-  mainApp.style.display = 'block';
-  document.body.classList.remove('auth-mode');
-  renderAll();
-});
-
-/* ============================= APP CORE ============================= */
-const LS = { activities:'chrono_activities_v2', events:'chrono_events_v2', deletes:'chrono_pending_deletes_v2', settings:'chrono_user_settings_v2', offgridDays:'chrono_offgrid_days_v1', people:'chrono_people_v1' };
-function loadLS(key, fallback){ try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } }
-function saveLS(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){ console.error(e); } }
-function uid(){ return crypto.randomUUID(); }
-function localDateStr(d){ d = d || new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-
-const state = {
-  user: null,
-  activities: loadLS(LS.activities, []),
-  events: loadLS(LS.events, []),
-  pendingDeletes: loadLS(LS.deletes, []),
-  offgridDays: loadLS(LS.offgridDays, {}),
-  people: loadLS(LS.people, []),
-  historyDaysShown: 7,
-  openHistoryDays: new Set()
-};
-
-function currentEvent(){
-  const today = localDateStr();
-  const evs = state.events.filter(e => e.date === today).sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
-  return evs[evs.length-1];
-}
-
-function logActivity(act, at, detail){
-  const ev = { id:uid(), activity_id:act.id, activity_name:act.name, category:act.category, color:act.color, start_time:(at||new Date()).toISOString(), date:localDateStr(at), detail:detail||'', synced:false };
-  state.events.push(ev);
-  saveLS(LS.events, state.events);
-  renderAll();
-  queueSync();
-}
-
-const queueSync = (function(){
-  let t;
-  return function(){
-    clearTimeout(t);
-    t = setTimeout(() => { if(state.user) syncPush(); }, 2000);
-  };
-})();
-
-async function syncPush(){
-  if(!state.user) return;
-  const batch = db.batch();
-  state.events.filter(e => !e.synced).forEach(e => {
-    batch.set(db.collection('users').doc(state.user.uid).collection('events').doc(e.id), e);
-  });
-  await batch.commit();
-  state.events.forEach(e => e.synced = true);
-  saveLS(LS.events, state.events);
-}
-
-function renderAll(){
-  renderTimeline();
-  renderStatus();
-  renderQuickAdd();
-  renderTodayLog();
-}
-
-function renderTimeline(){
-  const rows = document.getElementById('tlRows');
-  const today = localDateStr();
-  rows.innerHTML = `<div class="tl-day"><div class="tl-day-label">${today}</div><div class="tl-track" style="width:1000px"></div></div>`;
-}
-
-function renderStatus(){
-  const el = document.getElementById('statusCard');
-  const ev = currentEvent();
-  if(!ev) el.innerHTML = '<div class="status-empty">Ready to track?</div>';
-  else el.innerHTML = `<span class="status-dot" style="background:${ev.color}"></span><div><div class="status-name">${ev.activity_name}</div></div>`;
-}
-
-function renderQuickAdd(){
-  const el = document.getElementById('quickAdd');
-  el.innerHTML = '<button class="qa-add" id="addActOpenBtn">+ Activity</button>';
-}
-
-function renderTodayLog(){
-  const el = document.getElementById('todayLog');
-  const today = localDateStr();
-  const evs = state.events.filter(e => e.date === today);
-  el.innerHTML = evs.map(e => `<div class="log-row"><span class="log-dot" style="background:${e.color}"></span><span>${e.activity_name}</span></div>`).join('');
-}
-
-/* ============================= INIT & AUTH ============================= */
 auth.onAuthStateChanged(user => {
   state.user = user;
   if(user){
-    handleAuthSuccess(user);
-    authWrapper.style.display = 'none';
-    mainApp.style.display = 'block';
+    document.getElementById('authWrapper').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
     document.body.classList.remove('auth-mode');
-    document.getElementById('authChipLabel').textContent = user.email || user.phoneNumber || 'User';
+    document.getElementById('authChipLabel').textContent = user.email || user.phoneNumber || 'Member';
     document.getElementById('cloudBadge').classList.add('on');
-    renderAll();
+    syncPull();
   } else {
-    authWrapper.style.display = 'flex';
-    mainApp.style.display = 'none';
+    document.getElementById('authWrapper').style.display = 'flex';
+    document.getElementById('mainApp').style.display = 'none';
     document.body.classList.add('auth-mode');
     drawArc();
   }
 });
 
-document.getElementById('signOutBtn').addEventListener('click', () => auth.signOut());
-document.getElementById('authChip').addEventListener('click', () => document.getElementById('settingsModal').classList.add('open'));
-document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => document.getElementById(b.dataset.close).classList.remove('open')));
+document.querySelector('[data-provider="google"]').onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+document.querySelector('[data-provider="apple"]').onclick = () => auth.signInWithPopup(new firebase.auth.OAuthProvider('apple.com'));
+document.getElementById('authGuestBtn').onclick = () => {
+  document.getElementById('authWrapper').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  document.body.classList.remove('auth-mode');
+  renderAll();
+};
+document.getElementById('signOutBtn').onclick = () => auth.signOut().then(() => location.reload());
+
+document.querySelectorAll('[data-close]').forEach(b => {
+  b.onclick = () => document.getElementById(b.dataset.close).classList.remove('open');
+});
+
+document.getElementById('settingsBtn').onclick = () => document.getElementById('settingsModal').classList.add('open');
+document.getElementById('authChip').onclick = () => document.getElementById('settingsModal').classList.add('open');
+
+document.querySelectorAll('#catPills .pill').forEach(p => {
+  p.onclick = () => {
+    document.querySelectorAll('#catPills .pill').forEach(x => x.classList.remove('active'));
+    p.classList.add('active');
+  };
+});
+
+// Periodic UI updates
+setInterval(() => {
+  if(!document.body.classList.contains('auth-mode')){
+    renderStatus();
+    renderTimeline();
+  } else {
+    drawArc();
+  }
+}, 30000);
+
+renderAll();
 
 })();
 </script>
