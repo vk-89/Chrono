@@ -132,13 +132,18 @@
   .row.is-loading .row-chevron { display: none; }
   .row.is-loading .spinner { display: block; }
 
-  .field-input { width: 100%; padding: 14px; background: rgba(255,255,255,0.04); border: 1px solid var(--login-line); border-radius: 10px; color: var(--login-paper); font-size: 16px; margin-bottom: 16px; }
+  .field-input { width: 100%; padding: 14px; background: rgba(255,255,255,0.04); border: 1px solid var(--login-line); border-radius: 10px; color: var(--login-paper); font-size: 16px; margin-bottom: 16px; outline: none; }
+  .field-input:focus { border-color: var(--login-dawn); }
   .btn-primary { width: 100%; padding: 14px; background: var(--login-dawn); border: none; border-radius: 10px; color: #1A0E08; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
-  .btn-text { background: none; border: none; color: var(--login-mist); cursor: pointer; padding: 8px; font-size: 14px; }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-text { background: none; border: none; color: var(--login-mist); cursor: pointer; padding: 8px; font-size: 14px; margin-top: 8px; }
   
-  .error-banner { width: 100%; background: rgba(255,122,89,0.12); border: 1px solid rgba(255,122,89,0.35); color: #FFD9CC; font-size: 13.5px; padding: 11px 14px; border-radius: 10px; margin-bottom: 16px; text-align: left; }
+  .error-banner { width: 100%; background: rgba(255,122,89,0.12); border: 1px solid rgba(255,122,89,0.35); color: #FFD9CC; font-size: 13px; padding: 11px 14px; border-radius: 10px; margin-bottom: 16px; text-align: left; line-height: 1.4; }
   .otp-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; }
-  .otp-box { width: 40px; height: 52px; text-align: center; font-size: 20px; background: rgba(255,255,255,0.04); border: 1px solid var(--login-line); border-radius: 10px; color: var(--login-paper); }
+  .otp-box { width: 40px; height: 52px; text-align: center; font-size: 20px; background: rgba(255,255,255,0.04); border: 1px solid var(--login-line); border-radius: 10px; color: var(--login-paper); outline: none; }
+  .otp-box:focus { border-color: var(--login-dawn); }
+
+  #recaptcha-container { margin: 10px 0; display: flex; justify-content: center; }
 </style>
 </head>
 <body class="auth-mode">
@@ -183,6 +188,7 @@
 
     <div class="view" id="view-phone" hidden>
       <input class="field-input" id="phoneInput" type="tel" placeholder="+1 555 123 4567">
+      <div id="recaptcha-container"></div>
       <button class="btn-primary" id="sendCodeBtn" type="button"><span class="btn-label">Send code</span><span class="spinner" id="phoneSpinner"></span></button>
       <button class="btn-text" id="phoneBackBtn" type="button">Back</button>
     </div>
@@ -229,11 +235,10 @@
     </div>
   </div>
 
-  <div id="recaptcha-container"></div>
-
 <script>
   // ---------------------------------------------------------------
   // FIREBASE CONFIG
+  // IMPORTANT: Ensure these are correct for your Firebase project.
   // ---------------------------------------------------------------
   const FIREBASE_CONFIG = {
     apiKey: "YOUR_API_KEY",
@@ -251,7 +256,6 @@
   // ---------------------------------------------------------------
   // STATE & REFS
   // ---------------------------------------------------------------
-  let recaptchaVerifier = null;
   let confirmationResultRef = null;
 
   const authGate = document.getElementById('authGate');
@@ -282,9 +286,10 @@
   }
 
   function showError(msg) {
+    console.error("Auth Error:", msg);
     errorBanner.textContent = msg;
     errorBanner.hidden = false;
-    setTimeout(() => errorBanner.hidden = true, 4000);
+    setTimeout(() => errorBanner.hidden = true, 6000);
   }
 
   // ---------------------------------------------------------------
@@ -298,38 +303,37 @@
   async function handleAuthSuccess(user) {
     try {
       const ref = db.collection('users').doc(user.uid);
-      const snap = await ref.get();
-      if (!snap.exists) {
-        await ref.set({
-          uid: user.uid,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
-          provider: user.providerData[0]?.providerId || 'unknown'
-        });
-      } else {
-        await ref.set({ lastLogin: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-      }
+      await ref.set({
+        uid: user.uid,
+        lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
+        provider: user.providerData[0]?.providerId || 'unknown'
+      }, { merge: true });
       toggleAppView(true);
     } catch (e) {
-      console.error(e);
-      toggleAppView(true); // Proceed anyway, local state will sync later
+      console.warn("Firestore sync skipped:", e.message);
+      toggleAppView(true);
     }
   }
 
   // Social Auth
   document.querySelectorAll('.row[data-provider]').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const p = btn.dataset.provider;
       if (p === 'phone') {
         document.getElementById('view-methods').hidden = true;
         document.getElementById('view-phone').hidden = false;
       } else {
-        btn.classList.add('is-loading');
-        const provider = p === 'google' ? new firebase.auth.GoogleAuthProvider() : new firebase.auth.OAuthProvider('apple.com');
-        auth.signInWithPopup(provider).catch(err => {
+        try {
+          btn.classList.add('is-loading');
+          const provider = p === 'google' 
+            ? new firebase.auth.GoogleAuthProvider() 
+            : new firebase.auth.OAuthProvider('apple.com');
+          await auth.signInWithPopup(provider);
+        } catch (err) {
+          showError(err.message || "Sign-in failed. Ensure your Firebase config is correct.");
+        } finally {
           btn.classList.remove('is-loading');
-          showError("Sign-in failed. Try again.");
-        });
+        }
       }
     });
   });
@@ -340,32 +344,56 @@
     document.getElementById('view-phone').hidden = true;
   };
 
-  document.getElementById('sendCodeBtn').onclick = () => {
+  document.getElementById('sendCodeBtn').onclick = async () => {
     const num = document.getElementById('phoneInput').value.trim();
     if (!/^\+/.test(num)) return showError("Include country code (e.g. +1)");
     
-    if (!recaptchaVerifier) recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
+    const btn = document.getElementById('sendCodeBtn');
+    const spinner = document.getElementById('phoneSpinner');
     
-    document.getElementById('phoneSpinner').style.display = 'block';
-    auth.signInWithPhoneNumber(num, recaptchaVerifier).then(result => {
+    try {
+      btn.disabled = true;
+      spinner.style.display = 'block';
+      
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { 
+          size: 'invisible' 
+        });
+      }
+      
+      const result = await auth.signInWithPhoneNumber(num, window.recaptchaVerifier);
       confirmationResultRef = result;
       document.getElementById('view-phone').hidden = true;
       document.getElementById('view-otp').hidden = false;
-    }).catch(err => {
-      document.getElementById('phoneSpinner').style.display = 'none';
-      showError("Failed to send code.");
-    });
+    } catch (err) {
+      showError(err.message || "Failed to send code.");
+      if (window.recaptchaVerifier && typeof grecaptcha !== 'undefined') {
+        window.recaptchaVerifier.render().then(id => grecaptcha.reset(id));
+      }
+    } finally {
+      btn.disabled = false;
+      spinner.style.display = 'none';
+    }
   };
 
-  document.getElementById('verifyBtn').onclick = () => {
+  document.getElementById('verifyBtn').onclick = async () => {
     const code = Array.from(document.querySelectorAll('.otp-box')).map(i => i.value).join('');
-    if (code.length < 6) return;
+    if (code.length < 6) return showError("Enter the 6-digit code.");
     
-    document.getElementById('otpSpinner').style.display = 'block';
-    confirmationResultRef.confirm(code).catch(err => {
-      document.getElementById('otpSpinner').style.display = 'none';
-      showError("Invalid code.");
-    });
+    const spinner = document.getElementById('otpSpinner');
+    try {
+      spinner.style.display = 'block';
+      await confirmationResultRef.confirm(code);
+    } catch (err) {
+      showError("Invalid or expired code.");
+    } finally {
+      spinner.style.display = 'none';
+    }
+  };
+
+  document.getElementById('otpBackBtn').onclick = () => {
+    document.getElementById('view-phone').hidden = false;
+    document.getElementById('view-otp').hidden = true;
   };
 
   // ---------------------------------------------------------------
@@ -398,6 +426,8 @@
   window.addEventListener('scroll', () => {
     document.getElementById('appTopbar')?.classList.toggle('scrolled', window.scrollY > 10);
   });
+
+  setInterval(drawArc, 60000);
 </script>
 </body>
 </html>
