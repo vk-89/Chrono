@@ -232,6 +232,16 @@
   }
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
+  /* ---- Chat FAB ---- */
+  .fab-chat{
+    position:fixed;bottom:24px;right:20px;width:52px;height:52px;
+    background:var(--ink);color:white;border:none;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 16px rgba(0,0,0,0.2);z-index:90;cursor:pointer;
+    font-size:22px;transition:transform 0.2s, opacity 0.2s;
+  }
+  .fab-chat:active{transform:scale(0.92);}
+
   /* ---- Modals ---- */
   .modal-backdrop{
     position:fixed;inset:0;background:rgba(20,19,15,0.42);display:none;
@@ -252,7 +262,7 @@
   }
   .field-hint{font-size:11.5px;color:var(--ink-faint);margin-top:5px;}
   .pill-row{display:flex;gap:8px;}
-  .pill{flex:1;border:1.5px solid var(--border-strong);border-radius:9px;padding:10px 8px;text-align:center;font-size:12.5px;font-weight:600;background:var(--surface);}
+  .pill{flex:1;border:1.5px solid var(--border-strong);border-radius:999px;padding:10px 8px;text-align:center;font-size:12.5px;font-weight:600;background:var(--surface);}
   .pill.active{border-color:var(--ink);background:var(--paper);}
   
   /* Color Grid Styles */
@@ -413,6 +423,7 @@
   </div>
 </div>
 
+<button class="fab-chat" id="fabChat" title="Chat with Assistant">💬</button>
 <div id="toast"></div>
 
 <!-- Interruption Tag Modal -->
@@ -1484,7 +1495,7 @@ function buildChatContext(){
 function renderChatLog(){
   const el = document.getElementById('chatLog');
   if(!el) return;
-  if(!state.chatMessages.length){ el.innerHTML = '<div class="chat-msg system">Ask me anything about your routine — e.g. "How much have I studied this week?" or "Why do I keep sleeping late?"</div>'; } else { el.innerHTML = state.chatMessages.map(m=> '<div class="chat-msg '+m.role+'">'+escapeHtml(m.text)+'</div>' ).join(''); }
+  if(!state.chatMessages.length){ el.innerHTML = '<div class="chat-msg system">Hi there! This is your space to discuss your routine, habits, or anything on your mind. Ask me e.g. "How much have I studied this week?" or "Why do I keep sleeping late?"</div>'; } else { el.innerHTML = state.chatMessages.map(m=> '<div class="chat-msg '+m.role+'">'+escapeHtml(m.text)+'</div>' ).join(''); }
   setTimeout(() => { el.scrollTop = el.scrollHeight; }, 0);
 }
 
@@ -1784,7 +1795,7 @@ document.getElementById('historyList').addEventListener('click', (e)=>{
 document.getElementById('loadMoreBtn').addEventListener('click', ()=>{ state.historyDaysShown += 14; renderHistory(); });
 document.getElementById('tlScroll').addEventListener('pointerdown', function(){ this.dataset.userScrolled = '1'; });
 
-document.querySelectorAll('.tab-btn').forEach(btn=>{ btn.addEventListener('click', ()=>{ document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active')); btn.classList.add('active'); document.getElementById('tab-'+btn.dataset.tab).classList.add('active'); if(btn.dataset.tab === 'today') renderTimeline(); if(btn.dataset.tab === 'chat') { renderChatInsight(); renderChatLog(); } }); });
+document.querySelectorAll('.tab-btn').forEach(btn=>{ btn.addEventListener('click', ()=>{ document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active')); btn.classList.add('active'); document.getElementById('tab-'+btn.dataset.tab).classList.add('active'); if(btn.dataset.tab === 'today') renderTimeline(); if(btn.dataset.tab === 'chat') { renderChatInsight(); renderChatLog(); } const fab = document.getElementById('fabChat'); if(fab) fab.style.display = (btn.dataset.tab === 'chat') ? 'none' : 'flex'; }); });
 
 window.addEventListener('scroll', ()=>{ document.getElementById('topbar').classList.toggle('scrolled', window.scrollY > 4); });
 
@@ -1794,6 +1805,11 @@ document.getElementById('signOutBtn').addEventListener('click', async ()=>{
     await auth.signOut();
   }
   window.location.replace('login.html');
+});
+
+document.getElementById('fabChat').addEventListener('click', () => {
+  const chatBtn = document.querySelector('.tab-btn[data-tab="chat"]');
+  if(chatBtn) chatBtn.click();
 });
 
 const queueSync = debounce(()=>{ if(state.user) syncPush(); }, 1500);
