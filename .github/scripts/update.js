@@ -39,7 +39,7 @@ Return ONLY the complete updated file content, from the very first line to the v
 Do not include any explanation, markdown fences, or commentary — just the raw file content, ready to save directly as ${FILE_TO_UPDATE}.`;
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
