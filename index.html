@@ -144,9 +144,25 @@
   .otp-box:focus { border-color: var(--login-dawn); }
 
   #recaptcha-container { margin: 10px 0; display: flex; justify-content: center; }
+
+  /* Help Overlay for missing API keys */
+  #setupHelp {
+    position: fixed; bottom: 20px; left: 20px; right: 20px;
+    background: #FFFBEB; border: 1px solid #F59E0B; border-radius: 12px;
+    padding: 16px; color: #92400E; font-size: 13px; z-index: 100;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  }
+  #setupHelp code { background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; font-family: monospace; }
 </style>
 </head>
 <body class="auth-mode">
+
+  <div id="setupHelp" class="hidden">
+    <strong>Firebase Setup Required:</strong> Your API key is currently invalid. 
+    1. Go to your <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a>.
+    2. Open Project Settings > General.
+    3. Scroll down to "Your apps" and copy the <code>firebaseConfig</code> values into the code's <code>FIREBASE_CONFIG</code> variable.
+  </div>
 
   <!-- AUTH CONTENT -->
   <div id="authGate" class="auth-screen">
@@ -237,8 +253,12 @@
 
 <script>
   // ---------------------------------------------------------------
-  // FIREBASE CONFIG
-  // IMPORTANT: Ensure these are correct for your Firebase project.
+  // 1. SETUP INSTRUCTIONS:
+  // To fix the "api-key-not-valid" error, you must:
+  // a) Go to https://console.firebase.google.com/
+  // b) Create a project (or select an existing one)
+  // c) Click the </> icon to add a Web App
+  // d) Copy the values from the 'firebaseConfig' object and paste them here:
   // ---------------------------------------------------------------
   const FIREBASE_CONFIG = {
     apiKey: "YOUR_API_KEY",
@@ -249,9 +269,22 @@
     appId: "YOUR_APP_ID"
   };
 
-  firebase.initializeApp(FIREBASE_CONFIG);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+  // ---------------------------------------------------------------
+  // INITIALIZATION
+  // ---------------------------------------------------------------
+  let auth, db;
+  
+  try {
+    if (FIREBASE_CONFIG.apiKey === "YOUR_API_KEY") {
+      document.getElementById('setupHelp').classList.remove('hidden');
+    }
+    firebase.initializeApp(FIREBASE_CONFIG);
+    auth = firebase.auth();
+    db = firebase.firestore();
+  } catch (e) {
+    console.error("Firebase init failed:", e);
+    document.getElementById('setupHelp').classList.remove('hidden');
+  }
 
   // ---------------------------------------------------------------
   // STATE & REFS
@@ -270,6 +303,7 @@
       document.body.className = 'app-mode';
       authGate.classList.add('hidden');
       appContent.classList.remove('hidden');
+      document.getElementById('setupHelp').classList.add('hidden');
       const user = auth.currentUser;
       if (user) {
         document.getElementById('userName').textContent = user.displayName || user.phoneNumber || 'User';
@@ -287,18 +321,23 @@
 
   function showError(msg) {
     console.error("Auth Error:", msg);
+    if (msg.includes("api-key-not-valid")) {
+      document.getElementById('setupHelp').classList.remove('hidden');
+    }
     errorBanner.textContent = msg;
     errorBanner.hidden = false;
-    setTimeout(() => errorBanner.hidden = true, 6000);
+    setTimeout(() => errorBanner.hidden = true, 8000);
   }
 
   // ---------------------------------------------------------------
   // AUTH LOGIC
   // ---------------------------------------------------------------
-  auth.onAuthStateChanged(user => {
-    if (user) handleAuthSuccess(user);
-    else toggleAppView(false);
-  });
+  if (auth) {
+    auth.onAuthStateChanged(user => {
+      if (user) handleAuthSuccess(user);
+      else toggleAppView(false);
+    });
+  }
 
   async function handleAuthSuccess(user) {
     try {
@@ -318,6 +357,7 @@
   // Social Auth
   document.querySelectorAll('.row[data-provider]').forEach(btn => {
     btn.addEventListener('click', async () => {
+      if (!auth) return showError("Firebase not initialized. Check your API key.");
       const p = btn.dataset.provider;
       if (p === 'phone') {
         document.getElementById('view-methods').hidden = true;
