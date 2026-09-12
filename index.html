@@ -1732,7 +1732,7 @@ function renderChatLog(){
       '<div class="chat-msg '+m.role+'">'+escapeHtml(m.text)+'</div>'
     ).join('');
   }
-  el.scrollTop = el.scrollHeight;
+  setTimeout(() => { el.scrollTop = el.scrollHeight; }, 0);
 }
 
 function extractReplyText(data){
@@ -2260,7 +2260,10 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.classList.add('active');
     document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
     if(btn.dataset.tab === 'today') renderTimeline();
-    if(btn.dataset.tab === 'chat') renderChatInsight();
+    if(btn.dataset.tab === 'chat') {
+      renderChatInsight();
+      renderChatLog();
+    }
   });
 });
 
