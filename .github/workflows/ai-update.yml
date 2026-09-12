@@ -16,6 +16,11 @@ jobs:
     permissions:
       contents: write
       issues: write
+    # Force AI-update jobs to run one at a time, in the order they were queued,
+    # instead of in parallel — prevents two issues from racing on the same file.
+    concurrency:
+      group: ai-code-update
+      cancel-in-progress: false
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -39,6 +44,8 @@ jobs:
           git config user.email "actions@github.com"
           git add -A
           git diff --staged --quiet || git commit -m "AI update from issue #${{ github.event.issue.number }}"
+          # Rebase onto the latest main in case an earlier queued job already pushed
+          git pull --rebase origin main
           git push
 
       - name: Comment on issue
