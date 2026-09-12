@@ -133,7 +133,7 @@
     display:flex;align-items:center;gap:9px;
     background:var(--surface);border:1px solid var(--border);border-left:4px solid #ccc;
     border-radius:var(--radius-sm);padding:12px 12px;font-size:14px;font-weight:500;color:var(--ink);
-    text-align:left;-webkit-user-select:none;user-select:none;
+    text-align:left;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
   }
   .qa-btn:active{transform:scale(0.97);background:var(--paper);}
   .qa-dot{width:9px;height:9px;border-radius:50%;flex:none;}
@@ -279,15 +279,6 @@
   .person-row input[type=checkbox]{width:17px;height:17px;flex:none;}
   .person-row button[data-del]{background:none;border:none;font-size:13px;padding:4px 6px;color:var(--ink-faint);flex:none;}
   .person-empty{font-size:12.5px;color:var(--ink-faint);padding:8px 2px;}
-
-  /* ---- Manage activities list ---- */
-  .manage-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--border);}
-  .manage-row:last-child{border-bottom:none;}
-  .manage-dot{width:10px;height:10px;border-radius:50%;flex:none;}
-  .manage-name{flex:1;font-size:14px;}
-  .manage-cat{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;}
-  .manage-actions{display:flex;gap:4px;}
-  .manage-actions button{background:none;border:none;font-size:13px;padding:4px 6px;color:var(--ink-faint);}
 
   /* ---- Quote banner ---- */
   .quote-banner{
@@ -516,19 +507,10 @@
       <label style="margin:0;font-weight:400;">Multi-person picker (choose who's involved)</label>
     </div>
     <div class="modal-actions">
+      <button class="btn btn-ghost" id="deleteActBtn" style="display:none;color:var(--danger);">Delete</button>
       <button class="btn btn-ghost" id="saveOnlyBtn">Save only</button>
       <button class="btn btn-primary" id="saveLogBtn">Save & log now</button>
     </div>
-  </div>
-</div>
-
-<!-- Manage activities modal -->
-<div class="modal-backdrop" id="manageModal">
-  <div class="modal">
-    <button class="modal-close" data-close="manageModal">✕</button>
-    <h2>Manage activities</h2>
-    <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;">Rename, recategorize, unpin, or delete activities you've created. Deleting only removes it from this list — past logged entries are kept.</div>
-    <div id="manageList"></div>
   </div>
 </div>
 
@@ -638,7 +620,6 @@ const CATEGORY_LABELS = { study:'Study', social:'Social & Fun', essential:'Essen
 const CATEGORY_HUE = { study:208, social:16, essential:150 };
 const CATEGORY_SAT = { study:62, social:72, essential:32 };
 
-/* Extended Raw Palette */
 const RAW_PALETTE = Array.from(new Set([
   '#09090b', '#171717', '#1e1b4b', '#14532d', '#450a0a', '#4a044e',
   '#27272a', '#312e81', '#1e3a8a', '#115e59', '#7f1d1d', '#701a75', '#831843',
@@ -655,7 +636,6 @@ const RAW_PALETTE = Array.from(new Set([
   '#64748B','#78716C','#57534E','#44403C','#7C2D12','#134E4A'
 ]));
 
-/* Helper to calculate luminance for sorting colors from dark to light */
 function getLuminance(hex) {
     if (hex.startsWith('#')) hex = hex.substring(1);
     if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
@@ -665,7 +645,6 @@ function getLuminance(hex) {
     return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-/* Palette sorted dark to light based on relative luminance */
 const PALETTE = RAW_PALETTE.slice().sort((a, b) => getLuminance(a) - getLuminance(b));
 
 const QUOTES = [
@@ -735,20 +714,16 @@ function paletteColor(name){ return PALETTE[hashStr((name||'').toLowerCase().tri
 
 function colorForEntry(activity, detail){
   if (!detail || !detail.trim()) return activity.color;
-  
   let hex = activity.color.replace('#', '');
   if(hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
-  
   const seed = hashStr(detail.trim().toLowerCase());
   const amount = 30 + (seed % 40); 
   const direction = (seed % 2 === 0) ? 1 : -1;
   const shift = amount * direction;
-
   let num = parseInt(hex, 16);
   let r = Math.min(255, Math.max(0, (num >> 16) + shift));
   let g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + shift));
   let b = Math.min(255, Math.max(0, (num & 0x0000FF) + shift));
-  
   return '#' + (r << 16 | g << 8 | b).toString(16).padStart(6, '0');
 }
 
@@ -769,7 +744,6 @@ function loadLS(key, fallback){ try{ const v = localStorage.getItem(key); return
 function saveLS(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){ console.error('localStorage save failed', e); } }
 function debounce(fn, ms){ let t; return function(){ clearTimeout(t); const a=arguments; t=setTimeout(()=>fn.apply(null,a), ms); }; }
 
-/* Load User Settings */
 const userSettings = Object.assign({
   dayStartHour: 0,
   autoGroupPrompt: true,
@@ -840,6 +814,7 @@ const state = {
   offgridDays: loadLS(LS.offgridDays, {}),
   people: loadLS(LS.people, []),
   editingId: null,
+  editingActivityId: null,
   historyDaysShown: 7,
   authMode: 'signin',
   dismissedGroupPrompt: false
@@ -948,7 +923,7 @@ function addActivity(opts){
   if(!name) return null;
   const existing = state.activities.find(a => a.name.toLowerCase() === name.toLowerCase());
   if(existing){
-    if(opts.pin) existing.is_pinned = true;
+    if(opts.pin !== undefined) existing.is_pinned = !!opts.pin;
     if(opts.instant !== undefined) existing.instant = !!opts.instant;
     if(opts.needsDetail !== undefined) existing.needsDetail = !!opts.needsDetail;
     if(opts.peoplePicker !== undefined) existing.peoplePicker = !!opts.peoplePicker;
@@ -968,7 +943,7 @@ function addActivity(opts){
     instant: !!opts.instant,
     needsDetail: opts.needsDetail !== undefined ? !!opts.needsDetail : defaultNeedsDetail(name),
     peoplePicker: opts.peoplePicker !== undefined ? !!opts.peoplePicker : defaultPeoplePicker(name),
-    is_pinned: !!opts.pin, synced:false, updated_at: new Date().toISOString(),
+    is_pinned: opts.pin !== undefined ? !!opts.pin : true, synced:false, updated_at: new Date().toISOString(),
   };
   state.activities.push(act);
   persistActivities();
@@ -1031,7 +1006,6 @@ function computeGlobalSegments(){
       }
     }
 
-    // Auto-stop cap to prevent massive idle blocks
     if (end.getTime() - start.getTime() > maxMs) {
       end = new Date(start.getTime() + maxMs);
       if (live) live = false;
@@ -1132,14 +1106,10 @@ function applyAutoGroup(eventsToGroup){
   const first = eventsToGroup[0];
   const combinedNotes = eventsToGroup.map(e => e.activity_name + (e.detail ? ' ('+e.detail+')' : '')).join(' → ');
   const adminAct = state.activities.find(a => a.name.toLowerCase() === 'admin / switching') || addActivity({ name:'Admin / Switching', category:'essential', pin:true });
-
   const idsToRemove = new Set(eventsToGroup.map(e => e.id));
-  eventsToGroup.forEach(e=>{
-    if(e.synced) state.pendingDeletes.push(e.id);
-  });
+  eventsToGroup.forEach(e=>{ if(e.synced) state.pendingDeletes.push(e.id); });
   persistDeletes();
   state.events = state.events.filter(e => !idsToRemove.has(e.id));
-
   logActivity(adminAct, new Date(first.start_time), combinedNotes);
   state.dismissedGroupPrompt = true;
   renderAll();
@@ -1302,7 +1272,7 @@ function renderQuickAdd(){
     });
     html += '</div></div>';
   });
-  html += '<div class="qa-manage-row"><button class="qa-add" id="addActOpenBtn" style="flex:2;">+ Add activity</button><button class="qa-add" id="manageActOpenBtn" style="flex:1;">Manage</button></div>';
+  html += '<div class="qa-manage-row"><button class="qa-add" id="addActOpenBtn">+ Add activity</button></div>';
   container.innerHTML = html;
 }
 
@@ -1358,14 +1328,9 @@ function renderInlinePastAdd(){
   sel.innerHTML = state.activities.map(a => '<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
   if(currentVal && state.activities.find(a=>a.id===currentVal)) sel.value = currentVal;
   else if(state.activities.length) sel.value = state.activities[0].id;
-
   const now = new Date();
-  if(!document.getElementById('inlinePastActDate').value){
-      document.getElementById('inlinePastActDate').value = localDateStr(now);
-  }
-  if(!document.getElementById('inlinePastActTime').value){
-      document.getElementById('inlinePastActTime').value = pad(now.getHours())+':'+pad(now.getMinutes());
-  }
+  if(!document.getElementById('inlinePastActDate').value){ document.getElementById('inlinePastActDate').value = localDateStr(now); }
+  if(!document.getElementById('inlinePastActTime').value){ document.getElementById('inlinePastActTime').value = pad(now.getHours())+':'+pad(now.getMinutes()); }
 }
 
 function renderHistory(){
@@ -1394,9 +1359,7 @@ function renderHistory(){
           '<button class="btn-save" data-action="saveEdit" data-id="'+s.id+'">Save</button>' +
           '<button class="btn-cancel" data-action="cancelEdit">✕</button></div>';
       }
-      const interTags = (s.interruptions && s.interruptions.length)
-        ? s.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(it.note)+'</span>').join('')
-        : '';
+      const interTags = (s.interruptions && s.interruptions.length) ? s.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(it.note)+'</span>').join('') : '';
       return '<div class="log-row"><span class="log-dot" style="background:'+s.color+'"></span><span class="log-name">'+escapeHtml(s.activity_name)+(s.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(s.detail)+'</span>':'')+interTags+'</span><span class="log-time mono">'+fmt12(s.start)+' – '+fmt12(s.end)+' ('+durationLabel((s.end-s.start)/60000)+')</span><button class="log-edit" data-action="edit" data-id="'+s.id+'">✎</button><button class="log-del" data-action="del" data-id="'+s.id+'">🗑</button></div>';
     }).join('');
     const markerRows = mks.map(m=> {
@@ -1429,7 +1392,6 @@ function renderStats(){
   const todayTotals = {study:0, social:0, essential:0};
   todaySegs.forEach(s=>{ todayTotals[s.category] = (todayTotals[s.category]||0) + (s.end-s.start)/60000; });
   const todayGrandTotal = Object.values(todayTotals).reduce((a,b)=>a+b,0) || 1;
-
   let html = '<div class="stat-card"><h3>Today\'s split</h3>';
   ['study','social','essential'].forEach(cat=>{
     const mins = todayTotals[cat] || 0;
@@ -1439,7 +1401,6 @@ function renderStats(){
       '<span class="stat-bar-val mono">'+(mins?durationLabel(mins):'0m')+'</span></div>';
   });
   html += '</div>';
-
   html += '<div class="stat-card"><h3>Last 7 days · category totals</h3>';
   const last7 = last7LogicalDates();
   const dayLabels = last7.map(ds => dayLabel(ds)==='Today' ? 'Tdy' : new Date(ds+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short'}).slice(0,2));
@@ -1450,135 +1411,30 @@ function renderStats(){
     let grand = 0;
     segs.forEach(s=>{ const m=(s.end-s.start)/60000; totals[s.category]=(totals[s.category]||0)+m; grand += m; });
     let segHtml = '';
-    if(grand > 0){
-      ['study','social','essential'].forEach(cat=>{
-        if(totals[cat] > 0) segHtml += '<div style="flex-grow:'+totals[cat]+';background:'+categoryColor(cat)+'"></div>';
-      });
-    }
+    if(grand > 0){ ['study','social','essential'].forEach(cat=>{ if(totals[cat] > 0) segHtml += '<div style="flex-grow:'+totals[cat]+';background:'+categoryColor(cat)+'"></div>'; }); }
     const labelStyle = isOffgrid ? 'style="color:var(--ink-faint);text-decoration:line-through;"' : '';
     html += '<div class="stat-week-row"><span class="stat-week-day" '+labelStyle+'>'+dayLabels[i]+'</span>' +
       '<span class="stat-week-strip">'+segHtml+'</span>' +
       '<span class="hist-total mono" style="width:44px;text-align:right;">'+(grand?durationLabel(grand):'—')+'</span></div>';
   });
   html += '</div>';
-
   const personal = computePersonalAverages(INSIGHTS_LOOKBACK_DAYS, userSettings.excludeOffgridFromStats);
   const filterChecked = userSettings.excludeOffgridFromStats ? 'checked' : '';
   html += '<div class="insight-card"><h3><span>Your last '+INSIGHTS_LOOKBACK_DAYS+' days</span><label class="toggle-filter"><input type="checkbox" id="statFilterToggle" '+filterChecked+'> Exclude Travel</label></h3>';
-  if(personal.daysLogged < 3){
-    html += '<div class="insight-empty">Log a few more days and this section will start showing your averages.</div>';
-  } else {
-    html +=
-      '<div class="insight-stat-row"><span class="insight-stat-label">Wake time</span><span class="insight-stat-val">'+fmtWakeClock(personal.avgWakeMinutes)+' avg</span></div>' +
+  if(personal.daysLogged < 3){ html += '<div class="insight-empty">Log a few more days and this section will start showing your averages.</div>'; } else {
+    html += '<div class="insight-stat-row"><span class="insight-stat-label">Wake time</span><span class="insight-stat-val">'+fmtWakeClock(personal.avgWakeMinutes)+' avg</span></div>' +
       '<div class="insight-stat-row"><span class="insight-stat-label">Study</span><span class="insight-stat-val">'+durationLabel(personal.avgStudy)+'/day avg</span></div>' +
       '<div class="insight-stat-row"><span class="insight-stat-label">Social & Fun</span><span class="insight-stat-val">'+durationLabel(personal.avgSocial)+'/day avg</span></div>' +
       '<div class="insight-stat-row"><span class="insight-stat-label">Essential</span><span class="insight-stat-val">'+durationLabel(personal.avgEssential)+'/day avg</span></div>';
     const diff = computeTodayWakeDeviation(personal);
-    if(diff != null && Math.abs(diff) >= 20){
-      html += '<div class="insight-stat-row"><span class="insight-stat-label">Today vs average</span><span class="insight-stat-val" style="color:var(--accent)">'+Math.round(Math.abs(diff))+'m '+(diff>0?'later':'earlier')+'</span></div>';
-    }
+    if(diff != null && Math.abs(diff) >= 20){ html += '<div class="insight-stat-row"><span class="insight-stat-label">Today vs average</span><span class="insight-stat-val" style="color:var(--accent)">'+Math.round(Math.abs(diff))+'m '+(diff>0?'later':'earlier')+'</span></div>'; }
   }
   html += '</div>';
-
   container.innerHTML = html;
-
   const toggleEl = document.getElementById('statFilterToggle');
-  if(toggleEl){
-    toggleEl.addEventListener('change', (e)=>{
-      userSettings.excludeOffgridFromStats = e.target.checked;
-      persistSettings();
-      renderStats();
-    });
-  }
+  if(toggleEl){ toggleEl.addEventListener('change', (e)=>{ userSettings.excludeOffgridFromStats = e.target.checked; persistSettings(); renderStats(); }); }
 }
 
-/* ============================= MANAGE ACTIVITIES ============================= */
-function renderManageList(){
-  const container = document.getElementById('manageList');
-  const acts = state.activities.slice().sort((a,b)=> a.name.localeCompare(b.name));
-  if(!acts.length){ container.innerHTML = '<div class="empty-note">No activities yet.</div>'; return; }
-  container.innerHTML = acts.map(a=>
-    '<div class="manage-row" data-id="'+a.id+'">' +
-      '<span class="manage-dot" style="background:'+a.color+'"></span>' +
-      '<span class="manage-name">'+escapeHtml(a.name)+(a.is_pinned?'':' <span style="color:var(--ink-faint);font-weight:400;">(unpinned)</span>')+'</span>' +
-      '<span class="manage-cat">'+CATEGORY_LABELS[a.category]+'</span>' +
-      '<span class="manage-actions">' +
-        '<button data-action="changeColor" data-id="'+a.id+'" title="Change color">🎨</button>' +
-        '<button data-action="togglePin" data-id="'+a.id+'" title="'+(a.is_pinned?'Unpin':'Pin')+'">'+(a.is_pinned?'📌':'📍')+'</button>' +
-        '<button data-action="togglePeoplePicker" data-id="'+a.id+'" title="'+(a.peoplePicker?'Turn off group picker':'Turn on group picker (pick multiple people, e.g. for group calls)')+'">'+(a.peoplePicker?'👥':'👤')+'</button>' +
-        '<button data-action="cycleCat" data-id="'+a.id+'" title="Change category">↻</button>' +
-        '<button data-action="deleteAct" data-id="'+a.id+'" title="Delete">🗑</button>' +
-      '</span>' +
-    '</div>'
-  ).join('');
-}
-
-document.getElementById('manageList').addEventListener('click', (e)=>{
-  const btn = e.target.closest('button[data-action]');
-  if(!btn) return;
-  const id = btn.dataset.id;
-  const act = state.activities.find(a=>a.id===id);
-  if(!act) return;
-  if(btn.dataset.action === 'changeColor'){
-    colorPickTargetId = id;
-    document.getElementById('colorModalTitle').textContent = 'Change color — ' + act.name;
-    renderColorGrid('colorModalGrid', act.color, false);
-    openModal('colorModal');
-  } else if(btn.dataset.action === 'togglePin'){
-    act.is_pinned = !act.is_pinned;
-    act.synced = false;
-    persistActivities();
-    renderManageList();
-    renderQuickAdd();
-  } else if(btn.dataset.action === 'togglePeoplePicker'){
-    act.peoplePicker = !act.peoplePicker;
-    act.synced = false;
-    persistActivities();
-    renderManageList();
-    renderQuickAdd();
-    queueSync();
-  } else if(btn.dataset.action === 'cycleCat'){
-    const order = ['study','social','essential'];
-    const idx = order.indexOf(act.category);
-    act.category = order[(idx+1) % order.length];
-    act.synced = false;
-    persistActivities();
-    renderManageList();
-    renderQuickAdd();
-    queueSync();
-  } else if(btn.dataset.action === 'deleteAct'){
-    const stillUsed = state.events.some(ev => ev.activity_id === id);
-    const msg = stillUsed
-      ? 'Remove "'+act.name+'" from your quick-add list? Past logged entries for it are kept.'
-      : 'Remove "'+act.name+'"?';
-    if(!confirm(msg)) return;
-    state.activities = state.activities.filter(a=>a.id!==id);
-    persistActivities();
-    renderManageList();
-    renderQuickAdd();
-    renderInlinePastAdd();
-    showToast('Removed ' + act.name);
-  }
-});
-
-let colorPickTargetId = null;
-document.getElementById('colorModalGrid').addEventListener('click', (e)=>{
-  const btn = e.target.closest('.color-swatch');
-  if(!btn || !btn.dataset.color) return;
-  const act = state.activities.find(a=>a.id===colorPickTargetId);
-  if(!act) return;
-  act.color = btn.dataset.color;
-  act.synced = false;
-  act.updated_at = new Date().toISOString();
-  persistActivities();
-  propagateActivityColor(act.id, act.color);
-  closeModal('colorModal');
-  renderManageList();
-  renderAll();
-  queueSync();
-});
-
-/* ============================= EXPORT ============================= */
 function downloadBlob(filename, content, mime){
   const blob = new Blob([content], {type: mime});
   const url = URL.createObjectURL(blob);
@@ -1589,14 +1445,7 @@ function downloadBlob(filename, content, mime){
 }
 function exportJson(){
   const events = state.events.slice().sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
-  const payload = {
-    exported_at: new Date().toISOString(),
-    day_start_hour: getDayStartHour(),
-    offgrid_days: state.offgridDays,
-    people: state.people.map(p=>({ id:p.id, name:p.name })),
-    activities: state.activities.map(a=>({ id:a.id, name:a.name, category:a.category, instant:!!a.instant, needsDetail:!!a.needsDetail, peoplePicker:!!a.peoplePicker })),
-    events: events.map(e=>({ id:e.id, activity_name:e.activity_name, category:e.category, detail:e.detail||'', instant:!!e.instant, interruptions:e.interruptions||[], start_time:e.start_time, date:e.date }))
-  };
+  const payload = { exported_at: new Date().toISOString(), day_start_hour: getDayStartHour(), offgrid_days: state.offgridDays, people: state.people.map(p=>({ id:p.id, name:p.name })), activities: state.activities.map(a=>({ id:a.id, name:a.name, category:a.category, instant:!!a.instant, needsDetail:!!a.needsDetail, peoplePicker:!!a.peoplePicker })), events: events.map(e=>({ id:e.id, activity_name:e.activity_name, category:e.category, detail:e.detail||'', instant:!!e.instant, interruptions:e.interruptions||[], start_time:e.start_time, date:e.date })) };
   downloadBlob('chrono-export-'+localDateStr()+'.json', JSON.stringify(payload, null, 2), 'application/json');
   showToast('Exported '+events.length+' activities as JSON');
 }
@@ -1604,10 +1453,7 @@ function csvEscape(v){ v = String(v==null?'':v); return /[",\n]/.test(v) ? '"'+v
 function exportCsv(){
   const events = state.events.slice().sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
   const rows = [['date','start_time','activity','category','detail','interruptions','instant','offgrid_day']];
-  events.forEach(e=>{
-    const interStr = (e.interruptions && e.interruptions.length) ? e.interruptions.map(i=>i.note+' ('+i.mins+'m)').join('; ') : '';
-    rows.push([e.date, e.start_time, e.activity_name, e.category, e.detail||'', interStr, e.instant?'yes':'no', state.offgridDays[e.date]?'yes':'no']);
-  });
+  events.forEach(e=>{ const interStr = (e.interruptions && e.interruptions.length) ? e.interruptions.map(i=>i.note+' ('+i.mins+'m)').join('; ') : ''; rows.push([e.date, e.start_time, e.activity_name, e.category, e.detail||'', interStr, e.instant?'yes':'no', state.offgridDays[e.date]?'yes':'no']); });
   const csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
   downloadBlob('chrono-export-'+localDateStr()+'.csv', csv, 'text/csv');
   showToast('Exported '+events.length+' activities as CSV');
@@ -1631,13 +1477,7 @@ function computePersonalAverages(days, filterOffgrid){
     if(firstStart) wakeMinutesArr.push(minutesIntoDay(firstStart, ds));
   });
   function avg(arr){ return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null; }
-  return {
-    daysLogged: wakeMinutesArr.length,
-    avgWakeMinutes: avg(wakeMinutesArr),
-    avgStudy: avg(totals.study),
-    avgSocial: avg(totals.social),
-    avgEssential: avg(totals.essential),
-  };
+  return { daysLogged: wakeMinutesArr.length, avgWakeMinutes: avg(wakeMinutesArr), avgStudy: avg(totals.study), avgSocial: avg(totals.social), avgEssential: avg(totals.essential) };
 }
 
 function fmtWakeClock(mins){
@@ -1659,43 +1499,21 @@ function computeTodayWakeDeviation(personal){
 async function renderChatInsight(){
   const container = document.getElementById('chatInsightPanel');
   if(!container) return;
-
   let html = '<div class="insight-card"><h3>AI observations</h3><div id="aiInsightBody">';
-  if(!CLOUD_ENABLED || !state.user){
-    html += '<div class="insight-empty">Sign in to get AI-generated observations, refreshed nightly from your logged data. You can still chat below without signing in.</div>';
-  } else {
-    html += '<div class="insight-loading">Loading…</div>';
-  }
+  if(!CLOUD_ENABLED || !state.user){ html += '<div class="insight-empty">Sign in to get AI-generated observations, refreshed nightly from your logged data. You can still chat below without signing in.</div>'; } else { html += '<div class="insight-loading">Loading…</div>'; }
   html += '</div></div>';
-
   container.innerHTML = html;
-
   if(CLOUD_ENABLED && state.user){
     try{
       const docSnap = await db.collection('users').doc(state.user.uid).collection('insights').doc('latest').get();
       const body = document.getElementById('aiInsightBody');
       if(!body) return;
-      if(docSnap.exists){
-        const d = docSnap.data();
-        const when = new Date(d.generated_at);
-        body.innerHTML =
-          '<div class="insight-text">'+escapeHtml(d.text)+'</div>' +
-          '<div class="insight-meta">Generated '+when.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' at '+fmt12(when) +
-          (d.cohort_available ? ' · included patterns from similar users' : '') + '</div>';
-      } else {
-        body.innerHTML = '<div class="insight-empty">No AI insight yet — check back after tonight\'s update. This starts once you have a handful of logged days.</div>';
-      }
-    } catch(err){
-      console.error('Failed to load AI insight', err);
-      const body = document.getElementById('aiInsightBody');
-      if(body) body.innerHTML = '<div class="insight-empty">Couldn\'t load — check your connection and try again.</div>';
-    }
+      if(docSnap.exists){ const d = docSnap.data(); const when = new Date(d.generated_at); body.innerHTML = '<div class="insight-text">'+escapeHtml(d.text)+'</div>' + '<div class="insight-meta">Generated '+when.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' at '+fmt12(when) + (d.cohort_available ? ' · included patterns from similar users' : '') + '</div>'; } else { body.innerHTML = '<div class="insight-empty">No AI insight yet — check back after tonight\'s update. This starts once you have a handful of logged days.</div>'; }
+    } catch(err){ console.error('Failed to load AI insight', err); const body = document.getElementById('aiInsightBody'); if(body) body.innerHTML = '<div class="insight-empty">Couldn\'t load — check your connection and try again.</div>'; }
   }
 }
 
-/* ============================= LIVE AI CHAT ============================= */
 const WORKER_URL = "https://chrono-ai-proxy.vishalkumawat589.workers.dev";
-
 const LS_CHAT = 'chrono_chat_v1';
 state.chatMessages = loadLS(LS_CHAT, []);
 
@@ -1703,35 +1521,14 @@ function buildChatContext(){
   const personal = computePersonalAverages(INSIGHTS_LOOKBACK_DAYS, userSettings.excludeOffgridFromStats);
   const {ranges} = computeGlobalSegments();
   const recentDates = lastNLogicalDates(3);
-  const recentLines = recentDates.map(ds=>{
-    const segs = segmentsForDay(ds, ranges);
-    if(!segs.length) return dayLabel(ds)+': no data';
-    const isOffgrid = state.offgridDays[ds] ? ' (Out of town / travel)' : '';
-    const parts = segs.map(s => s.activity_name + (s.detail?' ('+s.detail+')':'') + ' ' + fmt12(s.start)+'-'+fmt12(s.end));
-    return dayLabel(ds) + isOffgrid + ': ' + parts.join(', ');
-  }).join('\n');
-  return [
-    'You are a concise, encouraging personal routine coach inside a time-tracking app called Chrono.',
-    'The user logs activities in three categories: Study, Social & Fun, Essential.',
-    'Day starts at '+fmtHour12(getDayStartHour())+'.',
-    'Their averages over the last '+INSIGHTS_LOOKBACK_DAYS+' routine days (excluding travel days): wake time '+fmtWakeClock(personal.avgWakeMinutes)+
-      ', study '+durationLabel(personal.avgStudy||0)+'/day, social '+durationLabel(personal.avgSocial||0)+'/day, essential '+durationLabel(personal.avgEssential||0)+'/day.',
-    'Their last 5 logged days:',
-    recentLines || 'No data yet.',
-    'Answer the user\'s question directly and briefly (a few sentences unless asked for more). Reference their actual logged data when relevant. Be honest, not just cheerleading.'
-  ].join('\n');
+  const recentLines = recentDates.map(ds=>{ const segs = segmentsForDay(ds, ranges); if(!segs.length) return dayLabel(ds)+': no data'; const isOffgrid = state.offgridDays[ds] ? ' (Out of town / travel)' : ''; const parts = segs.map(s => s.activity_name + (s.detail?' ('+s.detail+')':'') + ' ' + fmt12(s.start)+'-'+fmt12(s.end)); return dayLabel(ds) + isOffgrid + ': ' + parts.join(', '); }).join('\n');
+  return [ 'You are a concise, encouraging personal routine coach inside a time-tracking app called Chrono.', 'The user logs activities in three categories: Study, Social & Fun, Essential.', 'Day starts at '+fmtHour12(getDayStartHour())+'.', 'Their averages over the last '+INSIGHTS_LOOKBACK_DAYS+' routine days (excluding travel days): wake time '+fmtWakeClock(personal.avgWakeMinutes)+ ', study '+durationLabel(personal.avgStudy||0)+'/day, social '+durationLabel(personal.avgSocial||0)+'/day, essential '+durationLabel(personal.avgEssential||0)+'/day.', 'Their last 5 logged days:', recentLines || 'No data yet.', 'Answer the user\'s question directly and briefly (a few sentences unless asked for more). Reference their actual logged data when relevant. Be honest, not just cheerleading.' ].join('\n');
 }
 
 function renderChatLog(){
   const el = document.getElementById('chatLog');
   if(!el) return;
-  if(!state.chatMessages.length){
-    el.innerHTML = '<div class="chat-msg system">Ask me anything about your routine — e.g. "How much have I studied this week?" or "Why do I keep sleeping late?"</div>';
-  } else {
-    el.innerHTML = state.chatMessages.map(m=>
-      '<div class="chat-msg '+m.role+'">'+escapeHtml(m.text)+'</div>'
-    ).join('');
-  }
+  if(!state.chatMessages.length){ el.innerHTML = '<div class="chat-msg system">Ask me anything about your routine — e.g. "How much have I studied this week?" or "Why do I keep sleeping late?"</div>'; } else { el.innerHTML = state.chatMessages.map(m=> '<div class="chat-msg '+m.role+'">'+escapeHtml(m.text)+'</div>' ).join(''); }
   setTimeout(() => { el.scrollTop = el.scrollHeight; }, 0);
 }
 
@@ -1741,105 +1538,36 @@ function extractReplyText(data){
   if(typeof data.response === 'string' && data.response.trim()) return data.response;
   if(typeof data.message === 'string' && data.message.trim()) return data.message;
   if(typeof data.reply === 'string' && data.reply.trim()) return data.reply;
-  try{
-    const geminiText = data.candidates && data.candidates[0] && data.candidates[0].content &&
-      data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
-    if(typeof geminiText === 'string' && geminiText.trim()) return geminiText;
-  } catch(e){ /* ignore */ }
-  try{
-    const openaiText = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-    if(typeof openaiText === 'string' && openaiText.trim()) return openaiText;
-  } catch(e){ /* ignore */ }
-  try{
-    const anthropicText = Array.isArray(data.content) && data.content.find(b => b.type === 'text');
-    if(anthropicText && typeof anthropicText.text === 'string' && anthropicText.text.trim()) return anthropicText.text;
-  } catch(e){ /* ignore */ }
+  try{ const geminiText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text; if(typeof geminiText === 'string' && geminiText.trim()) return geminiText; } catch(e){}
+  try{ const openaiText = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content; if(typeof openaiText === 'string' && openaiText.trim()) return openaiText; } catch(e){}
+  try{ const anthropicText = Array.isArray(data.content) && data.content.find(b => b.type === 'text'); if(anthropicText && typeof anthropicText.text === 'string' && anthropicText.text.trim()) return anthropicText.text; } catch(e){}
   return null;
 }
 
 async function sendChatMessage(text){
   text = (text||'').trim();
   if(!text) return;
-
   state.chatMessages.push({role:'user', text});
   saveLS(LS_CHAT, state.chatMessages);
   renderChatLog();
-
   const sendBtn = document.getElementById('chatSendBtn');
   sendBtn.disabled = true;
   state.chatMessages.push({role:'ai', text:'…'});
   renderChatLog();
-
   try {
-    const history = state.chatMessages
-      .filter(m => m.role === 'user' || m.role === 'ai')
-      .slice(-7, -1)
-      .map(m => ({ role: m.role === 'ai' ? 'model' : 'user', parts: [{ text: m.text }] }));
-
-    const res = await fetch(WORKER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt: text,
-        system_instruction: buildChatContext(),
-        history
-      })
-    });
-
-    let data = null;
-    let rawText = '';
-    try{
-      rawText = await res.text();
-      data = rawText ? JSON.parse(rawText) : null;
-    } catch(parseErr){
-      console.error('Chat worker returned non-JSON response', rawText);
-    }
-
-    if (!res.ok) {
-      const detail = (data && (data.error || data.message)) || rawText || res.statusText;
-      state.chatMessages[state.chatMessages.length - 1] = {
-        role: 'ai',
-        text: 'AI request failed (HTTP '+res.status+'): ' + detail
-      };
-    } else if (data && data.error) {
-      state.chatMessages[state.chatMessages.length - 1] = {
-        role: 'ai',
-        text: 'AI request failed: ' + data.error
-      };
-    } else {
-      const reply = extractReplyText(data);
-      state.chatMessages[state.chatMessages.length - 1] = {
-        role: 'ai',
-        text: reply || "Sorry, I couldn't generate a response just now."
-      };
-    }
-  } catch(err){
-    console.error('Chat request failed', err);
-    state.chatMessages[state.chatMessages.length - 1] = {
-      role: 'ai',
-      text: 'Something went wrong reaching the AI worker — check your connection and try again.'
-    };
-  }
-
+    const history = state.chatMessages.filter(m => m.role === 'user' || m.role === 'ai').slice(-7, -1).map(m => ({ role: m.role === 'ai' ? 'model' : 'user', parts: [{ text: m.text }] }));
+    const res = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: text, system_instruction: buildChatContext(), history }) });
+    let data = null; let rawText = '';
+    try{ rawText = await res.text(); data = rawText ? JSON.parse(rawText) : null; } catch(parseErr){ console.error('Chat worker returned non-JSON response', rawText); }
+    if (!res.ok) { const detail = (data && (data.error || data.message)) || rawText || res.statusText; state.chatMessages[state.chatMessages.length - 1] = { role: 'ai', text: 'AI request failed (HTTP '+res.status+'): ' + detail }; } else if (data && data.error) { state.chatMessages[state.chatMessages.length - 1] = { role: 'ai', text: 'AI request failed: ' + data.error }; } else { const reply = extractReplyText(data); state.chatMessages[state.chatMessages.length - 1] = { role: 'ai', text: reply || "Sorry, I couldn't generate a response just now." }; }
+  } catch(err){ console.error('Chat request failed', err); state.chatMessages[state.chatMessages.length - 1] = { role: 'ai', text: 'Something went wrong reaching the AI worker — check your connection and try again.' }; }
   saveLS(LS_CHAT, state.chatMessages);
   renderChatLog();
   sendBtn.disabled = false;
 }
 
-document.getElementById('chatSendBtn').addEventListener('click', ()=>{
-  const input = document.getElementById('chatInput');
-  const text = input.value;
-  input.value = '';
-  sendChatMessage(text);
-});
-document.getElementById('chatInput').addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter'){
-    const input = e.target;
-    const text = input.value;
-    input.value = '';
-    sendChatMessage(text);
-  }
-});
+document.getElementById('chatSendBtn').addEventListener('click', ()=>{ const input = document.getElementById('chatInput'); const text = input.value; input.value = ''; sendChatMessage(text); });
+document.getElementById('chatInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ const input = e.target; const text = input.value; input.value = ''; sendChatMessage(text); } });
 renderChatLog();
 
 function renderAuthUI(){
@@ -1848,19 +1576,8 @@ function renderAuthUI(){
   const signOutBtn = document.getElementById('signOutBtn');
   const authToggleRow = document.getElementById('authToggleRow');
   const cloudArea = document.getElementById('authCloudArea');
-  if(state.user){
-    label.textContent = (state.user.email || 'Account').split('@')[0];
-    badge.className = 'cloud-badge on';
-    signOutBtn.style.display = 'block';
-  } else {
-    label.textContent = 'Guest';
-    badge.className = 'cloud-badge';
-    signOutBtn.style.display = 'none';
-  }
-  if(!CLOUD_ENABLED){
-    cloudArea.innerHTML = '<div class="cloud-note">Cloud sync isn\'t active. Ensure your Firebase keys are configured if needed. Chrono will continue working locally.</div>';
-    authToggleRow.style.display = 'none';
-  }
+  if(state.user){ label.textContent = (state.user.email || 'Account').split('@')[0]; badge.className = 'cloud-badge on'; signOutBtn.style.display = 'block'; } else { label.textContent = 'Guest'; badge.className = 'cloud-badge'; signOutBtn.style.display = 'none'; }
+  if(!CLOUD_ENABLED){ cloudArea.innerHTML = '<div class="cloud-note">Cloud sync isn\'t active. Ensure your Firebase keys are configured if needed. Chrono will continue working locally.</div>'; authToggleRow.style.display = 'none'; }
 }
 
 function renderAll(){
@@ -1881,11 +1598,10 @@ setInterval(()=>{
   const elEl = document.getElementById('statusElapsed');
   if(ev && !ev.instant && elEl){ elEl.textContent = durationLabel((Date.now()-new Date(ev.start_time))/60000); }
   renderTimeline();
-  renderStatus(); /* Keep status auto-stop checked in real-time */
+  renderStatus();
   renderSleepBanner();
 }, 30000);
 
-/* ============================= TOAST ============================= */
 let toastTimer;
 function showToast(msg){
   const t = document.getElementById('toast');
@@ -1895,85 +1611,67 @@ function showToast(msg){
   toastTimer = setTimeout(()=> t.classList.remove('show'), 2200);
 }
 
-/* ============================= MODALS & LISTENERS ============================= */
 function openModal(id){ document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('[data-close]').forEach(btn=>{
-  btn.addEventListener('click', ()=> closeModal(btn.dataset.close));
-});
-document.querySelectorAll('.modal-backdrop').forEach(bd=>{
-  bd.addEventListener('click', (e)=>{ if(e.target === bd) bd.classList.remove('open'); });
-});
+document.querySelectorAll('[data-close]').forEach(btn=>{ btn.addEventListener('click', ()=> closeModal(btn.dataset.close)); });
+document.querySelectorAll('.modal-backdrop').forEach(bd=>{ bd.addEventListener('click', (e)=>{ if(e.target === bd) bd.classList.remove('open'); }); });
 
-function nowTimeValue(){
-  const d = new Date();
-  return pad(d.getHours())+':'+pad(d.getMinutes());
+function nowTimeValue(){ const d = new Date(); return pad(d.getHours())+':'+pad(d.getMinutes()); }
+
+document.getElementById('settingsBtn').addEventListener('click', ()=>{ document.getElementById('settingAutoGroup').checked = !!userSettings.autoGroupPrompt; openModal('settingsModal'); });
+document.getElementById('saveSettingsBtn').addEventListener('click', ()=>{ userSettings.autoGroupPrompt = document.getElementById('settingAutoGroup').checked; persistSettings(); closeModal('settingsModal'); renderAll(); showToast('Saved settings'); });
+document.getElementById('restoreCloudBtn').addEventListener('click', async ()=>{ if(!CLOUD_ENABLED || !state.user){ showToast('Sign in first to restore from the cloud'); return; } if(!confirm('Pull the latest data from the cloud and merge it into this device? This will not delete anything currently on this device.')) return; showToast('Restoring…'); await syncPull(); renderAll(); closeModal('settingsModal'); showToast('Restore complete'); });
+
+document.getElementById('interruptBtn').addEventListener('click', ()=>{ document.getElementById('interruptDetail').value = ''; document.getElementById('interruptDuration').value = '2'; openModal('interruptModal'); setTimeout(()=> document.getElementById('interruptDetail').focus(), 150); });
+document.getElementById('saveInterruptBtn').addEventListener('click', ()=>{ const note = document.getElementById('interruptDetail').value.trim() || 'Call / Interruption'; const mins = document.getElementById('interruptDuration').value; addInterruptionToActive(note, mins); closeModal('interruptModal'); });
+document.getElementById('interruptDetail').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') document.getElementById('saveInterruptBtn').click(); });
+
+document.getElementById('markDayOffgridBtn').addEventListener('click', ()=>{ const todayL = todayLogicalDate(); state.offgridDays[todayL] = !state.offgridDays[todayL]; persistOffgrid(); renderAll(); showToast(state.offgridDays[todayL] ? 'Day marked as Out of Town / Vacation' : 'Restored regular routine day'); queueSync(); });
+
+/* Long Press & Quick Add logic */
+let lpTimer;
+let isLpTriggered = false;
+
+function openEditActivity(id){
+  const act = state.activities.find(a=>a.id===id);
+  if(!act) return;
+  state.editingActivityId = id;
+  document.getElementById('addModalTitle').textContent = 'Edit Activity';
+  document.getElementById('actName').value = act.name;
+  document.getElementById('actTime').value = nowTimeValue();
+  document.getElementById('actPin').checked = !!act.is_pinned;
+  document.getElementById('actInstant').checked = !!act.instant;
+  document.getElementById('actNeedsDetail').checked = !!act.needsDetail;
+  document.getElementById('actPeoplePicker').checked = !!act.peoplePicker;
+  document.querySelectorAll('#catPills .pill').forEach(p=>p.classList.remove('active'));
+  document.querySelector('#catPills .pill[data-cat="'+act.category+'"]').classList.add('active');
+  selectedActColor = act.color;
+  renderColorGrid('actColorGrid', act.color, true);
+  document.getElementById('saveOnlyBtn').textContent = 'Update';
+  document.getElementById('saveLogBtn').textContent = 'Update & Log';
+  document.getElementById('deleteActBtn').style.display = 'block';
+  openModal('addModal');
 }
 
-/* Settings Modal */
-document.getElementById('settingsBtn').addEventListener('click', ()=>{
-  document.getElementById('settingAutoGroup').checked = !!userSettings.autoGroupPrompt;
-  openModal('settingsModal');
+const qaContainer = document.getElementById('quickAdd');
+qaContainer.addEventListener('pointerdown', (e)=>{
+  const btn = e.target.closest('.qa-btn');
+  if(!btn) return;
+  isLpTriggered = false;
+  lpTimer = setTimeout(() => {
+    isLpTriggered = true;
+    openEditActivity(btn.dataset.id);
+  }, 700);
 });
+qaContainer.addEventListener('pointerup', () => clearTimeout(lpTimer));
+qaContainer.addEventListener('pointerleave', () => clearTimeout(lpTimer));
+qaContainer.addEventListener('contextmenu', (e) => { if(e.target.closest('.qa-btn')) e.preventDefault(); });
 
-document.getElementById('saveSettingsBtn').addEventListener('click', ()=>{
-  userSettings.autoGroupPrompt = document.getElementById('settingAutoGroup').checked;
-  persistSettings();
-  closeModal('settingsModal');
-  renderAll();
-  showToast('Saved settings');
-});
-
-document.getElementById('restoreCloudBtn').addEventListener('click', async ()=>{
-  if(!CLOUD_ENABLED || !state.user){
-    showToast('Sign in first to restore from the cloud');
-    return;
-  }
-  if(!confirm('Pull the latest data from the cloud and merge it into this device? This will not delete anything currently on this device.')) return;
-  showToast('Restoring…');
-  await syncPull();
-  renderAll();
-  closeModal('settingsModal');
-  showToast('Restore complete');
-});
-
-/* Interruption Modal */
-document.getElementById('interruptBtn').addEventListener('click', ()=>{
-  document.getElementById('interruptDetail').value = '';
-  document.getElementById('interruptDuration').value = '2';
-  openModal('interruptModal');
-  setTimeout(()=> document.getElementById('interruptDetail').focus(), 150);
-});
-
-document.getElementById('saveInterruptBtn').addEventListener('click', ()=>{
-  const note = document.getElementById('interruptDetail').value.trim() || 'Call / Interruption';
-  const mins = document.getElementById('interruptDuration').value;
-  addInterruptionToActive(note, mins);
-  closeModal('interruptModal');
-});
-document.getElementById('interruptDetail').addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter') document.getElementById('saveInterruptBtn').click();
-});
-
-/* Out-of-town / Travel mode toggle */
-document.getElementById('markDayOffgridBtn').addEventListener('click', ()=>{
-  const todayL = todayLogicalDate();
-  state.offgridDays[todayL] = !state.offgridDays[todayL];
-  persistOffgrid();
-  renderAll();
-  showToast(state.offgridDays[todayL] ? 'Day marked as Out of Town / Vacation' : 'Restored regular routine day');
-  queueSync();
-});
-
-document.getElementById('quickAdd').addEventListener('click', (e)=>{
-  const manageBtn = e.target.closest('#manageActOpenBtn');
-  if(manageBtn){
-    renderManageList();
-    openModal('manageModal');
-    return;
-  }
+qaContainer.addEventListener('click', (e)=>{
+  if(isLpTriggered) return;
   const openBtn = e.target.closest('#addActOpenBtn');
   if(openBtn){
+    state.editingActivityId = null;
     document.getElementById('addModalTitle').textContent = 'Add activity';
     document.getElementById('actName').value = '';
     document.getElementById('actNameHint').style.display = 'none';
@@ -1986,6 +1684,9 @@ document.getElementById('quickAdd').addEventListener('click', (e)=>{
     document.querySelector('#catPills .pill[data-cat="study"]').classList.add('active');
     selectedActColor = null;
     renderColorGrid('actColorGrid', null, true);
+    document.getElementById('saveOnlyBtn').textContent = 'Save only';
+    document.getElementById('saveLogBtn').textContent = 'Save & log now';
+    document.getElementById('deleteActBtn').style.display = 'none';
     openModal('addModal');
     setTimeout(()=> document.getElementById('actName').focus(), 150);
     return;
@@ -1995,615 +1696,200 @@ document.getElementById('quickAdd').addEventListener('click', (e)=>{
     const act = state.activities.find(a=>a.id===qb.dataset.id);
     if(!act) return;
     const cur = currentEvent();
-    if(cur && cur.activity_id === act.id && !act.needsDetail && !act.peoplePicker){
-      showToast(act.name + ' is already active');
-      return;
-    }
-    if(act.peoplePicker){
-      openPeopleModal(act, new Date());
-    } else if(act.needsDetail){
-      openDetailModal(act, new Date());
-    } else {
-      logActivity(act, new Date());
-    }
+    if(cur && cur.activity_id === act.id && !act.needsDetail && !act.peoplePicker){ showToast(act.name + ' is already active'); return; }
+    if(act.peoplePicker) openPeopleModal(act, new Date());
+    else if(act.needsDetail) openDetailModal(act, new Date());
+    else logActivity(act, new Date());
   }
+});
+
+document.getElementById('deleteActBtn').addEventListener('click', () => {
+  if(!state.editingActivityId) return;
+  const act = state.activities.find(a => a.id === state.editingActivityId);
+  if(!act) return;
+  const stillUsed = state.events.some(ev => ev.activity_id === act.id);
+  const msg = stillUsed ? 'Remove "'+act.name+'" from your quick-add list? Past logged entries for it are kept.' : 'Remove "'+act.name+'"?';
+  if(!confirm(msg)) return;
+  state.activities = state.activities.filter(a => a.id !== state.editingActivityId);
+  persistActivities();
+  closeModal('addModal');
+  renderAll();
+  showToast('Removed ' + act.name);
+  queueSync();
 });
 
 document.getElementById('inlinePastSaveBtn').addEventListener('click', ()=>{
   const actId = document.getElementById('inlinePastActSelect').value;
   const act = state.activities.find(a=>a.id===actId);
   if(!act) return;
-  
   const dateVal = document.getElementById('inlinePastActDate').value; 
   const timeVal = document.getElementById('inlinePastActTime').value; 
   if(!dateVal || !timeVal) return;
-  
   const d = new Date(dateVal + 'T' + timeVal + ':00');
   const detail = document.getElementById('inlinePastActDetail').value;
-  
   logActivity(act, d, detail);
   document.getElementById('inlinePastActDetail').value = '';
 });
 
 let pendingDetailAct = null, pendingDetailTime = null;
-function openDetailModal(act, atDate){
-  pendingDetailAct = act; pendingDetailTime = atDate;
-  document.getElementById('detailModalTitle').textContent = act.name;
-  document.getElementById('detailModalLabel').textContent =
-    act.name.toLowerCase() === 'timepass' ? 'What exactly are you doing?' : 'Note';
-  const input = document.getElementById('detailModalInput');
-  input.value = '';
-  openModal('detailModal');
-  setTimeout(()=> input.focus(), 150);
-}
+function openDetailModal(act, atDate){ pendingDetailAct = act; pendingDetailTime = atDate; document.getElementById('detailModalTitle').textContent = act.name; document.getElementById('detailModalLabel').textContent = act.name.toLowerCase() === 'timepass' ? 'What exactly are you doing?' : 'Note'; const input = document.getElementById('detailModalInput'); input.value = ''; openModal('detailModal'); setTimeout(()=> input.focus(), 150); }
 
-/* ============================= PEOPLE PICKER ============================= */
 let pendingPeopleAct = null, pendingPeopleTime = null;
 let selectedPeopleIds = new Set();
 
 function renderPeopleCheckList(){
   const container = document.getElementById('peopleCheckList');
   const people = state.people.slice().sort((a,b)=> a.name.localeCompare(b.name));
-  if(!people.length){
-    container.innerHTML = '<div class="person-empty">No one saved yet — add someone below.</div>';
-    return;
-  }
-  container.innerHTML = people.map(p=>
-    '<div class="person-row">' +
-      '<label style="display:flex;align-items:center;gap:9px;flex:1;min-width:0;">' +
-        '<input type="checkbox" data-id="'+p.id+'" '+(selectedPeopleIds.has(p.id)?'checked':'')+'>' +
-        '<span>'+escapeHtml(p.name)+'</span>' +
-      '</label>' +
-      '<button type="button" data-del="'+p.id+'" title="Remove from list">🗑</button>' +
-    '</div>'
-  ).join('');
+  if(!people.length){ container.innerHTML = '<div class="person-empty">No one saved yet — add someone below.</div>'; return; }
+  container.innerHTML = people.map(p=> '<div class="person-row">' + '<label style="display:flex;align-items:center;gap:9px;flex:1;min-width:0;">' + '<input type="checkbox" data-id="'+p.id+'" '+(selectedPeopleIds.has(p.id)?'checked':'')+'>' + '<span>'+escapeHtml(p.name)+'</span>' + '</label>' + '<button type="button" data-del="'+p.id+'" title="Remove from list">🗑</button>' + '</div>' ).join('');
 }
 
-function openPeopleModal(act, atDate){
-  pendingPeopleAct = act; pendingPeopleTime = atDate;
-  selectedPeopleIds = new Set();
-  document.getElementById('peopleModalTitle').textContent =
-    act.name.toLowerCase() === 'call' ? "Who's on the call?" : "Who's involved — " + act.name;
-  document.getElementById('newPersonInput').value = '';
-  renderPeopleCheckList();
-  openModal('peopleModal');
-  setTimeout(()=> document.getElementById('newPersonInput').focus(), 150);
-}
+function openPeopleModal(act, atDate){ pendingPeopleAct = act; pendingPeopleTime = atDate; selectedPeopleIds = new Set(); document.getElementById('peopleModalTitle').textContent = act.name.toLowerCase() === 'call' ? "Who's on the call?" : "Who's involved — " + act.name; document.getElementById('newPersonInput').value = ''; renderPeopleCheckList(); openModal('peopleModal'); setTimeout(()=> document.getElementById('newPersonInput').focus(), 150); }
 
-function resolvePendingPeople(skip){
-  if(!pendingPeopleAct) return;
-  let detail = '';
-  if(!skip){
-    const names = state.people.filter(p => selectedPeopleIds.has(p.id)).map(p=>p.name);
-    detail = names.join(', ');
-  }
-  logActivity(pendingPeopleAct, pendingPeopleTime, detail);
-  pendingPeopleAct = null; pendingPeopleTime = null;
-  closeModal('peopleModal');
-}
+function resolvePendingPeople(skip){ if(!pendingPeopleAct) return; let detail = ''; if(!skip){ const names = state.people.filter(p => selectedPeopleIds.has(p.id)).map(p=>p.name); detail = names.join(', '); } logActivity(pendingPeopleAct, pendingPeopleTime, detail); pendingPeopleAct = null; pendingPeopleTime = null; closeModal('peopleModal'); }
 
-document.getElementById('peopleCheckList').addEventListener('change', (e)=>{
-  const cb = e.target.closest('input[type=checkbox]');
-  if(!cb) return;
-  if(cb.checked) selectedPeopleIds.add(cb.dataset.id);
-  else selectedPeopleIds.delete(cb.dataset.id);
-});
-
-document.getElementById('peopleCheckList').addEventListener('click', (e)=>{
-  const delBtn = e.target.closest('button[data-del]');
-  if(!delBtn) return;
-  const id = delBtn.dataset.del;
-  if(!confirm('Remove this person from your list? Past logged entries will keep their name.')) return;
-  state.people = state.people.filter(p=>p.id!==id);
-  selectedPeopleIds.delete(id);
-  persistPeople();
-  renderPeopleCheckList();
-  queueSync();
-});
-
-document.getElementById('addPersonBtn').addEventListener('click', ()=>{
-  const input = document.getElementById('newPersonInput');
-  const p = addPerson(input.value);
-  if(p){
-    selectedPeopleIds.add(p.id);
-    input.value = '';
-    renderPeopleCheckList();
-    queueSync();
-    input.focus();
-  }
-});
-document.getElementById('newPersonInput').addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('addPersonBtn').click(); }
-});
+document.getElementById('peopleCheckList').addEventListener('change', (e)=>{ const cb = e.target.closest('input[type=checkbox]'); if(!cb) return; if(cb.checked) selectedPeopleIds.add(cb.dataset.id); else selectedPeopleIds.delete(cb.dataset.id); });
+document.getElementById('peopleCheckList').addEventListener('click', (e)=>{ const delBtn = e.target.closest('button[data-del]'); if(!delBtn) return; const id = delBtn.dataset.del; if(!confirm('Remove this person from your list? Past logged entries will keep their name.')) return; state.people = state.people.filter(p=>p.id!==id); selectedPeopleIds.delete(id); persistPeople(); renderPeopleCheckList(); queueSync(); });
+document.getElementById('addPersonBtn').addEventListener('click', ()=>{ const input = document.getElementById('newPersonInput'); const p = addPerson(input.value); if(p){ selectedPeopleIds.add(p.id); input.value = ''; renderPeopleCheckList(); queueSync(); input.focus(); } });
+document.getElementById('newPersonInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('addPersonBtn').click(); } });
 document.getElementById('peopleLogBtn').addEventListener('click', ()=> resolvePendingPeople(false));
 document.getElementById('peopleSkipBtn').addEventListener('click', ()=> resolvePendingPeople(true));
-function resolvePendingDetail(detail){
-  if(!pendingDetailAct) return;
-  logActivity(pendingDetailAct, pendingDetailTime, detail);
-  pendingDetailAct = null; pendingDetailTime = null;
-  closeModal('detailModal');
-}
-document.getElementById('detailSaveBtn').addEventListener('click', ()=>{
-  resolvePendingDetail(document.getElementById('detailModalInput').value);
-});
-document.getElementById('detailSkipBtn').addEventListener('click', ()=>{
-  resolvePendingDetail('');
-});
-document.getElementById('detailModalInput').addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter') resolvePendingDetail(e.target.value);
-});
+function resolvePendingDetail(detail){ if(!pendingDetailAct) return; logActivity(pendingDetailAct, pendingDetailTime, detail); pendingDetailAct = null; pendingDetailTime = null; closeModal('detailModal'); }
+document.getElementById('detailSaveBtn').addEventListener('click', ()=>{ resolvePendingDetail(document.getElementById('detailModalInput').value); });
+document.getElementById('detailSkipBtn').addEventListener('click', ()=>{ resolvePendingDetail(''); });
+document.getElementById('detailModalInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') resolvePendingDetail(e.target.value); });
 
 let selectedActColor = null;
-document.getElementById('actColorGrid').addEventListener('click', (e)=>{
-  const btn = e.target.closest('.color-swatch');
-  if(!btn) return;
-  selectedActColor = btn.dataset.color || null;
-  document.querySelectorAll('#actColorGrid .color-swatch').forEach(s=>s.classList.remove('selected'));
-  btn.classList.add('selected');
-});
+document.getElementById('actColorGrid').addEventListener('click', (e)=>{ const btn = e.target.closest('.color-swatch'); if(!btn) return; selectedActColor = btn.dataset.color || null; document.querySelectorAll('#actColorGrid .color-swatch').forEach(s=>s.classList.remove('selected')); btn.classList.add('selected'); });
+document.getElementById('catPills').addEventListener('click', (e)=>{ const p = e.target.closest('.pill'); if(!p) return; document.querySelectorAll('#catPills .pill').forEach(x=>x.classList.remove('active')); p.classList.add('active'); });
 
-document.getElementById('catPills').addEventListener('click', (e)=>{
-  const p = e.target.closest('.pill');
-  if(!p) return;
-  document.querySelectorAll('#catPills .pill').forEach(x=>x.classList.remove('active'));
-  p.classList.add('active');
-});
+function getSelectedCat(){ const active = document.querySelector('#catPills .pill.active'); return active ? active.dataset.cat : 'essential'; }
+function timeInputToDate(val){ const d = new Date(); const parts = (val || nowTimeValue()).split(':'); d.setHours(parseInt(parts[0],10), parseInt(parts[1],10), 0, 0); return d; }
 
-function getSelectedCat(){
-  const active = document.querySelector('#catPills .pill.active');
-  return active ? active.dataset.cat : 'essential';
-}
-function timeInputToDate(val){
-  const d = new Date();
-  const parts = (val || nowTimeValue()).split(':');
-  d.setHours(parseInt(parts[0],10), parseInt(parts[1],10), 0, 0);
-  return d;
-}
+document.getElementById('actName').addEventListener('input', (e)=>{ const name = e.target.value.trim(); const hint = document.getElementById('actNameHint'); const existing = name && state.activities.find(a => a.name.toLowerCase() === name.toLowerCase()); if(existing && existing.id !== state.editingActivityId){ hint.style.display = 'block'; hint.textContent = 'An activity named "'+existing.name+'" already exists.'; } else { hint.style.display = 'none'; } });
 
-document.getElementById('actName').addEventListener('input', (e)=>{
-  const name = e.target.value.trim();
-  const hint = document.getElementById('actNameHint');
-  const existing = name && state.activities.find(a => a.name.toLowerCase() === name.toLowerCase());
-  if(existing){
-    hint.style.display = 'block';
-    hint.textContent = 'An activity named "'+existing.name+'" already exists — saving will update it instead of creating a duplicate.';
+function saveActivityFromModal(logNow){
+  const name = document.getElementById('actName').value.trim();
+  if(!name) return;
+  const opts = { name, category:getSelectedCat(), color: selectedActColor, pin: document.getElementById('actPin').checked, instant: document.getElementById('actInstant').checked, needsDetail: document.getElementById('actNeedsDetail').checked, peoplePicker: document.getElementById('actPeoplePicker').checked };
+  let act;
+  if(state.editingActivityId){
+    act = state.activities.find(a => a.id === state.editingActivityId);
+    if(act){
+      const oldColor = act.color;
+      Object.assign(act, opts);
+      act.synced = false;
+      act.updated_at = new Date().toISOString();
+      persistActivities();
+      if(oldColor !== act.color) propagateActivityColor(act.id, act.color);
+    }
   } else {
-    hint.style.display = 'none';
+    act = addActivity(opts);
   }
-});
-document.getElementById('actName').addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('saveLogBtn').click(); }
-});
-
-document.getElementById('saveOnlyBtn').addEventListener('click', ()=>{
-  const name = document.getElementById('actName').value.trim();
-  if(!name){ return; }
-  addActivity({ name, category:getSelectedCat(), color: selectedActColor, pin: document.getElementById('actPin').checked, instant: document.getElementById('actInstant').checked, needsDetail: document.getElementById('actNeedsDetail').checked, peoplePicker: document.getElementById('actPeoplePicker').checked });
-  renderAll();
-  closeModal('addModal');
-  showToast('Saved ' + name);
-  queueSync();
-});
-
-document.getElementById('saveLogBtn').addEventListener('click', ()=>{
-  const name = document.getElementById('actName').value.trim();
-  if(!name){ return; }
-  const act = addActivity({ name, category:getSelectedCat(), color: selectedActColor, pin: document.getElementById('actPin').checked, instant: document.getElementById('actInstant').checked, needsDetail: document.getElementById('actNeedsDetail').checked, peoplePicker: document.getElementById('actPeoplePicker').checked });
-  const when = timeInputToDate(document.getElementById('actTime').value);
   closeModal('addModal');
   if(!act) return;
-  if(act.peoplePicker) openPeopleModal(act, when);
-  else if(act.needsDetail) openDetailModal(act, when);
-  else logActivity(act, when);
-});
+  if(logNow){
+    const when = timeInputToDate(document.getElementById('actTime').value);
+    if(act.peoplePicker) openPeopleModal(act, when);
+    else if(act.needsDetail) openDetailModal(act, when);
+    else logActivity(act, when);
+  } else {
+    renderAll();
+    showToast('Saved ' + name);
+    queueSync();
+  }
+}
 
-document.getElementById('undoBtn').addEventListener('click', ()=>{
-  const ev = currentEvent();
-  if(ev) deleteEvent(ev.id);
-});
+document.getElementById('saveOnlyBtn').addEventListener('click', () => saveActivityFromModal(false));
+document.getElementById('saveLogBtn').addEventListener('click', () => saveActivityFromModal(true));
+
+document.getElementById('undoBtn').addEventListener('click', ()=>{ const ev = currentEvent(); if(ev) deleteEvent(ev.id); });
 
 document.getElementById('todayLog').addEventListener('click', (e)=>{
-  const btn = e.target.closest('button');
-  if(!btn) return;
-  const action = btn.dataset.action;
-  if(action === 'edit'){ state.editingId = btn.dataset.id; renderTodayLog(); }
-  else if(action === 'del'){ deleteEvent(btn.dataset.id); }
-  else if(action === 'cancelEdit'){ state.editingId = null; renderTodayLog(); }
-  else if(action === 'saveEdit'){
-    const row = btn.closest('.log-editrow');
-    const timeInput = row.querySelector('.editTimeInput');
-    const detailInput = row.querySelector('.editDetailInput');
-    const parts = timeInput.value.split(':');
-    updateEvent(btn.dataset.id, parseInt(parts[0],10), parseInt(parts[1],10), detailInput.value);
-  }
+  const btn = e.target.closest('button'); if(!btn) return; const action = btn.dataset.action;
+  if(action === 'edit'){ state.editingId = btn.dataset.id; renderTodayLog(); } else if(action === 'del'){ deleteEvent(btn.dataset.id); } else if(action === 'cancelEdit'){ state.editingId = null; renderTodayLog(); } else if(action === 'saveEdit'){ const row = btn.closest('.log-editrow'); const timeInput = row.querySelector('.editTimeInput'); const detailInput = row.querySelector('.editDetailInput'); const parts = timeInput.value.split(':'); updateEvent(btn.dataset.id, parseInt(parts[0],10), parseInt(parts[1],10), detailInput.value); }
 });
 
 document.getElementById('historyList').addEventListener('click', (e)=>{
   const actionBtn = e.target.closest('button[data-action]');
   if(actionBtn){
     const action = actionBtn.dataset.action;
-    if(action === 'edit'){ state.editingId = actionBtn.dataset.id; renderHistory(); }
-    else if(action === 'del'){ deleteEvent(actionBtn.dataset.id); }
-    else if(action === 'cancelEdit'){ state.editingId = null; renderHistory(); }
-    else if(action === 'saveEdit'){
-      const row = actionBtn.closest('.log-editrow');
-      const timeInput = row.querySelector('.editTimeInput');
-      const detailInput = row.querySelector('.editDetailInput');
-      const parts = timeInput.value.split(':');
-      updateEvent(actionBtn.dataset.id, parseInt(parts[0],10), parseInt(parts[1],10), detailInput.value);
-    }
+    if(action === 'edit'){ state.editingId = actionBtn.dataset.id; renderHistory(); } else if(action === 'del'){ deleteEvent(actionBtn.dataset.id); } else if(action === 'cancelEdit'){ state.editingId = null; renderHistory(); } else if(action === 'saveEdit'){ const row = actionBtn.closest('.log-editrow'); const timeInput = row.querySelector('.editTimeInput'); const detailInput = row.querySelector('.editDetailInput'); const parts = timeInput.value.split(':'); updateEvent(actionBtn.dataset.id, parseInt(parts[0],10), parseInt(parts[1],10), detailInput.value); }
     return;
   }
   const toggleZone = e.target.closest('.hist-day-head') || e.target.closest('.hist-strip');
-  if(!toggleZone) return;
-  const day = e.target.closest('.hist-day');
-  if(!day) return;
-  const ds = day.dataset.date;
-  if(state.openHistoryDays.has(ds)) state.openHistoryDays.delete(ds);
-  else state.openHistoryDays.add(ds);
-  renderHistory();
+  if(!toggleZone) return; const day = e.target.closest('.hist-day'); if(!day) return; const ds = day.dataset.date; if(state.openHistoryDays.has(ds)) state.openHistoryDays.delete(ds); else state.openHistoryDays.add(ds); renderHistory();
 });
 
-document.getElementById('loadMoreBtn').addEventListener('click', ()=>{
-  state.historyDaysShown += 14;
-  renderHistory();
-});
+document.getElementById('loadMoreBtn').addEventListener('click', ()=>{ state.historyDaysShown += 14; renderHistory(); });
+document.getElementById('tlScroll').addEventListener('pointerdown', function(){ this.dataset.userScrolled = '1'; });
 
-document.getElementById('tlScroll').addEventListener('pointerdown', function(){
-  this.dataset.userScrolled = '1';
-});
+document.querySelectorAll('.tab-btn').forEach(btn=>{ btn.addEventListener('click', ()=>{ document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active')); btn.classList.add('active'); document.getElementById('tab-'+btn.dataset.tab).classList.add('active'); if(btn.dataset.tab === 'today') renderTimeline(); if(btn.dataset.tab === 'chat') { renderChatInsight(); renderChatLog(); } }); });
 
-document.querySelectorAll('.tab-btn').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
-    if(btn.dataset.tab === 'today') renderTimeline();
-    if(btn.dataset.tab === 'chat') {
-      renderChatInsight();
-      renderChatLog();
-    }
-  });
-});
+window.addEventListener('scroll', ()=>{ document.getElementById('topbar').classList.toggle('scrolled', window.scrollY > 4); });
 
-window.addEventListener('scroll', ()=>{
-  document.getElementById('topbar').classList.toggle('scrolled', window.scrollY > 4);
-});
+document.getElementById('authChip').addEventListener('click', ()=>{ state.authMode = 'signin'; renderAuthModalMode(); openModal('authModal'); });
+document.getElementById('guestBtn').addEventListener('click', ()=>{ closeModal('authModal'); showToast('Continuing without an account — saved on this device only'); });
 
-/* ============================= AUTH ============================= */
-document.getElementById('authChip').addEventListener('click', ()=>{
-  state.authMode = 'signin';
-  renderAuthModalMode();
-  openModal('authModal');
-});
-document.getElementById('guestBtn').addEventListener('click', ()=>{
-  closeModal('authModal');
-  showToast('Continuing without an account — saved on this device only');
-});
-
-function renderAuthModalMode(){
-  document.getElementById('authTitle').textContent = state.authMode === 'signin' ? 'Sign in' : 'Create account';
-  document.getElementById('authSubmitBtn').textContent = state.authMode === 'signin' ? 'Sign in' : 'Create account';
-  document.getElementById('authMsg').textContent = '';
-  const toggle = document.getElementById('authToggleRow');
-  toggle.innerHTML = state.authMode === 'signin'
-    ? 'New here? <b id="toggleToSignup">Create account</b>'
-    : 'Already have an account? <b id="toggleToSignup">Sign in</b>';
-}
-document.getElementById('authToggleRow').addEventListener('click', (e)=>{
-  if(e.target.id === 'toggleToSignup'){
-    state.authMode = state.authMode === 'signin' ? 'signup' : 'signin';
-    renderAuthModalMode();
-  }
-});
+function renderAuthModalMode(){ document.getElementById('authTitle').textContent = state.authMode === 'signin' ? 'Sign in' : 'Create account'; document.getElementById('authSubmitBtn').textContent = state.authMode === 'signin' ? 'Sign in' : 'Create account'; document.getElementById('authMsg').textContent = ''; const toggle = document.getElementById('authToggleRow'); toggle.innerHTML = state.authMode === 'signin' ? 'New here? <b id="toggleToSignup">Create account</b>' : 'Already have an account? <b id="toggleToSignup">Sign in</b>'; }
+document.getElementById('authToggleRow').addEventListener('click', (e)=>{ if(e.target.id === 'toggleToSignup'){ state.authMode = state.authMode === 'signin' ? 'signup' : 'signin'; renderAuthModalMode(); } });
 
 if(CLOUD_ENABLED){
-  document.getElementById('googleBtn').addEventListener('click', async ()=>{
-    const provider = new firebase.auth.GoogleAuthProvider();
-    const msgEl = document.getElementById('authMsg');
-    const popupFallbackCodes = new Set([
-      'auth/popup-blocked',
-      'auth/popup-closed-by-user',
-      'auth/cancelled-popup-request',
-      'auth/operation-not-supported-in-this-environment'
-    ]);
-    try {
-      await auth.signInWithPopup(provider);
-      closeModal('authModal');
-    } catch(err) {
-      if(popupFallbackCodes.has(err.code)){
-        try {
-          msgEl.textContent = 'Redirecting to Google…';
-          await auth.signInWithRedirect(provider);
-        } catch(err2) {
-          msgEl.textContent = err2.message;
-        }
-      } else {
-        msgEl.textContent = err.message;
-      }
-    }
-  });
-
-  auth.getRedirectResult().then((result)=>{
-    if(result && result.user){
-      closeModal('authModal');
-      showToast('Signed in as ' + (result.user.email || 'Google account'));
-    }
-  }).catch((err)=>{
-    console.error('Google redirect sign-in failed', err);
-    const msgEl = document.getElementById('authMsg');
-    if(msgEl) msgEl.textContent = err.message;
-  });
-
-  document.getElementById('authSubmitBtn').addEventListener('click', async ()=>{
-    const email = document.getElementById('authEmail').value.trim();
-    const pass = document.getElementById('authPass').value;
-    const msgEl = document.getElementById('authMsg');
-    if(!email || !pass){ msgEl.textContent = 'Enter both email and password.'; return; }
-    msgEl.textContent = '';
-
-    try {
-      if(state.authMode === 'signin'){
-        await auth.signInWithEmailAndPassword(email, pass);
-      } else {
-        await auth.createUserWithEmailAndPassword(email, pass);
-      }
-      closeModal('authModal');
-    } catch(err) {
-      msgEl.textContent = err.message;
-    }
-  });
-
-  document.getElementById('signOutBtn').addEventListener('click', async ()=>{
-    await auth.signOut();
-    closeModal('authModal');
-  });
-
-  auth.onAuthStateChanged(async (user) => {
-    const prevUser = state.user;
-    state.user = user;
-    renderAuthUI();
-
-    if(user && !prevUser){
-      const migratedKey = 'chrono_migrated_v2_' + user.uid;
-      const alreadyMigrated = loadLS(migratedKey, false);
-
-      // Only treat this as "local data needs uploading" if there's actually
-      // something local worth uploading. An empty/fresh-default local state
-      // (e.g. right after clearing browser data) should NOT push before pulling.
-      const hasLocalDataToMigrate = !alreadyMigrated &&
-        (state.events.length > 0 || state.people.length > 0);
-
-      if(hasLocalDataToMigrate){
-        state.activities.forEach(a=>a.synced=false);
-        state.events.forEach(e=>e.synced=false);
-        state.people.forEach(p=>p.synced=false);
-        await syncPush();
-      }
-      saveLS(migratedKey, true);
-
-      await syncPull();
-      await syncPush();
-      renderAll();
-    }
-  });
-
+  document.getElementById('googleBtn').addEventListener('click', async ()=>{ const provider = new firebase.auth.GoogleAuthProvider(); const msgEl = document.getElementById('authMsg'); const popupFallbackCodes = new Set(['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request', 'auth/operation-not-supported-in-this-environment']); try { await auth.signInWithPopup(provider); closeModal('authModal'); } catch(err) { if(popupFallbackCodes.has(err.code)){ try { msgEl.textContent = 'Redirecting to Google…'; await auth.signInWithRedirect(provider); } catch(err2) { msgEl.textContent = err2.message; } } else { msgEl.textContent = err.message; } } });
+  auth.getRedirectResult().then((result)=>{ if(result && result.user){ closeModal('authModal'); showToast('Signed in as ' + (result.user.email || 'Google account')); } }).catch((err)=>{ console.error('Google redirect sign-in failed', err); const msgEl = document.getElementById('authMsg'); if(msgEl) msgEl.textContent = err.message; });
+  document.getElementById('authSubmitBtn').addEventListener('click', async ()=>{ const email = document.getElementById('authEmail').value.trim(); const pass = document.getElementById('authPass').value; const msgEl = document.getElementById('authMsg'); if(!email || !pass){ msgEl.textContent = 'Enter both email and password.'; return; } msgEl.textContent = ''; try { if(state.authMode === 'signin'){ await auth.signInWithEmailAndPassword(email, pass); } else { await auth.createUserWithEmailAndPassword(email, pass); } closeModal('authModal'); } catch(err) { msgEl.textContent = err.message; } });
+  document.getElementById('signOutBtn').addEventListener('click', async ()=>{ await auth.signOut(); closeModal('authModal'); });
+  auth.onAuthStateChanged(async (user) => { const prevUser = state.user; state.user = user; renderAuthUI(); if(user && !prevUser){ const migratedKey = 'chrono_migrated_v2_' + user.uid; const alreadyMigrated = loadLS(migratedKey, false); const hasLocalDataToMigrate = !alreadyMigrated && (state.events.length > 0 || state.people.length > 0); if(hasLocalDataToMigrate){ state.activities.forEach(a=>a.synced=false); state.events.forEach(e=>e.synced=false); state.people.forEach(p=>p.synced=false); await syncPush(); } saveLS(migratedKey, true); await syncPull(); await syncPush(); renderAll(); } });
   setInterval(()=>{ if(state.user) syncPull().then(renderAll); }, 5*60*1000);
-  document.addEventListener('visibilitychange', ()=>{
-    if(document.visibilityState === 'visible' && state.user) syncPull().then(renderAll);
-  });
+  document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible' && state.user) syncPull().then(renderAll); });
 }
 
-/* ============================= SYNC ============================= */
 const queueSync = debounce(()=>{ if(CLOUD_ENABLED && state.user) syncPush(); }, 1500);
-
-function setSyncBusy(busy){
-  const badge = document.getElementById('cloudBadge');
-  if(!badge) return;
-  if(busy){ badge.className = 'cloud-badge busy'; }
-  else { badge.className = state.user ? 'cloud-badge on' : 'cloud-badge'; }
-}
+function setSyncBusy(busy){ const badge = document.getElementById('cloudBadge'); if(!badge) return; if(busy){ badge.className = 'cloud-badge busy'; } else { badge.className = state.user ? 'cloud-badge on' : 'cloud-badge'; } }
 
 async function syncPush(){
-  if(!CLOUD_ENABLED || !state.user) return;
-  setSyncBusy(true);
+  if(!CLOUD_ENABLED || !state.user) return; setSyncBusy(true);
   try {
-    const uid = state.user.uid;
-    const batch = db.batch();
-
+    const uid = state.user.uid; const batch = db.batch();
     const unsyncedActs = state.activities.filter(a => !a.synced);
-    unsyncedActs.forEach(a => {
-      const ref = db.collection('users').doc(uid).collection('activities').doc(a.id);
-      batch.set(ref, {
-        id: a.id,
-        name: a.name,
-        category: a.category,
-        color: a.color,
-        instant: !!a.instant,
-        is_pinned: a.is_pinned,
-        updated_at: new Date().toISOString()
-      }, { merge: true });
-    });
-
+    unsyncedActs.forEach(a => { const ref = db.collection('users').doc(uid).collection('activities').doc(a.id); batch.set(ref, { id: a.id, name: a.name, category: a.category, color: a.color, instant: !!a.instant, is_pinned: a.is_pinned, updated_at: new Date().toISOString() }, { merge: true }); });
     const unsyncedEvs = state.events.filter(e => !e.synced);
-    unsyncedEvs.forEach(e => {
-      const ref = db.collection('users').doc(uid).collection('events').doc(e.id);
-      batch.set(ref, {
-        id: e.id,
-        client_id: e.client_id || e.id,
-        activity_id: e.activity_id,
-        activity_name: e.activity_name,
-        category: e.category,
-        color: e.color,
-        instant: !!e.instant,
-        detail: e.detail || '',
-        interruptions: e.interruptions || [],
-        start_time: e.start_time,
-        date: e.date
-      }, { merge: true });
-    });
-
+    unsyncedEvs.forEach(e => { const ref = db.collection('users').doc(uid).collection('events').doc(e.id); batch.set(ref, { id: e.id, client_id: e.client_id || e.id, activity_id: e.activity_id, activity_name: e.activity_name, category: e.category, color: e.color, instant: !!e.instant, detail: e.detail || '', interruptions: e.interruptions || [], start_time: e.start_time, date: e.date }, { merge: true }); });
     const unsyncedPeople = state.people.filter(p => !p.synced);
-    unsyncedPeople.forEach(p => {
-      const ref = db.collection('users').doc(uid).collection('people').doc(p.id);
-      batch.set(ref, {
-        id: p.id,
-        name: p.name,
-        updated_at: p.updated_at
-      }, { merge: true });
-    });
-
-    if(state.pendingDeletes.length){
-      state.pendingDeletes.forEach(id => {
-        const ref = db.collection('users').doc(uid).collection('events').doc(id);
-        batch.delete(ref);
-      });
-    }
-
-    const settingsRef = db.collection('users').doc(uid).collection('meta').doc('settings');
-    batch.set(settingsRef, {
-      offgrid_days: state.offgridDays,
-      updated_at: new Date().toISOString()
-    }, { merge: true });
-
+    unsyncedPeople.forEach(p => { const ref = db.collection('users').doc(uid).collection('people').doc(p.id); batch.set(ref, { id: p.id, name: p.name, updated_at: p.updated_at }, { merge: true }); });
+    if(state.pendingDeletes.length){ state.pendingDeletes.forEach(id => { const ref = db.collection('users').doc(uid).collection('events').doc(id); batch.delete(ref); }); }
+    const settingsRef = db.collection('users').doc(uid).collection('meta').doc('settings'); batch.set(settingsRef, { offgrid_days: state.offgridDays, updated_at: new Date().toISOString() }, { merge: true });
     await batch.commit();
-
-    unsyncedActs.forEach(a => a.synced = true);
-    unsyncedEvs.forEach(e => e.synced = true);
-    unsyncedPeople.forEach(p => p.synced = true);
-    state.pendingDeletes = [];
-
-    persistActivities();
-    persistEvents();
-    persistDeletes();
-    persistPeople();
-  } catch(err) {
-    console.error('Firebase sync push failed', err);
-  }
+    unsyncedActs.forEach(a => a.synced = true); unsyncedEvs.forEach(e => e.synced = true); unsyncedPeople.forEach(p => p.synced = true); state.pendingDeletes = []; persistActivities(); persistEvents(); persistDeletes(); persistPeople();
+  } catch(err) { console.error('Firebase sync push failed', err); }
   setSyncBusy(false);
 }
 
 async function syncPull(){
-  if(!CLOUD_ENABLED || !state.user) return;
-  setSyncBusy(true);
+  if(!CLOUD_ENABLED || !state.user) return; setSyncBusy(true);
   try {
-    const uid = state.user.uid;
-    const [actsSnap, evsSnap, metaSnap, peopleSnap] = await Promise.all([
-      db.collection('users').doc(uid).collection('activities').get(),
-      db.collection('users').doc(uid).collection('events').get(),
-      db.collection('users').doc(uid).collection('meta').doc('settings').get(),
-      db.collection('users').doc(uid).collection('people').get()
-    ]);
-
-        if(!actsSnap.empty){
-      const remoteActs = actsSnap.docs.map(doc => doc.data());
-      mergeActivities(remoteActs);
-    } else {
-      // Brand-new user: pull from admin defaults
-      try {
-        const defaultsSnap = await db.collection('config').doc('defaults').get();
-        const remoteDefaults = defaultsSnap.exists ? defaultsSnap.data().activities : null;
-        if(Array.isArray(remoteDefaults) && remoteDefaults.length){
-          state.activities = remoteDefaults.map(a => ({
-            id: a.id || slugId(a.name), name: a.name, category: a.category,
-            color: a.color || paletteColor(a.name), instant: !!a.instant,
-            needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name),
-            is_pinned: true, synced: false, updated_at: new Date().toISOString(),
-          }));
-        }
-      } catch(err) {
-        console.error('Failed to load admin defaults', err);
-      }
-    }
-
-    if(!evsSnap.empty){
-      const remoteEvs = evsSnap.docs.map(doc => doc.data());
-      mergeEvents(remoteEvs);
-    }
-    if(!peopleSnap.empty){
-      const remotePeople = peopleSnap.docs.map(doc => doc.data());
-      mergePeople(remotePeople);
-    }
-    if(metaSnap.exists){
-      const remoteOffgrid = metaSnap.data().offgrid_days;
-      if(remoteOffgrid && typeof remoteOffgrid === 'object'){
-        state.offgridDays = Object.assign({}, remoteOffgrid, state.offgridDays);
-        persistOffgrid();
-      }
-    }
-
-    persistActivities();
-    persistEvents();
-    persistPeople();
-  } catch(err) {
-    console.error('Firebase sync pull failed', err);
-  }
+    const uid = state.user.uid; const [actsSnap, evsSnap, metaSnap, peopleSnap] = await Promise.all([ db.collection('users').doc(uid).collection('activities').get(), db.collection('users').doc(uid).collection('events').get(), db.collection('users').doc(uid).collection('meta').doc('settings').get(), db.collection('users').doc(uid).collection('people').get() ]);
+    if(!actsSnap.empty){ mergeActivities(actsSnap.docs.map(doc => doc.data())); } else { try { const defaultsSnap = await db.collection('config').doc('defaults').get(); const remoteDefaults = defaultsSnap.exists ? defaultsSnap.data().activities : null; if(Array.isArray(remoteDefaults) && remoteDefaults.length){ state.activities = remoteDefaults.map(a => ({ id: a.id || slugId(a.name), name: a.name, category: a.category, color: a.color || paletteColor(a.name), instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name), is_pinned: true, synced: false, updated_at: new Date().toISOString(), })); } } catch(err) { console.error('Failed to load admin defaults', err); } }
+    if(!evsSnap.empty){ mergeEvents(evsSnap.docs.map(doc => doc.data())); }
+    if(!peopleSnap.empty){ mergePeople(peopleSnap.docs.map(doc => doc.data())); }
+    if(metaSnap.exists){ const remoteOffgrid = metaSnap.data().offgrid_days; if(remoteOffgrid && typeof remoteOffgrid === 'object'){ state.offgridDays = Object.assign({}, remoteOffgrid, state.offgridDays); persistOffgrid(); } }
+    persistActivities(); persistEvents(); persistPeople();
+  } catch(err) { console.error('Firebase sync pull failed', err); }
   setSyncBusy(false);
 }
 
-function mergePeople(remoteRows){
-  const byId = new Map(state.people.map(p=>[p.id, p]));
-  remoteRows.forEach(r=>{
-    const local = byId.get(r.id);
-    if(!local){
-      byId.set(r.id, { id:r.id, name:r.name, synced:true, updated_at:r.updated_at });
-    } else if(local.synced){
-      Object.assign(local, { name:r.name, synced:true, updated_at:r.updated_at });
-    }
-  });
-  state.people = Array.from(byId.values());
-}
+function mergePeople(remoteRows){ const byId = new Map(state.people.map(p=>[p.id, p])); remoteRows.forEach(r=>{ const local = byId.get(r.id); if(!local){ byId.set(r.id, { id:r.id, name:r.name, synced:true, updated_at:r.updated_at }); } else if(local.synced){ Object.assign(local, { name:r.name, synced:true, updated_at:r.updated_at }); } }); state.people = Array.from(byId.values()); }
+function mergeActivities(remoteRows){ const byId = new Map(state.activities.map(a=>[a.id, a])); remoteRows.forEach(r=>{ const local = byId.get(r.id); if(!local){ byId.set(r.id, { id:r.id, name:r.name, category:r.category, color:r.color, instant:!!r.instant, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at }); } else if(local.synced){ Object.assign(local, { name:r.name, category:r.category, color:r.color, instant:!!r.instant, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at }); } }); state.activities = Array.from(byId.values()); }
+function mergeEvents(remoteRows){ const pendingSet = new Set(state.pendingDeletes); const byId = new Map(state.events.map(e=>[e.id, e])); remoteRows.forEach(r=>{ if(pendingSet.has(r.id)) return; const local = byId.get(r.id); if(!local){ byId.set(r.id, { id:r.id, client_id:r.client_id||r.id, activity_id:r.activity_id, activity_name:r.activity_name, category:r.category, color:r.color, instant:!!r.instant, detail:r.detail||'', interruptions:r.interruptions||[], start_time:r.start_time, date:r.date, synced:true }); } else if(local.synced){ Object.assign(local, { activity_name:r.activity_name, category:r.category, color:r.color, instant:!!r.instant, detail:r.detail||'', interruptions:r.interruptions||[], start_time:r.start_time, date:r.date, synced:true }); } }); state.events = Array.from(byId.values()).sort((a,b)=> new Date(a.start_time)-new Date(b.start_time)); }
 
-function mergeActivities(remoteRows){
-  const byId = new Map(state.activities.map(a=>[a.id, a]));
-  remoteRows.forEach(r=>{
-    const local = byId.get(r.id);
-    if(!local){
-      byId.set(r.id, { id:r.id, name:r.name, category:r.category, color:r.color, instant:!!r.instant, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at });
-    } else if(local.synced){
-      Object.assign(local, { name:r.name, category:r.category, color:r.color, instant:!!r.instant, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at });
-    }
-  });
-  state.activities = Array.from(byId.values());
-}
-
-function mergeEvents(remoteRows){
-  const pendingSet = new Set(state.pendingDeletes);
-  const byId = new Map(state.events.map(e=>[e.id, e]));
-  remoteRows.forEach(r=>{
-    if(pendingSet.has(r.id)) return;
-    const local = byId.get(r.id);
-    if(!local){
-      byId.set(r.id, { id:r.id, client_id:r.client_id||r.id, activity_id:r.activity_id, activity_name:r.activity_name, category:r.category, color:r.color, instant:!!r.instant, detail:r.detail||'', interruptions:r.interruptions||[], start_time:r.start_time, date:r.date, synced:true });
-    } else if(local.synced){
-      Object.assign(local, { activity_name:r.activity_name, category:r.category, color:r.color, instant:!!r.instant, detail:r.detail||'', interruptions:r.interruptions||[], start_time:r.start_time, date:r.date, synced:true });
-    }
-  });
-  state.events = Array.from(byId.values()).sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
-}
-
-/* ============================= INIT ============================= */
 renderAuthUI();
 renderAll();
 
-/* ============================= INIT ============================= */
-renderAuthUI();
-renderAll();
-
-// Force fresh app loads to fetch admin defaults if no data exists yet
 if (CLOUD_ENABLED && !state.user && state.events.length === 0) {
   db.collection('config').doc('defaults').get().then(snap => {
     const remoteDefaults = snap.exists ? snap.data().activities : null;
     if(Array.isArray(remoteDefaults) && remoteDefaults.length){
-      state.activities = remoteDefaults.map(a => ({
-        id: a.id || slugId(a.name), name: a.name, category: a.category,
-        color: a.color || paletteColor(a.name), instant: !!a.instant,
-        needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name),
-        is_pinned: true, synced: false, updated_at: new Date().toISOString(),
-      }));
-      persistActivities();
-      renderAll();
+      state.activities = remoteDefaults.map(a => ({ id: a.id || slugId(a.name), name: a.name, category: a.category, color: a.color || paletteColor(a.name), instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name), is_pinned: true, synced: false, updated_at: new Date().toISOString(), })); persistActivities(); renderAll();
     }
   }).catch(e => console.log('Guest defaults check skipped', e));
 }
