@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0E14">
+<title>Chrono — Sign in</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+<style>
+  :root{
+    --ink:#0B0E14;
+    --dawn:#FF7A59;
+    --gold:#FFC24B;
+    --dusk:#7C6CF0;
+    --paper:#F3EFE6;
+    --mist:#A9B0C4;
+    --line:rgba(255,255,255,0.10);
+    --line-soft:rgba(255,255,255,0.06);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+
+  body{
+    min-height:100vh;
+    min-height:100dvh;
+    background:
+      radial-gradient(circle at 50% 18%, rgba(124,108,240,0.16), transparent 55%),
+      var(--ink);
+    color:var(--paper);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:32px 20px 40px;
+    opacity:0;
+  }
+  body.ready{ opacity:1; transition:opacity .45s ease; }
+
+  .screen{
+    width:100%;
+    max-width:380px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+  }
+
+  /* ---------- hero / arc ---------- */
+  .hero{ display:flex; flex-direction:column; align-items:center; margin-bottom:8px; }
+
+  #dayArc{ width:132px; height:132px; margin-bottom:18px; }
+  .arc-track{ fill:none; stroke:var(--line); stroke-width:3; }
+  .arc-progress{
+    fill:none;
+    stroke:url(#dayGradient);
+    stroke-width:3;
+    stroke-linecap:round;
+  }
+  .tick{ stroke:rgba(255,255,255,0.22); stroke-width:2; }
+  .now-dot{ fill:var(--gold); }
+  .now-dot-halo{
+    fill:var(--gold);
+    opacity:.45;
+    transform-box:fill-box;
+    transform-origin:center;
+    animation:haloPulse 2.4s ease-out infinite;
+  }
+  @keyframes haloPulse{
+    0%{ transform:scale(1); opacity:.45; }
+    100%{ transform:scale(2.1); opacity:0; }
+  }
+
+  .wordmark{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:28px;
+    letter-spacing:-0.01em;
+    margin:0 0 8px;
+  }
+  .tagline{
+    font-size:15px;
+    line-height:1.5;
+    color:var(--mist);
+    margin:0 0 30px;
+    max-width:280px;
+  }
+
+  /* ---------- views ---------- */
+  .view{ width:100%; }
+
+  .row{
+    width:100%;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:15px 4px;
+    background:none;
+    border:none;
+    border-bottom:1px solid var(--line-soft);
+    color:var(--paper);
+    font-family:inherit;
+    font-size:15.5px;
+    font-weight:500;
+    cursor:pointer;
+    text-align:left;
+    transition:background-color .15s ease, opacity .15s ease;
+  }
+  .view#view-methods .row:first-child{ border-top:1px solid var(--line-soft); }
+  .row:hover{ background-color:var(--line-soft); }
+  .row:active{ background-color:var(--line); }
+  .row:disabled{ opacity:.55; cursor:default; }
+  .row:focus-visible, .btn-primary:focus-visible, .btn-text:focus-visible, .otp-box:focus-visible, .field-input:focus-visible{
+    outline:2px solid var(--gold);
+    outline-offset:2px;
+  }
+
+  .row-icon{
+    width:22px; height:22px;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    color:var(--paper);
+  }
+  .row-icon svg{ width:100%; height:100%; }
+  .row-label{ flex:1; }
+  .row-chevron{ color:var(--mist); font-size:18px; transition:transform .15s ease; }
+  .row:hover .row-chevron{ transform:translateX(2px); color:var(--paper); }
+
+  .row[data-provider="google"]:hover{ background-color:rgba(255,194,75,0.06); }
+  .row[data-provider="apple"]:hover{ background-color:rgba(255,255,255,0.07); }
+  .row[data-provider="phone"]:hover{ background-color:rgba(124,108,240,0.10); }
+
+  .spinner{
+    width:17px; height:17px;
+    border-radius:50%;
+    border:2px solid rgba(255,255,255,0.25);
+    border-top-color:currentColor;
+    animation:spin .7s linear infinite;
+    flex-shrink:0;
+    display:none;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .row.is-loading .row-chevron{ display:none; }
+  .row.is-loading .row-spinner{ display:inline-block; }
+
+  /* phone + otp views */
+  .field-label{
+    display:block;
+    font-size:13.5px;
+    color:var(--mist);
+    text-align:left;
+    margin:4px 2px 8px;
+  }
+  .field-input{
+    width:100%;
+    padding:14px 14px;
+    background:rgba(255,255,255,0.04);
+    border:1px solid var(--line);
+    border-radius:10px;
+    color:var(--paper);
+    font-family:inherit;
+    font-size:16px;
+    margin-bottom:16px;
+  }
+  .field-input::placeholder{ color:rgba(169,176,196,0.55); }
+
+  .btn-primary{
+    width:100%;
+    padding:14px;
+    background:var(--dawn);
+    border:none;
+    border-radius:10px;
+    color:#1A0E08;
+    font-family:inherit;
+    font-size:15.5px;
+    font-weight:600;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    transition:filter .15s ease, opacity .15s ease;
+    margin-bottom:14px;
+  }
+  .btn-primary:hover{ filter:brightness(1.06); }
+  .btn-primary:disabled{ opacity:.6; cursor:default; }
+  .btn-spinner{ border-color:rgba(26,14,8,0.3); border-top-color:#1A0E08; }
+
+  .btn-text{
+    background:none;
+    border:none;
+    color:var(--mist);
+    font-family:inherit;
+    font-size:14px;
+    cursor:pointer;
+    padding:8px;
+  }
+  .btn-text:hover{ color:var(--paper); }
+  .btn-text:disabled{ opacity:.5; cursor:default; }
+
+  .otp-row{ display:flex; gap:8px; justify-content:center; margin-bottom:20px; }
+  .otp-box{
+    width:40px; height:52px;
+    text-align:center;
+    font-size:20px;
+    font-family:'Space Grotesk', sans-serif;
+    background:rgba(255,255,255,0.04);
+    border:1px solid var(--line);
+    border-radius:10px;
+    color:var(--paper);
+  }
+  .otp-footer{ display:flex; justify-content:space-between; align-items:center; }
+
+  .back-row{ margin-top:2px; }
+
+  .error-banner{
+    width:100%;
+    background:rgba(255,122,89,0.12);
+    border:1px solid rgba(255,122,89,0.35);
+    color:#FFD9CC;
+    font-size:13.5px;
+    line-height:1.4;
+    padding:11px 14px;
+    border-radius:10px;
+    margin-bottom:16px;
+    text-align:left;
+  }
+
+  .footnote{
+    font-size:12.5px;
+    color:rgba(169,176,196,0.7);
+    margin-top:26px;
+    max-width:300px;
+    line-height:1.5;
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .arc-progress{ transition:none !important; }
+    .now-dot-halo{ animation:none; }
+    .spinner{ animation:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="screen">
+
+  <div class="hero">
+    <svg id="dayArc" viewBox="0 0 200 200" aria-hidden="true">
+      <defs>
+        <linearGradient id="dayGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FF7A59"/>
+          <stop offset="50%" stop-color="#FFC24B"/>
+          <stop offset="100%" stop-color="#7C6CF0"/>
+        </linearGradient>
+      </defs>
+      <line class="tick" x1="100" y1="4" x2="100" y2="18"/>
+      <line class="tick" x1="183" y1="100" x2="197" y2="100"/>
+      <line class="tick" x1="100" y1="182" x2="100" y2="196"/>
+      <line class="tick" x1="3" y1="100" x2="17" y2="100"/>
+      <circle cx="100" cy="100" r="90" class="arc-track"/>
+      <circle cx="100" cy="100" r="90" class="arc-progress" id="arcProgress" transform="rotate(-90 100 100)"/>
+      <circle class="now-dot-halo" id="nowDotHalo" r="5"/>
+      <circle class="now-dot" id="nowDot" r="5"/>
+    </svg>
+    <h1 class="wordmark">Chrono</h1>
+    <p class="tagline">Sign in to pick up your day where you left it.</p>
+  </div>
+
+  <div id="errorBanner" class="error-banner" role="alert" hidden></div>
+
+  <div class="view" id="view-methods">
+    <button class="row" type="button" data-provider="google" aria-label="Continue with Google">
+      <span class="row-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 4a8 8 0 108 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 12h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </span>
+      <span class="row-label">Continue with Google</span>
+      <span class="row-chevron" aria-hidden="true">›</span>
+      <span class="spinner row-spinner" aria-hidden="true"></span>
+    </button>
+    <button class="row" type="button" data-provider="apple" aria-label="Continue with Apple">
+      <span class="row-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.7 12.7c0 2.6 2.3 3.5 2.3 3.5s-1.8 3.9-3.7 3.9c-.9 0-1.4-.6-2.5-.6s-1.7.6-2.5.6c-1.9 0-4.1-4-4.1-7.2 0-3.2 2-4.9 3.9-4.9 1 0 1.9.7 2.5.7s1.6-.7 2.8-.7c1 0 2.6.4 3.5 2-.1.1-2.2 1.3-2.2 2.7ZM13.9 5.3c.6-.7 1-1.7.9-2.7-.9 0-1.9.5-2.6 1.2-.6.6-1.1 1.6-.9 2.6.9.1 1.9-.4 2.6-1.1Z"/></svg>
+      </span>
+      <span class="row-label">Continue with Apple</span>
+      <span class="row-chevron" aria-hidden="true">›</span>
+      <span class="spinner row-spinner" aria-hidden="true"></span>
+    </button>
+    <button class="row" type="button" data-provider="phone" aria-label="Continue with phone">
+      <span class="row-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 3h5l1.5 4-2 1.5a11 11 0 005.5 5.5l1.5-2 4 1.5v5a2 2 0 01-2 2C11.6 21 3 12.4 3 5a2 2 0 013-2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      </span>
+      <span class="row-label">Continue with phone</span>
+      <span class="row-chevron" aria-hidden="true">›</span>
+      <span class="spinner row-spinner" aria-hidden="true"></span>
+    </button>
+  </div>
+
+  <div class="view" id="view-phone" hidden>
+    <label class="field-label" for="phoneInput">Phone number, with country code</label>
+    <input class="field-input" id="phoneInput" type="tel" inputmode="tel" placeholder="+91 98765 43210" autocomplete="tel">
+    <button class="btn-primary" id="sendCodeBtn" type="button">
+      <span class="btn-label">Send code</span>
+      <span class="spinner btn-spinner" aria-hidden="true" hidden></span>
+    </button>
+    <button class="btn-text back-row" id="phoneBackBtn" type="button">Back</button>
+  </div>
+
+  <div class="view" id="view-otp" hidden>
+    <p class="field-label" style="text-align:center;">Enter the 6-digit code we sent</p>
+    <div class="otp-row">
+      <input class="otp-box" type="tel" inputmode="numeric" maxlength="1" aria-label="Digit 1">
+      <input class="otp-box" type="tel" inputmode="numeric" maxlength="1" aria-label="Digit 2">
+      <input class="otp-box" type="tel" inputmode="numeric" maxlength="1" aria-label="Digit 3">
+      <input class="otp-box" type="tel" inputmode="numeric" maxlength="1" aria-label="Digit 4">
+      <input class="otp-box" type="tel" inputmode="numeric" maxlength="1" aria-label="Digit 5">
+      <input class="otp-box" type="tel" inputmode="numeric" maxlength="1" aria-label="Digit 6">
+    </div>
+    <button class="btn-primary" id="verifyBtn" type="button">
+      <span class="btn-label">Verify</span>
+      <span class="spinner btn-spinner" aria-hidden="true" hidden></span>
+    </button>
+    <div class="otp-footer">
+      <button class="btn-text" id="resendBtn" type="button">Resend code</button>
+      <button class="btn-text" id="otpBackBtn" type="button">Back</button>
+    </div>
+  </div>
+
+  <p class="footnote">By continuing, you're signing in to track your day in Chrono. Returning on the same number or account brings your data back with you.</p>
+</div>
+
+<div id="recaptcha-container"></div>
+
+<script>
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyBkqINVQDvotNAlwezK6_fXhHduT7E2M_4",
+    authDomain: "chrono-e6497.firebaseapp.com",
+    projectId: "chrono-e6497",
+    storageBucket: "chrono-e6497.firebasestorage.app",
+    messagingSenderId: "954295376775",
+    appId: "1:954295376775:web:5383634ba4a04e61289122"
+  };
+  const REDIRECT_TARGET = "index.html";
+  const USERS_COLLECTION = "users";
+
+  firebase.initializeApp(FIREBASE_CONFIG);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const viewMethods = document.getElementById('view-methods');
+  const viewPhone = document.getElementById('view-phone');
+  const viewOtp = document.getElementById('view-otp');
+  const errorBanner = document.getElementById('errorBanner');
+
+  const phoneInput = document.getElementById('phoneInput');
+  const sendCodeBtn = document.getElementById('sendCodeBtn');
+  const phoneBackBtn = document.getElementById('phoneBackBtn');
+
+  const otpBoxes = Array.from(document.querySelectorAll('.otp-box'));
+  const verifyBtn = document.getElementById('verifyBtn');
+  const resendBtn = document.getElementById('resendBtn');
+  const otpBackBtn = document.getElementById('otpBackBtn');
+
+  const arcProgress = document.getElementById('arcProgress');
+  const nowDot = document.getElementById('nowDot');
+  const nowDotHalo = document.getElementById('nowDotHalo');
+
+  let errorTimer = null;
+  let recaptchaVerifier = null;
+  let confirmationResultRef = null;
+  let cooldownTimer = null;
+
+  function drawArc(){
+    const now = new Date();
+    const fraction = (now.getHours() * 60 + now.getMinutes()) / 1440;
+    const r = 90;
+    const circumference = 2 * Math.PI * r;
+
+    arcProgress.style.strokeDasharray = circumference;
+    arcProgress.style.strokeDashoffset = circumference;
+    requestAnimationFrame(() => {
+      arcProgress.style.transition = 'stroke-dashoffset 1.3s cubic-bezier(.16,.84,.44,1)';
+      arcProgress.style.strokeDashoffset = circumference * (1 - fraction);
+    });
+
+    const angle = fraction * 2 * Math.PI - Math.PI / 2;
+    const cx = 100 + r * Math.cos(angle);
+    const cy = 100 + r * Math.sin(angle);
+    nowDot.setAttribute('cx', cx);
+    nowDot.setAttribute('cy', cy);
+    nowDotHalo.setAttribute('cx', cx);
+    nowDotHalo.setAttribute('cy', cy);
+  }
+  drawArc();
+
+  function showView(name){
+    viewMethods.hidden = name !== 'methods';
+    viewPhone.hidden = name !== 'phone';
+    viewOtp.hidden = name !== 'otp';
+    hideError();
+  }
+
+  function showError(message){
+    errorBanner.textContent = message;
+    errorBanner.hidden = false;
+    if (errorTimer) clearTimeout(errorTimer);
+    errorTimer = setTimeout(hideError, 4500);
+  }
+  function hideError(){
+    errorBanner.hidden = true;
+  }
+
+  function resetProviderButtons(){
+    document.querySelectorAll('.row').forEach(b => {
+      b.disabled = false;
+      b.classList.remove('is-loading');
+    });
+  }
+  function setProviderLoading(provider, loading){
+    const btn = document.querySelector('.row[data-provider="' + provider + '"]');
+    if (!btn) return;
+    btn.disabled = loading;
+    btn.classList.toggle('is-loading', loading);
+  }
+  function setInlineLoading(btn, loading){
+    const spinner = btn.querySelector('.spinner');
+    const label = btn.querySelector('.btn-label');
+    btn.disabled = loading;
+    if (spinner) spinner.hidden = !loading;
+    if (label) label.style.opacity = loading ? '0.6' : '1';
+  }
+
+  async function handleAuthSuccess(user){
+    try {
+      const ref = db.collection(USERS_COLLECTION).doc(user.uid);
+      const snap = await ref.get();
+      if (!snap.exists) {
+        await ref.set({
+          uid: user.uid,
+          displayName: user.displayName || null,
+          email: user.email || null,
+          phoneNumber: user.phoneNumber || null,
+          photoURL: user.photoURL || null,
+          provider: (user.providerData[0] && user.providerData[0].providerId) || 'unknown',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      } else {
+        await ref.set({ lastLogin: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      }
+      window.location.replace(REDIRECT_TARGET);
+    } catch (err) {
+      console.error(err);
+      showError("Signed in, but couldn't reach your data. Reloading may help.");
+      resetProviderButtons();
+    }
+  }
+
+  function handleProviderError(err, provider){
+    resetProviderButtons();
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment') {
+      auth.signInWithRedirect(provider);
+      return;
+    }
+    if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+      showError('Sign-in window was closed. Try again when ready.');
+      return;
+    }
+    console.error(err);
+    showError('Something interrupted sign-in. Try again.');
+  }
+
+  document.querySelector('.row[data-provider="google"]').addEventListener('click', () => {
+    setProviderLoading('google', true);
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider)
+      .then(result => handleAuthSuccess(result.user))
+      .catch(err => handleProviderError(err, provider));
+  });
+
+  document.querySelector('.row[data-provider="apple"]').addEventListener('click', () => {
+    setProviderLoading('apple', true);
+    const provider = new firebase.auth.OAuthProvider('apple.com');
+    provider.addScope('email');
+    provider.addScope('name');
+    auth.signInWithPopup(provider)
+      .then(result => handleAuthSuccess(result.user))
+      .catch(err => handleProviderError(err, provider));
+  });
+
+  document.querySelector('.row[data-provider="phone"]').addEventListener('click', () => {
+    showView('phone');
+    phoneInput.focus();
+  });
+  phoneBackBtn.addEventListener('click', () => showView('methods'));
+  otpBackBtn.addEventListener('click', () => showView('phone'));
+
+  function ensureRecaptcha(){
+    if (!recaptchaVerifier) {
+      recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
+    }
+    return recaptchaVerifier;
+  }
+
+  function sendCode(){
+    const raw = phoneInput.value.trim();
+    if (!/^\+[1-9]\d{7,14}$/.test(raw)) {
+      showError('Enter your number with the country code, like +91 98765 43210.');
+      return;
+    }
+    setInlineLoading(sendCodeBtn, true);
+    const verifier = ensureRecaptcha();
+    auth.signInWithPhoneNumber(raw, verifier)
+      .then(confirmationResult => {
+        confirmationResultRef = confirmationResult;
+        setInlineLoading(sendCodeBtn, false);
+        clearOtpBoxes();
+        showView('otp');
+        otpBoxes[0].focus();
+        startResendCooldown();
+      })
+      .catch(err => {
+        setInlineLoading(sendCodeBtn, false);
+        if (recaptchaVerifier) { recaptchaVerifier.clear(); recaptchaVerifier = null; }
+        console.error(err);
+        if (err.code === 'auth/too-many-requests') {
+          showError('Too many attempts. Wait a bit before trying again.');
+        } else if (err.code === 'auth/invalid-phone-number') {
+          showError("That number doesn't look right. Check the country code and digits.");
+        } else {
+          showError('Could not send the code. Try again.');
+        }
+      });
+  }
+  sendCodeBtn.addEventListener('click', sendCode);
+  phoneInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendCode(); });
+
+  function getOtpValue(){
+    return otpBoxes.map(b => b.value).join('');
+  }
+  function clearOtpBoxes(){
+    otpBoxes.forEach(b => { b.value = ''; });
+  }
+
+  otpBoxes.forEach((box, i) => {
+    box.addEventListener('input', () => {
+      box.value = box.value.replace(/[^0-9]/g, '').slice(0, 1);
+      if (box.value && i < otpBoxes.length - 1) otpBoxes[i + 1].focus();
+    });
+    box.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !box.value && i > 0) otpBoxes[i - 1].focus();
+      if (e.key === 'Enter') verifyCode();
+    });
+    box.addEventListener('paste', e => {
+      e.preventDefault();
+      const digits = (e.clipboardData.getData('text') || '').replace(/[^0-9]/g, '').slice(0, 6).split('');
+      digits.forEach((d, idx) => { if (otpBoxes[idx]) otpBoxes[idx].value = d; });
+      const last = Math.min(digits.length, otpBoxes.length) - 1;
+      if (last >= 0) otpBoxes[last].focus();
+    });
+  });
+
+  function verifyCode(){
+    const code = getOtpValue();
+    if (code.length !== 6) {
+      showError('Enter all 6 digits.');
+      return;
+    }
+    if (!confirmationResultRef) {
+      showError('This code expired. Send a new one.');
+      return;
+    }
+    setInlineLoading(verifyBtn, true);
+    confirmationResultRef.confirm(code)
+      .then(result => handleAuthSuccess(result.user))
+      .catch(err => {
+        setInlineLoading(verifyBtn, false);
+        console.error(err);
+        if (err.code === 'auth/code-expired') {
+          showError('This code expired. Send a new one.');
+        } else {
+          showError("That code didn't match. Try again.");
+        }
+        clearOtpBoxes();
+        otpBoxes[0].focus();
+      });
+  }
+  verifyBtn.addEventListener('click', verifyCode);
+
+  function startResendCooldown(){
+    let remaining = 30;
+    resendBtn.disabled = true;
+    resendBtn.textContent = 'Resend code (' + remaining + 's)';
+    if (cooldownTimer) clearInterval(cooldownTimer);
+    cooldownTimer = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        clearInterval(cooldownTimer);
+        resendBtn.disabled = false;
+        resendBtn.textContent = 'Resend code';
+      } else {
+        resendBtn.textContent = 'Resend code (' + remaining + 's)';
+      }
+    }, 1000);
+  }
+  resendBtn.addEventListener('click', () => {
+    if (resendBtn.disabled) return;
+    sendCode();
+  });
+
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      handleAuthSuccess(user);
+    } else {
+      document.body.classList.add('ready');
+    }
+  });
+
+  auth.getRedirectResult().catch(err => {
+    console.error(err);
+    document.body.classList.add('ready');
+    showError('Something interrupted sign-in. Try again.');
+  });
+
+  setTimeout(() => document.body.classList.add('ready'), 2500);
+</script>
+</body>
+</html>
