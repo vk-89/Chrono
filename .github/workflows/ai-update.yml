@@ -6,7 +6,12 @@ on:
 
 jobs:
   update-code:
-    if: contains(github.event.issue.title, '[ai]') || contains(github.event.issue.labels.*.name, 'ai-update')
+    if: >
+      contains(github.event.issue.title, '[ai]') ||
+      contains(github.event.issue.title, '[ai-user]') ||
+      contains(github.event.issue.title, '[ai-admin]') ||
+      contains(github.event.issue.title, '[ai-both]') ||
+      contains(github.event.issue.labels.*.name, 'ai-update')
     runs-on: ubuntu-latest
     permissions:
       contents: write
