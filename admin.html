@@ -56,11 +56,13 @@
   .tab-panel.active{display:block;}
 
   /* ---- Activity Grid (User Style) ---- */
+  .category-section { margin-bottom: 24px; }
+  .category-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin-bottom: 12px; }
+  
   .activity-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 8px;
-    margin-bottom: 20px;
   }
   .act-card {
     background: var(--surface);
@@ -73,8 +75,9 @@
     cursor: grab;
     user-select: none;
     position: relative;
+    transition: transform 0.1s;
   }
-  .act-card:active { cursor: grabbing; }
+  .act-card:active { transform: scale(0.97); cursor: grabbing; }
   .act-card.dragging { opacity: 0.5; border-style: dashed; }
   .act-dot {
     width: 10px;
@@ -201,10 +204,10 @@
   <div class="tab-panel active" id="activitiesTab">
     <div style="margin-bottom:12px;">
       <h2 style="font-size:14px;">Setup default grid</h2>
-      <p style="font-size:12px; color:var(--ink-soft); margin-top:4px;">Drag and drop to rearrange how new users see their dashboard.</p>
+      <p style="font-size:12px; color:var(--ink-soft); margin-top:4px;">Drag to rearrange. <b>Long press</b> to edit activity.</p>
     </div>
-    <div id="defaultsList" class="activity-grid"></div>
-    <button class="add-fab" id="addDefaultBtn">+ Add default activity</button>
+    <div id="defaultsContainer"></div>
+    <button class="add-fab" id="addDefaultBtn" style="margin-top:20px;">+ Add default activity</button>
   </div>
 
   <div class="tab-panel" id="usersTab">
@@ -227,7 +230,7 @@
       <label>Category</label>
       <div class="pill-row" id="actCatRow">
         <button type="button" class="pill" data-cat="study">Study</button>
-        <button type="button" class="pill" data-cat="social">Social</button>
+        <button type="button" class="pill" data-cat="social">Social and Fun</button>
         <button type="button" class="pill" data-cat="essential">Essential</button>
       </div>
     </div>
@@ -269,7 +272,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-const CATEGORY_LABELS = { study:'Study', social:'Social', essential:'Essential' };
+const CATEGORY_LABELS = { study:'Study', social:'Social and Fun', essential:'Essential' };
 const PALETTE = ['#09090b','#1e1b4b','#14532d','#450a0a','#4a044e','#312e81','#1e3a8a','#115e59',
   '#7f1d1d','#701a75','#831843','#4338ca','#1d4ed8','#0f766e','#b91c1c','#a21caf','#be185d','#b45309',
   '#4d7c0f','#6366f1','#3b82f6','#14b8a6','#ef4444','#d946ef','#ec4899','#f59e0b','#84cc16','#10b981',
@@ -348,48 +351,82 @@ async function loadDefaults(){
 }
 
 function renderDefaults(){
-  const el = document.getElementById('defaultsList');
-  el.innerHTML = '';
+  const container = document.getElementById('defaultsContainer');
+  container.innerHTML = '';
   
-  defaultActivities.forEach((a, idx) => {
-    const card = document.createElement('div');
-    card.className = 'act-card';
-    card.draggable = true;
-    card.dataset.id = a.id;
-    card.dataset.index = idx;
-    card.innerHTML = `
-      <div class="act-dot" style="background:${a.color}"></div>
-      <div class="act-name">${escapeHtml(a.name)}</div>
-      <div class="act-drag-handle">::</div>
-      <div class="act-actions">
-        <button data-edit="${a.id}">✎</button>
-        <button data-del="${a.id}">✕</button>
-      </div>
-    `;
+  const categories = ['study', 'social', 'essential'];
+  
+  categories.forEach(catId => {
+    const section = document.createElement('div');
+    section.className = 'category-section';
+    section.innerHTML = `<div class="category-title">${CATEGORY_LABELS[catId]}</div>`;
     
-    // Drag Events
-    card.addEventListener('dragstart', e => {
-      card.classList.add('dragging');
-      e.dataTransfer.setData('text/plain', idx);
-    });
-    card.addEventListener('dragend', () => card.classList.remove('dragging'));
-    card.addEventListener('dragover', e => e.preventDefault());
-    card.addEventListener('drop', e => {
-      e.preventDefault();
-      const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
-      const toIdx = idx;
-      if(fromIdx === toIdx) return;
-      const moved = defaultActivities.splice(fromIdx, 1)[0];
-      defaultActivities.splice(toIdx, 0, moved);
-      renderDefaults();
-      persistDefaults();
+    const grid = document.createElement('div');
+    grid.className = 'activity-grid';
+    
+    const filtered = defaultActivities.filter(a => (a.category||'essential') === catId);
+    
+    filtered.forEach((a) => {
+      const globalIdx = defaultActivities.indexOf(a);
+      const card = document.createElement('div');
+      card.className = 'act-card';
+      card.draggable = true;
+      card.dataset.id = a.id;
+      card.dataset.index = globalIdx;
+      card.innerHTML = `
+        <div class="act-dot" style="background:${a.color}"></div>
+        <div class="act-name">${escapeHtml(a.name)}</div>
+        <div class="act-drag-handle">::</div>
+        <div class="act-actions">
+          <button data-edit="${a.id}">✎</button>
+          <button data-del="${a.id}">✕</button>
+        </div>
+      `;
+      
+      // Long press simulation
+      let pressTimer;
+      const startPress = () => { pressTimer = setTimeout(() => openActModal(a.id), 600); };
+      const cancelPress = () => { clearTimeout(pressTimer); };
+      
+      card.addEventListener('mousedown', startPress);
+      card.addEventListener('mouseup', cancelPress);
+      card.addEventListener('mouseleave', cancelPress);
+      card.addEventListener('touchstart', startPress);
+      card.addEventListener('touchend', cancelPress);
+
+      // Drag Events
+      card.addEventListener('dragstart', e => {
+        card.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', globalIdx);
+      });
+      card.addEventListener('dragend', () => card.classList.remove('dragging'));
+      card.addEventListener('dragover', e => e.preventDefault());
+      card.addEventListener('drop', e => {
+        e.preventDefault();
+        const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+        const toIdx = globalIdx;
+        if(fromIdx === toIdx) return;
+        const moved = defaultActivities.splice(fromIdx, 1)[0];
+        defaultActivities.splice(toIdx, 0, moved);
+        renderDefaults();
+        persistDefaults();
+      });
+
+      card.querySelector('[data-edit]').addEventListener('click', (e)=>{ e.stopPropagation(); openActModal(a.id); });
+      card.querySelector('[data-del]').addEventListener('click', (e)=>{ e.stopPropagation(); deleteDefault(a.id); });
+      
+      grid.appendChild(card);
     });
 
-    card.querySelector('[data-edit]').addEventListener('click', (e)=>{ e.stopPropagation(); openActModal(a.id); });
-    card.querySelector('[data-del]').addEventListener('click', (e)=>{ e.stopPropagation(); deleteDefault(a.id); });
-    
-    el.appendChild(card);
+    if (filtered.length > 0) {
+      section.appendChild(grid);
+      container.appendChild(section);
+    }
   });
+
+  if (defaultActivities.length === 0) {
+    container.innerHTML = '<div class="empty-note">No default activities defined.</div>';
+  }
 }
 
 async function persistDefaults(){
