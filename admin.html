@@ -494,7 +494,7 @@ window.viewUser = async function(uid){
     ]);
 
     const profile = profSnap.data() || {};
-    const acts = actsSnap.docs.map(d=>d.data());
+    const acts = actsSnap.docs.map(d=>d.data()).sort((a,b) => (a.order ?? 0) - (b.order ?? 0));
     const evs = evsSnap.docs.map(d=>d.data()).sort((a,b)=> new Date(b.start_time) - new Date(a.start_time));
 
     let actsHtml = acts.map(a => `
@@ -518,7 +518,7 @@ window.viewUser = async function(uid){
       <div class="user-dash-header">
         <div class="sub">CHRONO USER VIEW</div>
         <h2>${escapeHtml(profile.email || 'User')}</h2>
-        <div class="sub">Joined ${new Date(profile.createdAt).toLocaleDateString()} · ${uid}</div>
+        <div class="sub">Joined ${profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '—'} · ${uid}</div>
       </div>
 
       <div class="stat-row">
