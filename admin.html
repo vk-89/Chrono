@@ -197,17 +197,17 @@
   </div>
 
   <div class="tabs">
-    <button class="tab-btn active" data-tab="activitiesTab">Starter Grid</button>
+    <button class="tab-btn active" data-tab="activitiesTab">Default Activities</button>
     <button class="tab-btn" data-tab="usersTab">Users</button>
   </div>
 
   <div class="tab-panel active" id="activitiesTab">
     <div style="margin-bottom:12px;">
-      <h2 style="font-size:14px;">Starter Grid Template</h2>
-      <p style="font-size:12px; color:var(--ink-soft); margin-top:4px;">Define the activities every <b>new user</b> starts with. Changes do not affect existing accounts. Drag to reorder, long press to edit.</p>
+      <h2 style="font-size:14px;">Default Activities Definition</h2>
+      <p style="font-size:12px; color:var(--ink-soft); margin-top:4px;">Define the activities every <b>user</b> starts with. Changes affect new users automatically, and existing users can be manually reset via the directory. Drag to reorder, long press to edit.</p>
     </div>
     <div id="defaultsContainer"></div>
-    <button class="add-fab" id="addDefaultBtn" style="margin-top:20px;">+ Add starter activity</button>
+    <button class="add-fab" id="addDefaultBtn" style="margin-top:20px;">+ Add default activity</button>
   </div>
 
   <div class="tab-panel" id="usersTab">
@@ -425,17 +425,16 @@ function renderDefaults(){
   });
 
   if (defaultActivities.length === 0) {
-    container.innerHTML = '<div class="empty-note">No starter activities defined.</div>';
+    container.innerHTML = '<div class="empty-note">No default activities defined.</div>';
   }
 }
 
 async function persistDefaults(){
-  // Updates global config ONLY. New users will clone this, existing users stay as-is.
   await DEFAULTS_REF.set({ activities: defaultActivities, updated_at: new Date().toISOString() }, { merge: true });
 }
 
 async function deleteDefault(id){
-  if(!confirm('Delete this starter activity?')) return;
+  if(!confirm('Delete this default activity?')) return;
   defaultActivities = defaultActivities.filter(a=>a.id!==id);
   renderDefaults();
   persistDefaults();
@@ -563,9 +562,14 @@ window.viewUser = async function(uid){
 
     body.innerHTML = `
       <div class="user-dash-header">
-        <div class="sub">CHRONO USER VIEW</div>
-        <h2>${escapeHtml(profile.email || 'User')}</h2>
-        <div class="sub">Joined ${profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '—'} · ${uid}</div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <div class="sub">CHRONO USER VIEW</div>
+            <h2>${escapeHtml(profile.email || 'User')}</h2>
+            <div class="sub">Joined ${profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '—'} · ${uid}</div>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="window.resetUserActivities('${uid}')" style="margin-top:10px;">Reset to Defaults</button>
+        </div>
       </div>
 
       <div class="stat-row">
@@ -586,6 +590,38 @@ window.viewUser = async function(uid){
 
   } catch(err) {
     body.innerHTML = '<div class="empty-note">Error loading user dashboard.</div>';
+    console.error(err);
+  }
+};
+
+window.resetUserActivities = async function(uid) {
+  if (!confirm("Are you sure you want to reset this user's grid to the admin-defined defaults? All current custom activities for this user will be removed.")) return;
+  
+  try {
+    const defaultsSnap = await db.collection('config').doc('defaults').get();
+    if (!defaultsSnap.exists) throw new Error("No default activities defined in system config.");
+    const defaults = defaultsSnap.data().activities || [];
+    
+    // 1. Get existing activities for user
+    const currentActsSnap = await db.collection('users').doc(uid).collection('activities').get();
+    
+    // 2. Perform batch update
+    const batch = db.batch();
+    
+    // Delete existing
+    currentActsSnap.forEach(doc => batch.delete(doc.ref));
+    
+    // Add defaults
+    defaults.forEach((act, idx) => {
+      const newRef = db.collection('users').doc(uid).collection('activities').doc();
+      batch.set(newRef, { ...act, order: idx });
+    });
+    
+    await batch.commit();
+    alert("User's activities have been reset to system defaults.");
+    window.viewUser(uid); // Refresh the modal
+  } catch(err) {
+    alert("Reset failed: " + err.message);
     console.error(err);
   }
 };

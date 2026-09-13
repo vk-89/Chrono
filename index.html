@@ -641,27 +641,6 @@ const DAY_WIDTH = 24 * PX_PER_HOUR;
 const TIMELINE_DAYS = 7;
 const INSIGHTS_LOOKBACK_DAYS = 14;
 
-const DEFAULT_ACTIVITIES = [
-  {name:'Wake Up', category:'essential', instant:true},
-  {name:'Ready', category:'essential'},
-  {name:'Bath', category:'essential'},
-  {name:'Breakfast', category:'essential'},
-  {name:'Lunch', category:'essential'},
-  {name:'Dinner', category:'essential'},
-  {name:'Commute', category:'essential'},
-  {name:'Rest', category:'essential'},
-  {name:'Cooking', category:'essential'},
-  {name:'Sleep', category:'essential'},
-  {name:'Admin / Switching', category:'essential'},
-  {name:'Library', category:'study'},
-  {name:'Coaching', category:'study'},
-  {name:'Newspaper', category:'study'},
-  {name:'Website Work', category:'study'},
-  {name:'Call', category:'social'},
-  {name:'Timepass', category:'social'},
-  {name:'Hobby', category:'social'},
-];
-
 const LS = {
   activities:'chrono_activities_v2',
   events:'chrono_events_v2',
@@ -784,11 +763,8 @@ function defaultPeoplePicker(name){
   return n === 'call';
 }
 
-// ---- Duplicate Mitigation Block ----
-const rawStoredActivities = loadLS(LS.activities, null) || DEFAULT_ACTIVITIES.map(a => ({
-  id: slugId(a.name), name:a.name, category:a.category, color: paletteColor(a.name),
-  instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name), is_pinned:true, synced:false, updated_at: new Date().toISOString(),
-}));
+// ---- Initialization ----
+const rawStoredActivities = loadLS(LS.activities, []);
 const rawStoredEvents = loadLS(LS.events, []);
 const activityDedupMap = new Map();
 const activityIdRedirects = {};
@@ -1716,19 +1692,36 @@ document.getElementById('deleteActBtn').addEventListener('click', () => {
 });
 
 document.getElementById('resetActivitiesBtn').addEventListener('click', async () => {
-  const msg = "Are you sure? This will remove all your custom activities and restore the standard defaults. Your logged history won't be deleted, but past entries might change appearance to match defaults.";
+  const msg = "Are you sure? This will remove all your custom activities and restore the admin-defined defaults. Your logged history won't be deleted, but past entries might change appearance to match defaults.";
   if(!confirm(msg)) return;
-  state.activities.forEach(a => { if(a.synced) state.pendingActivityDeletes.push(a.id); });
-  state.activities = DEFAULT_ACTIVITIES.map(a => ({
-    id: slugId(a.name), name:a.name, category:a.category, color: paletteColor(a.name),
-    instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name),
-    is_pinned:true, synced:false, updated_at: new Date().toISOString(),
-  }));
-  persistActivities(); persistActivityDeletes();
-  renderAll();
-  showToast("Activities reset to default");
-  closeModal('authModal');
-  queueSync();
+
+  showToast("Resetting to admin defaults...");
+  try {
+    const defaultsSnap = await db.collection('config').doc('defaults').get();
+    if(!defaultsSnap.exists) {
+      showToast("No admin defaults found in database.");
+      return;
+    }
+    const remoteDefaults = defaultsSnap.data().activities;
+    if(Array.isArray(remoteDefaults)){
+      state.activities.forEach(a => { if(a.synced) state.pendingActivityDeletes.push(a.id); });
+      state.activities = remoteDefaults.map(a => ({
+        id: a.id || slugId(a.name), name:a.name, category:a.category, color: a.color || paletteColor(a.name),
+        instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name),
+        is_pinned:true, synced:false, updated_at: new Date().toISOString(),
+      }));
+      persistActivities(); persistActivityDeletes();
+      renderAll();
+      showToast("Activities reset to admin defaults");
+      closeModal('authModal');
+      queueSync();
+    } else {
+      showToast("Invalid admin default data.");
+    }
+  } catch(e) {
+    console.error(e);
+    showToast("Error fetching defaults.");
+  }
 });
 
 document.getElementById('inlinePastSaveBtn').addEventListener('click', ()=>{
@@ -1762,7 +1755,7 @@ function openPeopleModal(act, atDate){ pendingPeopleAct = act; pendingPeopleTime
 function resolvePendingPeople(skip){ if(!pendingPeopleAct) return; let detail = ''; if(!skip){ const names = state.people.filter(p => selectedPeopleIds.has(p.id)).map(p=>p.name); detail = names.join(', '); } logActivity(pendingPeopleAct, pendingPeopleTime, detail); pendingPeopleAct = null; pendingPeopleTime = null; closeModal('peopleModal'); }
 
 document.getElementById('peopleCheckList').addEventListener('change', (e)=>{ const cb = e.target.closest('input[type=checkbox]'); if(!cb) return; if(cb.checked) selectedPeopleIds.add(cb.dataset.id); else selectedPeopleIds.delete(cb.dataset.id); });
-document.getElementById('peopleCheckList').addEventListener('click', (e)=>{ const delBtn = e.target.closest('button[data-del]'); if(!delBtn) return; const id = delBtn.dataset.del; if(!confirm('Remove this person from your list? Past logged entries will keep their name.')) return; state.people = state.people.filter(p=>p.id!==id); selectedPeopleIds.delete(id); persistPeople(); renderPeopleCheckList(); queueSync(); });
+document.getElementById('peopleCheckList').addEventListener('click', (e)=>{ const delBtn = e.target.closest('button[data-del]'); if(!btn) return; const id = delBtn.dataset.del; if(!confirm('Remove this person from your list? Past logged entries will keep their name.')) return; state.people = state.people.filter(p=>p.id!==id); selectedPeopleIds.delete(id); persistPeople(); renderPeopleCheckList(); queueSync(); });
 document.getElementById('addPersonBtn').addEventListener('click', ()=>{ const input = document.getElementById('newPersonInput'); const p = addPerson(input.value); if(p){ selectedPeopleIds.add(p.id); input.value = ''; renderPeopleCheckList(); queueSync(); input.focus(); } });
 document.getElementById('newPersonInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('addPersonBtn').click(); } });
 document.getElementById('peopleLogBtn').addEventListener('click', ()=> resolvePendingPeople(false));
