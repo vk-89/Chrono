@@ -558,6 +558,7 @@
       Signed in as <b id="accountIdentityDisplay" style="color:var(--ink);"></b>
     </div>
     <button class="btn btn-outline" id="openSettingsInProfile" style="width:100%;margin-bottom:10px;">Preferences</button>
+    <button class="btn btn-outline" id="resetActivitiesBtn" style="width:100%;margin-bottom:10px;color:var(--danger);border-color:rgba(179,73,47,0.2);">Reset Activities to Default</button>
     <button class="btn btn-ghost" id="signOutBtn" style="width:100%;color:var(--danger);font-weight:600;">Sign out</button>
   </div>
 </div>
@@ -665,6 +666,7 @@ const LS = {
   activities:'chrono_activities_v2',
   events:'chrono_events_v2',
   deletes:'chrono_pending_deletes_v2',
+  actDeletes:'chrono_pending_act_deletes_v2',
   settings:'chrono_user_settings_v2',
   offgridDays:'chrono_offgrid_days_v1',
   people:'chrono_people_v1'
@@ -806,6 +808,7 @@ const state = {
   activities: uniqueActivities,
   events: rawStoredEvents,
   pendingDeletes: loadLS(LS.deletes, []),
+  pendingActivityDeletes: loadLS(LS.actDeletes, []),
   offgridDays: loadLS(LS.offgridDays, {}),
   people: loadLS(LS.people, []),
   editingId: null,
@@ -826,6 +829,7 @@ saveLS(LS.events, state.events);
 function persistActivities(){ saveLS(LS.activities, state.activities); }
 function persistEvents(){ saveLS(LS.events, state.events); }
 function persistDeletes(){ saveLS(LS.deletes, state.pendingDeletes); }
+function persistActivityDeletes(){ saveLS(LS.actDeletes, state.pendingActivityDeletes); }
 function persistOffgrid(){ saveLS(LS.offgridDays, state.offgridDays); }
 function persistSettings(){ saveLS(LS.settings, userSettings); }
 function persistPeople(){ saveLS(LS.people, state.people); }
@@ -1702,11 +1706,28 @@ document.getElementById('deleteActBtn').addEventListener('click', () => {
   const stillUsed = state.events.some(ev => ev.activity_id === act.id);
   const msg = stillUsed ? 'Remove "'+act.name+'" from your quick-add list? Past logged entries for it are kept.' : 'Remove "'+act.name+'"?';
   if(!confirm(msg)) return;
+  if(act.synced){ state.pendingActivityDeletes.push(act.id); persistActivityDeletes(); }
   state.activities = state.activities.filter(a => a.id !== state.editingActivityId);
   persistActivities();
   closeModal('addModal');
   renderAll();
   showToast('Removed ' + act.name);
+  queueSync();
+});
+
+document.getElementById('resetActivitiesBtn').addEventListener('click', async () => {
+  const msg = "Are you sure? This will remove all your custom activities and restore the standard defaults. Your logged history won't be deleted, but past entries might change appearance to match defaults.";
+  if(!confirm(msg)) return;
+  state.activities.forEach(a => { if(a.synced) state.pendingActivityDeletes.push(a.id); });
+  state.activities = DEFAULT_ACTIVITIES.map(a => ({
+    id: slugId(a.name), name:a.name, category:a.category, color: paletteColor(a.name),
+    instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name),
+    is_pinned:true, synced:false, updated_at: new Date().toISOString(),
+  }));
+  persistActivities(); persistActivityDeletes();
+  renderAll();
+  showToast("Activities reset to default");
+  closeModal('authModal');
   queueSync();
 });
 
@@ -1847,9 +1868,10 @@ async function syncPush(){
     const unsyncedPeople = state.people.filter(p => !p.synced);
     unsyncedPeople.forEach(p => { const ref = db.collection('users').doc(uid).collection('people').doc(p.id); batch.set(ref, { id: p.id, name: p.name, updated_at: p.updated_at }, { merge: true }); });
     if(state.pendingDeletes.length){ state.pendingDeletes.forEach(id => { const ref = db.collection('users').doc(uid).collection('events').doc(id); batch.delete(ref); }); }
+    if(state.pendingActivityDeletes.length){ state.pendingActivityDeletes.forEach(id => { const ref = db.collection('users').doc(uid).collection('activities').doc(id); batch.delete(ref); }); }
     const settingsRef = db.collection('users').doc(uid).collection('meta').doc('settings'); batch.set(settingsRef, { offgrid_days: state.offgridDays, updated_at: new Date().toISOString() }, { merge: true });
     await batch.commit();
-    unsyncedActs.forEach(a => a.synced = true); unsyncedEvs.forEach(e => e.synced = true); unsyncedPeople.forEach(p => p.synced = true); state.pendingDeletes = []; persistActivities(); persistEvents(); persistDeletes(); persistPeople();
+    unsyncedActs.forEach(a => a.synced = true); unsyncedEvs.forEach(e => e.synced = true); unsyncedPeople.forEach(p => p.synced = true); state.pendingDeletes = []; state.pendingActivityDeletes = []; persistActivities(); persistEvents(); persistDeletes(); persistActivityDeletes(); persistPeople();
   } catch(err) { console.error('Firebase sync push failed', err); }
   setSyncBusy(false);
 }
