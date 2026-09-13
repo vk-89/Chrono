@@ -1842,7 +1842,27 @@ async function syncPull(){
   if(!state.user) return; setSyncBusy(true);
   try {
     const uid = state.user.uid; const [actsSnap, evsSnap, metaSnap, peopleSnap] = await Promise.all([ db.collection('users').doc(uid).collection('activities').get(), db.collection('users').doc(uid).collection('events').get(), db.collection('users').doc(uid).collection('meta').doc('settings').get(), db.collection('users').doc(uid).collection('people').get() ]);
-    if(!actsSnap.empty){ mergeActivities(actsSnap.docs.map(doc => doc.data())); } else { try { const defaultsSnap = await db.collection('config').doc('defaults').get(); const remoteDefaults = defaultsSnap.exists ? defaultsSnap.data().activities : null; if(Array.isArray(remoteDefaults) && remoteDefaults.length){ state.activities = remoteDefaults.map(a => ({ id: a.id || slugId(a.name), name: a.name, category: a.category, color: a.color || paletteColor(a.name), instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name), is_pinned: true, synced: false, updated_at: new Date().toISOString(), })); } } catch(err) { console.error('Failed to load admin defaults', err); } }
+    
+    // Remote activity logic: 
+    // If the user has personal activities in cloud, sync them. 
+    // If the user's cloud collection is completely empty, only then pull from admin defaults.
+    if(!actsSnap.empty){ 
+      mergeActivities(actsSnap.docs.map(doc => doc.data())); 
+    } else { 
+      try { 
+        const defaultsSnap = await db.collection('config').doc('defaults').get(); 
+        const remoteDefaults = defaultsSnap.exists ? defaultsSnap.data().activities : null; 
+        if(Array.isArray(remoteDefaults) && remoteDefaults.length){ 
+          state.activities = remoteDefaults.map(a => ({ 
+            id: a.id || slugId(a.name), name: a.name, category: a.category, color: a.color || paletteColor(a.name), 
+            instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name), 
+            is_pinned: true, synced: false, updated_at: new Date().toISOString(), 
+          })); 
+          persistActivities();
+        } 
+      } catch(err) { console.error('Failed to load admin defaults', err); } 
+    }
+    
     if(!evsSnap.empty){ mergeEvents(evsSnap.docs.map(doc => doc.data())); }
     if(!peopleSnap.empty){ mergePeople(peopleSnap.docs.map(doc => doc.data())); }
     if(metaSnap.exists){ const remoteOffgrid = metaSnap.data().offgrid_days; if(remoteOffgrid && typeof remoteOffgrid === 'object'){ state.offgridDays = Object.assign({}, remoteOffgrid, state.offgridDays); persistOffgrid(); } }
@@ -1852,7 +1872,25 @@ async function syncPull(){
 }
 
 function mergePeople(remoteRows){ const byId = new Map(state.people.map(p=>[p.id, p])); remoteRows.forEach(r=>{ const local = byId.get(r.id); if(!local){ byId.set(r.id, { id:r.id, name:r.name, synced:true, updated_at:r.updated_at }); } else if(local.synced){ Object.assign(local, { name:r.name, synced:true, updated_at:r.updated_at }); } }); state.people = Array.from(byId.values()); }
-function mergeActivities(remoteRows){ const byId = new Map(state.activities.map(a=>[a.id, a])); remoteRows.forEach(r=>{ const local = byId.get(r.id); if(!local){ byId.set(r.id, { id:r.id, name:r.name, category:r.category, color:r.color, instant:!!r.instant, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at }); } else if(local.synced){ Object.assign(local, { name:r.name, category:r.category, color:r.color, instant:!!r.instant, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at }); } }); state.activities = Array.from(byId.values()); }
+
+function mergeActivities(remoteRows){ 
+  const byId = new Map(state.activities.map(a=>[a.id, a])); 
+  remoteRows.forEach(r=>{ 
+    const local = byId.get(r.id); 
+    if(!local){ 
+      byId.set(r.id, { id:r.id, name:r.name, category:r.category, color:r.color, instant:!!r.instant, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at }); 
+    } else {
+      // Overwrite local with remote if local is already synced, 
+      // or if it's an initial default on a new device pull.
+      const isInitialDefault = local.id.startsWith('default-') && !local.synced;
+      if(local.synced || isInitialDefault){
+        Object.assign(local, { name:r.name, category:r.category, color:r.color, instant:!!r.instant, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at }); 
+      }
+    }
+  }); 
+  state.activities = Array.from(byId.values()); 
+}
+
 function mergeEvents(remoteRows){ const pendingSet = new Set(state.pendingDeletes); const byId = new Map(state.events.map(e=>[e.id, e])); remoteRows.forEach(r=>{ if(pendingSet.has(r.id)) return; const local = byId.get(r.id); if(!local){ byId.set(r.id, { id:r.id, client_id:r.client_id||r.id, activity_id:r.activity_id, activity_name:r.activity_name, category:r.category, color:r.color, instant:!!r.instant, detail:r.detail||'', interruptions:r.interruptions||[], start_time:r.start_time, date:r.date, synced:true }); } else if(local.synced){ Object.assign(local, { activity_name:r.activity_name, category:r.category, color:r.color, instant:!!r.instant, detail:r.detail||'', interruptions:r.interruptions||[], start_time:r.start_time, date:r.date, synced:true }); } }); state.events = Array.from(byId.values()).sort((a,b)=> new Date(a.start_time)-new Date(b.start_time)); }
 
 // Authentication Guard

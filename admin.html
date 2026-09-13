@@ -197,17 +197,17 @@
   </div>
 
   <div class="tabs">
-    <button class="tab-btn active" data-tab="activitiesTab">Default activities</button>
+    <button class="tab-btn active" data-tab="activitiesTab">Starter Grid</button>
     <button class="tab-btn" data-tab="usersTab">Users</button>
   </div>
 
   <div class="tab-panel active" id="activitiesTab">
     <div style="margin-bottom:12px;">
-      <h2 style="font-size:14px;">Setup default grid</h2>
-      <p style="font-size:12px; color:var(--ink-soft); margin-top:4px;">Drag to rearrange. <b>Long press</b> to edit activity.</p>
+      <h2 style="font-size:14px;">Starter Grid Template</h2>
+      <p style="font-size:12px; color:var(--ink-soft); margin-top:4px;">Define the activities every <b>new user</b> starts with. Changes do not affect existing accounts. Drag to reorder, long press to edit.</p>
     </div>
     <div id="defaultsContainer"></div>
-    <button class="add-fab" id="addDefaultBtn" style="margin-top:20px;">+ Add default activity</button>
+    <button class="add-fab" id="addDefaultBtn" style="margin-top:20px;">+ Add starter activity</button>
   </div>
 
   <div class="tab-panel" id="usersTab">
@@ -335,7 +335,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
   });
 });
 
-/* ============================= DEFAULT ACTIVITIES & DRAG-DROP ============================= */
+/* ============================= STARTER ACTIVITIES (DEFAULTS) ============================= */
 const DEFAULTS_REF = db.collection('config').doc('defaults');
 let defaultActivities = [];
 let editingActId = null;
@@ -425,16 +425,17 @@ function renderDefaults(){
   });
 
   if (defaultActivities.length === 0) {
-    container.innerHTML = '<div class="empty-note">No default activities defined.</div>';
+    container.innerHTML = '<div class="empty-note">No starter activities defined.</div>';
   }
 }
 
 async function persistDefaults(){
+  // Updates global config ONLY. New users will clone this, existing users stay as-is.
   await DEFAULTS_REF.set({ activities: defaultActivities, updated_at: new Date().toISOString() }, { merge: true });
 }
 
 async function deleteDefault(id){
-  if(!confirm('Delete this default activity?')) return;
+  if(!confirm('Delete this starter activity?')) return;
   defaultActivities = defaultActivities.filter(a=>a.id!==id);
   renderDefaults();
   persistDefaults();
@@ -563,7 +564,7 @@ window.viewUser = async function(uid){
         <div class="stat-pill"><div class="val">${acts.length}</div><div class="lbl">Acts</div></div>
       </div>
 
-      <div class="section-label">Dashboard Grid</div>
+      <div class="section-label">User's Grid</div>
       <div class="mock-grid">
         ${actsHtml || '<div class="empty-note" style="grid-column:span 3">No activities.</div>'}
       </div>
