@@ -67,31 +67,6 @@
   .modal{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 18px 26px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;position:relative;}
   @media(min-width:520px){.modal-backdrop{align-items:center;}.modal{border-radius:var(--radius);}}
   .modal-close{position:absolute;top:16px;right:16px;background:var(--paper);border:none;width:30px;height:30px;border-radius:50%;font-size:14px;color:var(--ink-soft);z-index:10;}
-
-  /* ---- User Dashboard Simulation ---- */
-  .user-dash-header { margin-bottom: 20px; }
-  .user-dash-header h2 { font-size: 18px; }
-  .user-dash-header .sub { font-size: 12px; color: var(--ink-soft); }
-  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin-bottom: 12px; margin-top: 24px; }
-  
-  .mock-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  .mock-act { background: var(--paper); border-radius: 12px; padding: 12px 8px; text-align: center; border: 1px solid transparent; }
-  .mock-act .dot { width: 8px; height: 8px; border-radius: 50%; margin: 0 auto 6px; }
-  .mock-act .name { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-  .timeline { margin-top: 10px; }
-  .tl-item { display: flex; gap: 12px; border-left: 1.5px solid var(--border); margin-left: 6px; padding: 0 0 16px 16px; position: relative; }
-  .tl-item::before { content: ""; position: absolute; left: -5px; top: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--border-strong); }
-  .tl-time { width: 45px; flex: none; font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--ink-faint); padding-top: 1px; }
-  .tl-content { flex: 1; }
-  .tl-act { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
-  .tl-act .dot { width: 6px; height: 6px; border-radius: 50%; }
-  .tl-detail { font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; }
-
-  .stat-row { display: flex; gap: 8px; margin-top: 16px; }
-  .stat-pill { flex: 1; background: var(--paper); border-radius: 10px; padding: 10px; text-align: center; }
-  .stat-pill .val { font-family: "Space Grotesk"; font-weight: 700; font-size: 16px; }
-  .stat-pill .lbl { font-size: 9px; text-transform: uppercase; color: var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -119,16 +94,16 @@
   <div id="usersTab">
     <div class="card">
       <h2>User Directory</h2>
-      <div class="hint">Click a user to see their dashboard and customize their prompt.</div>
+      <div class="hint">Click a user to view their account details.</div>
       <input type="text" class="search-input" id="userSearch" placeholder="Search by email or UID...">
       <div id="usersList"><div class="loading-note">Loading users…</div></div>
     </div>
   </div>
 </div>
 
-<!-- User Detail / Dashboard Mock Modal -->
+<!-- User Detail Modal -->
 <div class="modal-backdrop" id="userModal">
-  <div class="modal" style="max-width:440px; padding-bottom:40px;">
+  <div class="modal">
     <button class="modal-close" data-close="userModal">✕</button>
     <div id="userModalBody">
       <div class="loading-note">Loading user data...</div>
@@ -227,96 +202,37 @@ document.getElementById('userSearch').addEventListener('input', (e)=>{
   renderUsers(allUsers.filter(u => (u.email||'').toLowerCase().includes(q) || u.uid.toLowerCase().includes(q)));
 });
 
-/* ============================= USER DASHBOARD VIEW ============================= */
+/* ============================= USER DETAIL VIEW ============================= */
 window.viewUser = async function(uid){
   openModal('userModal');
   const body = document.getElementById('userModalBody');
-  body.innerHTML = '<div class="loading-note">Loading user dashboard...</div>';
+  body.innerHTML = '<div class="loading-note">Loading user details...</div>';
 
   try {
-    const [profSnap, actsSnap, evsSnap] = await Promise.all([
-      db.collection('users').doc(uid).get(),
-      db.collection('users').doc(uid).collection('activities').get(),
-      db.collection('users').doc(uid).collection('events').orderBy('start_time', 'desc').limit(30).get()
-    ]);
-
-    const profile = profSnap.data() || {};
-    const acts = actsSnap.docs.map(d=>d.data()).sort((a,b) => (a.order ?? 0) - (b.order ?? 0));
-    const evs = evsSnap.docs.map(d=>d.data());
-
-    let actsHtml = acts.map(a => `
-      <div class="mock-act">
-        <div class="dot" style="background:${a.color}"></div>
-        <div class="name">${escapeHtml(a.name)}</div>
-      </div>
-    `).join('');
-
-    let evsHtml = evs.map(e => `
-      <div class="tl-item">
-        <div class="tl-time">${e.start_time ? new Date(e.start_time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:false}) : '—'}</div>
-        <div class="tl-content">
-          <div class="tl-act"><div class="dot" style="background:${e.color||'#ccc'}"></div> ${escapeHtml(e.activity_name)}</div>
-          ${e.detail ? `<div class="tl-detail">${escapeHtml(e.detail)}</div>` : ''}
-        </div>
-      </div>
-    `).join('');
-
+    const snap = await db.collection('users').doc(uid).get();
+    const u = snap.data() || {};
     body.innerHTML = `
-      <div class="user-dash-header">
-        <div class="sub">CHRONO USER VIEW</div>
-        <h2>${escapeHtml(profile.email || 'User')}</h2>
-        <div class="sub">Joined ${profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '—'} · ${uid}</div>
-      </div>
-
-      <div class="stat-row">
-        <div class="stat-pill"><div class="val">${evs.length}</div><div class="lbl">Logs</div></div>
-        <div class="stat-pill"><div class="val">${acts.length}</div><div class="lbl">Acts</div></div>
-      </div>
-
-      <div class="section-label">AI Configuration</div>
+      <h2 style="margin-bottom:16px;">User Details</h2>
       <div class="field">
-        <label>Custom System Prompt</label>
-        <textarea id="userPromptInput" placeholder="Enter specific instructions/behavior for this user...">${escapeHtml(profile.systemPrompt || '')}</textarea>
+        <label>User ID</label>
+        <input type="text" value="${escapeHtml(uid)}" readonly>
       </div>
-      <button class="btn btn-primary" id="savePromptBtn" onclick="window.saveUserPrompt('${uid}')">Update User Prompt</button>
-      <div id="savePromptMsg" style="font-size:11px; margin-top:8px; text-align:center; min-height:1.2em;"></div>
-
-      <div class="section-label">User's Grid</div>
-      <div class="mock-grid">
-        ${actsHtml || '<div class="empty-note" style="grid-column:span 3">No activities.</div>'}
+      <div class="field">
+        <label>Email</label>
+        <input type="text" value="${escapeHtml(u.email || '')}" readonly>
       </div>
-
-      <div class="section-label">Recent Timeline</div>
-      <div class="timeline">
-        ${evsHtml || '<div class="empty-note">No logs found for this user.</div>'}
+      <div class="field">
+        <label>Last Login</label>
+        <input type="text" value="${fmtDate(u.lastLogin)}" readonly>
+      </div>
+      <div class="field">
+        <label>Created At</label>
+        <input type="text" value="${fmtDate(u.createdAt)}" readonly>
       </div>
     `;
-
   } catch(err) {
-    body.innerHTML = '<div class="empty-note">Error loading user dashboard.</div>';
+    body.innerHTML = '<div class="empty-note">Error loading user data.</div>';
     console.error(err);
-  }
-};
-
-window.saveUserPrompt = async function(uid) {
-  const btn = document.getElementById('savePromptBtn');
-  const msg = document.getElementById('savePromptMsg');
-  const prompt = document.getElementById('userPromptInput').value;
-  
-  btn.disabled = true;
-  msg.textContent = 'Saving changes...';
-  msg.style.color = 'var(--ink-soft)';
-
-  try {
-    await db.collection('users').doc(uid).set({ systemPrompt: prompt }, { merge: true });
-    msg.textContent = 'Successfully saved system prompt.';
-    msg.style.color = '#2e7d32';
-  } catch(err) {
-    msg.textContent = 'Error: ' + err.message;
-    msg.style.color = 'var(--danger)';
-    console.error(err);
-  } finally {
-    btn.disabled = false;
   }
 };
 
