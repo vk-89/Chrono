@@ -55,7 +55,7 @@
   .tab-panel{display:none;}
   .tab-panel.active{display:block;}
 
-  /* ---- Activity Grid (User Style) ---- */
+  /* ---- Activity Grid (Admin List) ---- */
   .category-section { margin-bottom: 24px; }
   .category-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin-bottom: 12px; }
   
@@ -122,6 +122,23 @@
 
   .add-fab{width:100%;border:1.5px dashed var(--border-strong);background:none;border-radius:var(--radius-sm);padding:14px;font-size:13px;font-weight:600;color:var(--ink-soft);margin-top:6px;}
 
+  /* ---- Ported User UI CSS ---- */
+  .qa-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+  .qa-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px 8px; display: flex; flex-direction: column;
+    align-items: center; gap: 8px; text-align: center; transition: transform 0.1s;
+  }
+  .qa-btn:active { transform: scale(0.97); }
+  .qa-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .log-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .log-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .log-name { flex: 1; font-size: 13.5px; font-weight: 600; line-height: 1.2; }
+  .log-detail { font-size: 11px; font-weight: 400; color: var(--ink-soft); margin-top: 2px; }
+  .log-time { font-size: 11.5px; color: var(--ink-faint); white-space: nowrap; }
+  .mono { font-family: "JetBrains Mono", monospace; }
+
   /* ---- Users list ---- */
   .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
   .card h2{font-size:14px;margin-bottom:2px;}
@@ -147,19 +164,7 @@
   .user-dash-header .sub { font-size: 12px; color: var(--ink-soft); }
   .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin-bottom: 12px; margin-top: 24px; }
   
-  .mock-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  .mock-act { background: var(--paper); border-radius: 12px; padding: 12px 8px; text-align: center; border: 1px solid transparent; }
-  .mock-act .dot { width: 8px; height: 8px; border-radius: 50%; margin: 0 auto 6px; }
-  .mock-act .name { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
   .timeline { margin-top: 10px; }
-  .tl-item { display: flex; gap: 12px; border-left: 1.5px solid var(--border); margin-left: 6px; padding: 0 0 16px 16px; position: relative; }
-  .tl-item::before { content: ""; position: absolute; left: -5px; top: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--border-strong); }
-  .tl-time { width: 45px; flex: none; font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--ink-faint); padding-top: 1px; }
-  .tl-content { flex: 1; }
-  .tl-act { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
-  .tl-act .dot { width: 6px; height: 6px; border-radius: 50%; }
-  .tl-detail { font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; }
 
   .stat-row { display: flex; gap: 8px; margin-top: 16px; }
   .stat-pill { flex: 1; background: var(--paper); border-radius: 10px; padding: 10px; text-align: center; }
@@ -215,7 +220,7 @@
     <div class="card">
       <h2>User Directory</h2>
       <div class="hint">Click a user to see their dashboard as they see it.</div>
-      <input type="text" class="search-input" id="userSearch" placeholder="Search by email or UID...">
+      <input type="text" class="search-input" id="userSearch" placeholder="Search by name, email, phone or UID...">
       <div id="usersList"><div class="loading-note">Loading users…</div></div>
     </div>
   </div>
@@ -524,20 +529,29 @@ async function loadUsers(){
 function renderUsers(list){
   const el = document.getElementById('usersList');
   if(!list.length){ el.innerHTML = '<div class="empty-note">No users found.</div>'; return; }
-  el.innerHTML = list.map(u => `
-    <div class="user-row" style="cursor:pointer;" onclick="window.viewUser('${u.uid}')">
-      <div class="user-av">${escapeHtml((u.email||'U').slice(0,1).toUpperCase())}</div>
-      <div class="user-info">
-        <div class="user-email">${escapeHtml(u.email || u.uid)}</div>
-        <div class="user-meta">Last seen ${fmtDate(u.lastLogin)}</div>
+  el.innerHTML = list.map(u => {
+    const identity = u.displayName || u.email || u.phoneNumber || u.uid;
+    const initial = identity.toString().charAt(0).toUpperCase();
+    return `
+      <div class="user-row" style="cursor:pointer;" onclick="window.viewUser('${u.uid}')">
+        <div class="user-av">${escapeHtml(initial)}</div>
+        <div class="user-info">
+          <div class="user-email">${escapeHtml(identity)}</div>
+          <div class="user-meta">Last seen ${fmtDate(u.lastLogin)}</div>
+        </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 document.getElementById('userSearch').addEventListener('input', (e)=>{
   const q = e.target.value.toLowerCase();
-  renderUsers(allUsers.filter(u => (u.email||'').toLowerCase().includes(q) || u.uid.toLowerCase().includes(q)));
+  renderUsers(allUsers.filter(u => 
+    (u.email||'').toLowerCase().includes(q) || 
+    (u.uid||'').toLowerCase().includes(q) ||
+    (u.displayName||'').toLowerCase().includes(q) ||
+    (u.phoneNumber||'').toLowerCase().includes(q)
+  ));
 });
 
 /* ============================= USER DASHBOARD VIEW ============================= */
@@ -556,21 +570,23 @@ window.viewUser = async function(uid){
     const profile = profSnap.data() || {};
     const acts = actsSnap.docs.map(d=>d.data()).sort((a,b) => (a.order ?? 0) - (b.order ?? 0));
     const evs = evsSnap.docs.map(d=>d.data()).sort((a,b)=> new Date(b.start_time) - new Date(a.start_time));
+    const identity = profile.displayName || profile.email || profile.phoneNumber || uid;
 
     let actsHtml = acts.map(a => `
-      <div class="mock-act">
-        <div class="dot" style="background:${a.color}"></div>
-        <div class="name">${escapeHtml(a.name)}</div>
+      <div class="qa-btn" style="border-left: 4px solid ${a.color}">
+        <div class="qa-dot" style="background:${a.color}"></div>
+        <div style="font-size:11px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">${escapeHtml(a.name)}</div>
       </div>
     `).join('');
 
     let evsHtml = evs.map(e => `
-      <div class="tl-item">
-        <div class="tl-time">${e.start_time ? new Date(e.start_time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:false}) : '—'}</div>
-        <div class="tl-content">
-          <div class="tl-act"><div class="dot" style="background:${e.color||'#ccc'}"></div> ${escapeHtml(e.activity_name)}</div>
-          ${e.detail ? `<div class="tl-detail">${escapeHtml(e.detail)}</div>` : ''}
+      <div class="log-row">
+        <div class="log-dot" style="background:${e.color||'#ccc'}"></div>
+        <div class="log-name">
+          ${escapeHtml(e.activity_name)}
+          ${e.detail ? `<div class="log-detail">${escapeHtml(e.detail)}</div>` : ''}
         </div>
+        <div class="log-time mono">${e.start_time ? new Date(e.start_time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:false}) : '—'}</div>
       </div>
     `).join('');
 
@@ -579,7 +595,7 @@ window.viewUser = async function(uid){
         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
           <div>
             <div class="sub">CHRONO USER VIEW</div>
-            <h2>${escapeHtml(profile.email || 'User')}</h2>
+            <h2>${escapeHtml(identity)}</h2>
             <div class="sub">Joined ${profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '—'} · ${uid}</div>
           </div>
           <button class="btn btn-danger btn-sm" onclick="window.resetUserActivities('${uid}')" style="margin-top:10px;">Reset Grid</button>
@@ -592,7 +608,7 @@ window.viewUser = async function(uid){
       </div>
 
       <div class="section-label">User's Grid</div>
-      <div class="mock-grid">
+      <div class="qa-grid">
         ${actsHtml || '<div class="empty-note" style="grid-column:span 3">No activities.</div>'}
       </div>
 
