@@ -772,14 +772,39 @@ function renderQuoteBanner(){
   el.innerHTML = '"'+escapeHtml(quoteForToday())+'"<span class="qtag">Today\'s reflection</span>';
 }
 
+function defaultNeedsDetail(name){
+  const n = (name||'').toLowerCase().trim();
+  return n === 'timepass';
+}
+
+function defaultPeoplePicker(name){
+  const n = (name||'').toLowerCase().trim();
+  return n === 'call';
+}
+
+// ---- Duplicate Mitigation Block ----
+const rawStoredActivities = loadLS(LS.activities, null) || DEFAULT_ACTIVITIES.map(a => ({
+  id: slugId(a.name), name:a.name, category:a.category, color: paletteColor(a.name),
+  instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name), is_pinned:true, synced:false, updated_at: new Date().toISOString(),
+}));
+const rawStoredEvents = loadLS(LS.events, []);
+const activityDedupMap = new Map();
+const activityIdRedirects = {};
+rawStoredActivities.forEach(a => {
+  const norm = (a.name||'').toLowerCase().trim();
+  if(!activityDedupMap.has(norm)){ activityDedupMap.set(norm, a); }
+  else { activityIdRedirects[a.id] = activityDedupMap.get(norm).id; }
+});
+const uniqueActivities = Array.from(activityDedupMap.values());
+rawStoredEvents.forEach(e => {
+  if(activityIdRedirects[e.activity_id]) e.activity_id = activityIdRedirects[e.activity_id];
+});
+
 const state = {
   user: null,
   openHistoryDays: new Set(),
-  activities: loadLS(LS.activities, null) || DEFAULT_ACTIVITIES.map(a => ({
-    id: slugId(a.name), name:a.name, category:a.category, color: paletteColor(a.name),
-    instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name), is_pinned:true, synced:false, updated_at: new Date().toISOString(),
-  })),
-  events: loadLS(LS.events, []),
+  activities: uniqueActivities,
+  events: rawStoredEvents,
   pendingDeletes: loadLS(LS.deletes, []),
   offgridDays: loadLS(LS.offgridDays, {}),
   people: loadLS(LS.people, []),
@@ -796,6 +821,7 @@ state.activities.forEach(a=>{
   if(a.peoplePicker === undefined) a.peoplePicker = defaultPeoplePicker(a.name);
 });
 saveLS(LS.activities, state.activities);
+saveLS(LS.events, state.events);
 
 function persistActivities(){ saveLS(LS.activities, state.activities); }
 function persistEvents(){ saveLS(LS.events, state.events); }
@@ -874,16 +900,6 @@ function deleteEvent(id){
   if(ev && ev.synced){ state.pendingDeletes.push(ev.id); persistDeletes(); }
   renderAll();
   queueSync();
-}
-
-function defaultNeedsDetail(name){
-  const n = (name||'').toLowerCase().trim();
-  return n === 'timepass';
-}
-
-function defaultPeoplePicker(name){
-  const n = (name||'').toLowerCase().trim();
-  return n === 'call';
 }
 
 function addActivity(opts){
@@ -1843,9 +1859,6 @@ async function syncPull(){
   try {
     const uid = state.user.uid; const [actsSnap, evsSnap, metaSnap, peopleSnap] = await Promise.all([ db.collection('users').doc(uid).collection('activities').get(), db.collection('users').doc(uid).collection('events').get(), db.collection('users').doc(uid).collection('meta').doc('settings').get(), db.collection('users').doc(uid).collection('people').get() ]);
     
-    // Remote activity logic: 
-    // If the user has personal activities in cloud, sync them. 
-    // If the user's cloud collection is completely empty, only then pull from admin defaults.
     if(!actsSnap.empty){ 
       mergeActivities(actsSnap.docs.map(doc => doc.data())); 
     } else { 
@@ -1875,14 +1888,27 @@ function mergePeople(remoteRows){ const byId = new Map(state.people.map(p=>[p.id
 
 function mergeActivities(remoteRows){ 
   const byId = new Map(state.activities.map(a=>[a.id, a])); 
+  const byName = new Map(state.activities.map(a=>[(a.name||'').toLowerCase().trim(), a]));
+
   remoteRows.forEach(r=>{ 
-    const local = byId.get(r.id); 
+    const normName = (r.name||'').toLowerCase().trim();
+    let local = byId.get(r.id);
+    
+    if(!local && byName.has(normName)){
+      local = byName.get(normName);
+      const oldId = local.id;
+      byId.delete(oldId);
+      local.id = r.id;
+      byId.set(r.id, local);
+      state.events.forEach(ev => { if(ev.activity_id === oldId) ev.activity_id = r.id; });
+    }
+
     if(!local){ 
-      byId.set(r.id, { id:r.id, name:r.name, category:r.category, color:r.color, instant:!!r.instant, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at }); 
+      const newAct = { id:r.id, name:r.name, category:r.category, color:r.color, instant:!!r.instant, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at, needsDetail: defaultNeedsDetail(r.name), peoplePicker: defaultPeoplePicker(r.name) };
+      byId.set(r.id, newAct);
+      byName.set(normName, newAct);
     } else {
-      // Overwrite local with remote if local is already synced, 
-      // or if it's an initial default on a new device pull.
-      const isInitialDefault = local.id.startsWith('default-') && !local.synced;
+      const isInitialDefault = String(local.id).startsWith('default-') && !local.synced;
       if(local.synced || isInitialDefault){
         Object.assign(local, { name:r.name, category:r.category, color:r.color, instant:!!r.instant, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at }); 
       }
