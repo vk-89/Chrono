@@ -109,12 +109,12 @@
     background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
     padding:14px 14px 12px;margin-top:12px;
   }
+  .status-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .status-main{display:flex;align-items:center;gap:11px;}
   .status-dot{width:13px;height:13px;border-radius:50%;flex:none;box-shadow:0 0 0 4px rgba(0,0,0,0.04);}
   .status-name{font-family:"Space Grotesk";font-weight:600;font-size:16.5px;line-height:1.2;}
   .status-since{color:var(--ink-soft);font-size:12.5px;margin-top:1px;}
   .status-empty{color:var(--ink-soft);font-size:14px;}
-  .status-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .status-actions{display:flex;align-items:center;gap:8px;}
   .status-undo,.status-interrupt{background:none;border:none;color:var(--ink-faint);font-size:12px;text-decoration:underline;padding:4px;}
   .status-interrupt{color:var(--accent);font-weight:600;text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;background:var(--paper);}
@@ -641,27 +641,6 @@ const DAY_WIDTH = 24 * PX_PER_HOUR;
 const TIMELINE_DAYS = 7;
 const INSIGHTS_LOOKBACK_DAYS = 14;
 
-const DEFAULT_ACTIVITIES = [
-  {name:'Wake Up', category:'essential', instant:true},
-  {name:'Ready', category:'essential'},
-  {name:'Bath', category:'essential'},
-  {name:'Breakfast', category:'essential'},
-  {name:'Lunch', category:'essential'},
-  {name:'Dinner', category:'essential'},
-  {name:'Commute', category:'essential'},
-  {name:'Rest', category:'essential'},
-  {name:'Cooking', category:'essential'},
-  {name:'Sleep', category:'essential'},
-  {name:'Admin / Switching', category:'essential'},
-  {name:'Library', category:'study'},
-  {name:'Coaching', category:'study'},
-  {name:'Newspaper', category:'study'},
-  {name:'Website Work', category:'study'},
-  {name:'Call', category:'social'},
-  {name:'Timepass', category:'social'},
-  {name:'Hobby', category:'social'},
-];
-
 const LS = {
   activities:'chrono_activities_v2',
   events:'chrono_events_v2',
@@ -784,11 +763,8 @@ function defaultPeoplePicker(name){
   return n === 'call';
 }
 
-// ---- Duplicate Mitigation Block ----
-const rawStoredActivities = loadLS(LS.activities, null) || DEFAULT_ACTIVITIES.map(a => ({
-  id: slugId(a.name), name:a.name, category:a.category, color: paletteColor(a.name),
-  instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name), is_pinned:true, synced:false, updated_at: new Date().toISOString(),
-}));
+// ---- Initialization Block ----
+const rawStoredActivities = loadLS(LS.activities, []);
 const rawStoredEvents = loadLS(LS.events, []);
 const activityDedupMap = new Map();
 const activityIdRedirects = {};
@@ -1716,15 +1692,13 @@ document.getElementById('deleteActBtn').addEventListener('click', () => {
 });
 
 document.getElementById('resetActivitiesBtn').addEventListener('click', async () => {
-  const msg = "Are you sure? This will remove all your custom activities and restore the standard defaults. Your logged history won't be deleted, but past entries might change appearance to match defaults.";
+  const msg = "Are you sure? This will remove all your custom activities and restore the standard defaults from the server. Your logged history won't be deleted.";
   if(!confirm(msg)) return;
   state.activities.forEach(a => { if(a.synced) state.pendingActivityDeletes.push(a.id); });
-  state.activities = DEFAULT_ACTIVITIES.map(a => ({
-    id: slugId(a.name), name:a.name, category:a.category, color: paletteColor(a.name),
-    instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name),
-    is_pinned:true, synced:false, updated_at: new Date().toISOString(),
-  }));
+  state.activities = [];
   persistActivities(); persistActivityDeletes();
+  renderAll();
+  if(state.user) await syncPull();
   renderAll();
   showToast("Activities reset to default");
   closeModal('authModal');

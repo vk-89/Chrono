@@ -39,88 +39,13 @@
   .btn-primary{background:var(--ink);color:#fff;}
   .btn-ghost{background:var(--paper);color:var(--ink-soft);border:1px solid var(--border);}
   .btn-danger{background:none;color:var(--danger);border:1px solid var(--danger);}
-  .btn-sm{width:auto;padding:7px 12px;font-size:12.5px;border-radius:8px;}
-  .auth-msg{font-size:12.5px;color:var(--danger);margin-top:8px;min-height:1em;}
 
   /* ---- Shell ---- */
   #adminApp{max-width:920px;margin:0 auto;padding:16px 16px 60px;}
-  .topbar{display:flex;align-items:center;justify-content:space-between;padding:6px 2px 18px;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:6px 2px 24px;}
   .topbar h1{font-size:18px;}
   .topbar .sub{font-size:11.5px;color:var(--ink-soft);}
   .icon-btn{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:7px 14px;font-size:12.5px;color:var(--ink-soft);font-weight:600;}
-
-  .tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px;margin-bottom:18px;}
-  .tab-btn{flex:1;border:none;background:none;padding:9px 0;border-radius:999px;font-size:13px;font-weight:600;color:var(--ink-soft);font-family:"Space Grotesk";}
-  .tab-btn.active{background:var(--ink);color:#fff;}
-  .tab-panel{display:none;}
-  .tab-panel.active{display:block;}
-
-  /* ---- Activity Grid (User Style) ---- */
-  .category-section { margin-bottom: 24px; }
-  .category-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin-bottom: 12px; }
-  
-  .activity-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 8px;
-  }
-  .act-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: grab;
-    user-select: none;
-    position: relative;
-    transition: transform 0.1s;
-  }
-  .act-card:active { transform: scale(0.97); cursor: grabbing; }
-  .act-card.dragging { opacity: 0.5; border-style: dashed; }
-  .act-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex: none;
-  }
-  .act-name {
-    font-size: 14px;
-    font-weight: 600;
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .act-drag-handle {
-    color: var(--ink-faint);
-    font-size: 12px;
-  }
-  .act-actions {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    display: flex;
-    gap: 2px;
-    opacity: 0;
-    transition: opacity 0.15s;
-  }
-  .act-card:hover .act-actions { opacity: 1; }
-  .act-actions button {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    color: var(--ink-soft);
-  }
-
-  .add-fab{width:100%;border:1.5px dashed var(--border-strong);background:none;border-radius:var(--radius-sm);padding:14px;font-size:13px;font-weight:600;color:var(--ink-soft);margin-top:6px;}
 
   /* ---- Users list ---- */
   .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
@@ -165,13 +90,6 @@
   .stat-pill { flex: 1; background: var(--paper); border-radius: 10px; padding: 10px; text-align: center; }
   .stat-pill .val { font-family: "Space Grotesk"; font-weight: 700; font-size: 16px; }
   .stat-pill .lbl { font-size: 9px; text-transform: uppercase; color: var(--ink-soft); }
-
-  .color-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:7px;margin-top:2px;}
-  .color-swatch{width:100%;aspect-ratio:1;border-radius:50%;border:2px solid transparent;padding:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08);}
-  .color-swatch.selected{border-color:var(--ink);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink);}
-  .pill-row{display:flex;gap:8px;}
-  .pill{flex:1;border:1px solid var(--border-strong);background:var(--paper);border-radius:var(--radius-sm);padding:9px;font-size:12.5px;font-weight:600;color:var(--ink-soft);text-align:center;}
-  .pill.active{border-color:var(--ink);background:var(--surface);color:var(--ink);}
 </style>
 </head>
 <body>
@@ -196,51 +114,12 @@
     <button class="icon-btn" id="signOutBtn">Sign out</button>
   </div>
 
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="activitiesTab">Starter Grid</button>
-    <button class="tab-btn" data-tab="usersTab">Users</button>
-  </div>
-
-  <div class="tab-panel active" id="activitiesTab">
-    <div style="margin-bottom:12px;">
-      <h2 style="font-size:14px;">Starter Grid Template</h2>
-      <p style="font-size:12px; color:var(--ink-soft); margin-top:4px;">Define the activities every <b>new user</b> starts with. Changes do not affect existing accounts. Drag to reorder, long press to edit.</p>
-    </div>
-    <div id="defaultsContainer"></div>
-    <button class="add-fab" id="addDefaultBtn" style="margin-top:20px;">+ Add starter activity</button>
-  </div>
-
-  <div class="tab-panel" id="usersTab">
+  <div id="usersTab">
     <div class="card">
       <h2>User Directory</h2>
       <div class="hint">Click a user to see their dashboard as they see it.</div>
       <input type="text" class="search-input" id="userSearch" placeholder="Search by email or UID...">
       <div id="usersList"><div class="loading-note">Loading users…</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- Add/Edit activity modal -->
-<div class="modal-backdrop" id="actModal">
-  <div class="modal">
-    <button class="modal-close" data-close="actModal">✕</button>
-    <h2 id="actModalTitle">Edit Activity</h2>
-    <div class="field" style="margin-top:10px;"><label>Name</label><input type="text" id="actName" placeholder="e.g. Work"></div>
-    <div class="field">
-      <label>Category</label>
-      <div class="pill-row" id="actCatRow">
-        <button type="button" class="pill" data-cat="study">Study</button>
-        <button type="button" class="pill" data-cat="social">Social and Fun</button>
-        <button type="button" class="pill" data-cat="essential">Essential</button>
-      </div>
-    </div>
-    <div class="field">
-      <label>Color</label>
-      <div class="color-grid" id="actColorGrid"></div>
-    </div>
-    <div class="btn-row" style="display:flex;gap:10px;margin-top:20px;">
-      <button class="btn btn-ghost" data-close="actModal">Cancel</button>
-      <button class="btn btn-primary" id="actSaveBtn">Save Changes</button>
     </div>
   </div>
 </div>
@@ -272,15 +151,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-const CATEGORY_LABELS = { study:'Study', social:'Social and Fun', essential:'Essential' };
-const PALETTE = ['#09090b','#1e1b4b','#14532d','#450a0a','#4a044e','#312e81','#1e3a8a','#115e59',
-  '#7f1d1d','#701a75','#831843','#4338ca','#1d4ed8','#0f766e','#b91c1c','#a21caf','#be185d','#b45309',
-  '#4d7c0f','#6366f1','#3b82f6','#14b8a6','#ef4444','#d946ef','#ec4899','#f59e0b','#84cc16','#10b981',
-  '#818cf8','#60a5fa','#2dd4bf','#f87171','#e879f9','#f472b6','#fbbf24','#a3e635','#34d399',
-  '#2563EB','#DC2626','#059669','#D97706','#7C3AED','#DB2777','#0891B2','#65A30D','#EA580C',
-  '#0EA5E9','#CA8A04','#E11D48','#FACC15','#22C55E','#06B6D4','#8B5CF6','#A855F7','#F97316'];
-
-function slugId(name){ return 'default-' + String(name).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-'); }
 function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtDate(iso){ if(!iso) return '—'; const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleString(); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
@@ -312,7 +182,6 @@ auth.onAuthStateChanged(async user => {
         document.getElementById('loginView').classList.add('hidden');
         document.getElementById('adminApp').classList.remove('hidden');
         document.getElementById('adminWhoami').textContent = user.email;
-        loadDefaults();
         loadUsers();
         return;
       }
@@ -323,177 +192,6 @@ auth.onAuthStateChanged(async user => {
     document.getElementById('loginView').classList.remove('hidden');
     document.getElementById('adminApp').classList.add('hidden');
   }
-});
-
-/* ============================= TABS ============================= */
-document.querySelectorAll('.tab-btn').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(btn.dataset.tab).classList.add('active');
-  });
-});
-
-/* ============================= STARTER ACTIVITIES (DEFAULTS) ============================= */
-const DEFAULTS_REF = db.collection('config').doc('defaults');
-let defaultActivities = [];
-let editingActId = null;
-
-async function loadDefaults(){
-  try{
-    const snap = await DEFAULTS_REF.get();
-    if(snap.exists && Array.isArray(snap.data().activities)){
-      defaultActivities = snap.data().activities;
-    }
-    renderDefaults();
-  } catch(err){ console.error(err); }
-}
-
-function renderDefaults(){
-  const container = document.getElementById('defaultsContainer');
-  container.innerHTML = '';
-  
-  const categories = ['study', 'social', 'essential'];
-  
-  categories.forEach(catId => {
-    const section = document.createElement('div');
-    section.className = 'category-section';
-    section.innerHTML = `<div class="category-title">${CATEGORY_LABELS[catId]}</div>`;
-    
-    const grid = document.createElement('div');
-    grid.className = 'activity-grid';
-    
-    const filtered = defaultActivities.filter(a => (a.category||'essential') === catId);
-    
-    filtered.forEach((a) => {
-      const globalIdx = defaultActivities.indexOf(a);
-      const card = document.createElement('div');
-      card.className = 'act-card';
-      card.draggable = true;
-      card.dataset.id = a.id;
-      card.dataset.index = globalIdx;
-      card.innerHTML = `
-        <div class="act-dot" style="background:${a.color}"></div>
-        <div class="act-name">${escapeHtml(a.name)}</div>
-        <div class="act-drag-handle">::</div>
-        <div class="act-actions">
-          <button data-edit="${a.id}">✎</button>
-          <button data-del="${a.id}">✕</button>
-        </div>
-      `;
-      
-      // Long press simulation
-      let pressTimer;
-      const startPress = () => { pressTimer = setTimeout(() => openActModal(a.id), 600); };
-      const cancelPress = () => { clearTimeout(pressTimer); };
-      
-      card.addEventListener('mousedown', startPress);
-      card.addEventListener('mouseup', cancelPress);
-      card.addEventListener('mouseleave', cancelPress);
-      card.addEventListener('touchstart', startPress);
-      card.addEventListener('touchend', cancelPress);
-
-      // Drag Events
-      card.addEventListener('dragstart', e => {
-        card.classList.add('dragging');
-        e.dataTransfer.setData('text/plain', globalIdx);
-      });
-      card.addEventListener('dragend', () => card.classList.remove('dragging'));
-      card.addEventListener('dragover', e => e.preventDefault());
-      card.addEventListener('drop', e => {
-        e.preventDefault();
-        const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
-        const toIdx = globalIdx;
-        if(fromIdx === toIdx) return;
-        const moved = defaultActivities.splice(fromIdx, 1)[0];
-        defaultActivities.splice(toIdx, 0, moved);
-        renderDefaults();
-        persistDefaults();
-      });
-
-      card.querySelector('[data-edit]').addEventListener('click', (e)=>{ e.stopPropagation(); openActModal(a.id); });
-      card.querySelector('[data-del]').addEventListener('click', (e)=>{ e.stopPropagation(); deleteDefault(a.id); });
-      
-      grid.appendChild(card);
-    });
-
-    if (filtered.length > 0) {
-      section.appendChild(grid);
-      container.appendChild(section);
-    }
-  });
-
-  if (defaultActivities.length === 0) {
-    container.innerHTML = '<div class="empty-note">No starter activities defined.</div>';
-  }
-}
-
-async function persistDefaults(){
-  // Updates global config ONLY. New users will clone this, existing users stay as-is.
-  await DEFAULTS_REF.set({ activities: defaultActivities, updated_at: new Date().toISOString() }, { merge: true });
-}
-
-async function deleteDefault(id){
-  if(!confirm('Delete this starter activity?')) return;
-  defaultActivities = defaultActivities.filter(a=>a.id!==id);
-  renderDefaults();
-  persistDefaults();
-}
-
-document.getElementById('addDefaultBtn').addEventListener('click', ()=> openActModal(null));
-
-function openActModal(id){
-  editingActId = id;
-  const existing = id ? defaultActivities.find(a=>a.id===id) : null;
-  document.getElementById('actModalTitle').textContent = existing ? 'Edit Activity' : 'Add Activity';
-  document.getElementById('actName').value = existing ? existing.name : '';
-  const cat = existing ? existing.category : 'essential';
-  document.querySelectorAll('#actCatRow .pill').forEach(p=> p.classList.toggle('active', p.dataset.cat===cat));
-
-  const grid = document.getElementById('actColorGrid');
-  const selectedColor = existing ? existing.color : PALETTE[0];
-  grid.innerHTML = PALETTE.map(c => `<button type="button" class="color-swatch${c===selectedColor?' selected':''}" data-color="${c}" style="background:${c}"></button>`).join('');
-  grid.querySelectorAll('.color-swatch').forEach(b=>{
-    b.addEventListener('click', ()=>{
-      grid.querySelectorAll('.color-swatch').forEach(x=>x.classList.remove('selected'));
-      b.classList.add('selected');
-    });
-  });
-  openModal('actModal');
-}
-
-document.querySelectorAll('#actCatRow .pill').forEach(p=>{
-  p.addEventListener('click', ()=>{
-    document.querySelectorAll('#actCatRow .pill').forEach(x=>x.classList.remove('active'));
-    p.classList.add('active');
-  });
-});
-
-document.getElementById('actSaveBtn').addEventListener('click', async ()=>{
-  const name = document.getElementById('actName').value.trim();
-  if(!name) return;
-
-  const isDuplicate = defaultActivities.some(a => 
-    a.name.toLowerCase() === name.toLowerCase() && a.id !== editingActId
-  );
-  if(isDuplicate) {
-    alert('An activity with this name already exists.');
-    return;
-  }
-
-  const cat = document.querySelector('#actCatRow .pill.active').dataset.cat;
-  const color = document.querySelector('#actColorGrid .color-swatch.selected').dataset.color;
-
-  if(editingActId){
-    const a = defaultActivities.find(x=>x.id===editingActId);
-    if(a){ a.name = name; a.category = cat; a.color = color; }
-  } else {
-    defaultActivities.push({ id: slugId(name)+'-'+Date.now().toString(36), name, category: cat, color });
-  }
-  renderDefaults();
-  closeModal('actModal');
-  await persistDefaults();
 });
 
 /* ============================= USER DIRECTORY ============================= */
@@ -537,12 +235,12 @@ window.viewUser = async function(uid){
     const [profSnap, actsSnap, evsSnap] = await Promise.all([
       db.collection('users').doc(uid).get(),
       db.collection('users').doc(uid).collection('activities').get(),
-      db.collection('users').doc(uid).collection('events').limit(30).get()
+      db.collection('users').doc(uid).collection('events').orderBy('start_time', 'desc').limit(30).get()
     ]);
 
     const profile = profSnap.data() || {};
     const acts = actsSnap.docs.map(d=>d.data()).sort((a,b) => (a.order ?? 0) - (b.order ?? 0));
-    const evs = evsSnap.docs.map(d=>d.data()).sort((a,b)=> new Date(b.start_time) - new Date(a.start_time));
+    const evs = evsSnap.docs.map(d=>d.data());
 
     let actsHtml = acts.map(a => `
       <div class="mock-act">
@@ -593,96 +291,4 @@ window.viewUser = async function(uid){
 })();
 </script>
 </body>
-</html><!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<title>Admin · Chrono</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
-<style>
-  :root{
-    --paper:#F4F3EC; --surface:#FFFFFF; --ink:#1C1E1B; --ink-soft:#63655D; --ink-faint:#9A9C92;
-    --border:#E1DFD2; --border-strong:#CFCDBD;
-    --study-h:208; --study-s:62%; --social-h:16; --social-s:72%; --essential-h:150; --essential-s:32%;
-    --danger:#B3492F; --accent:#B3492F; --radius:14px; --radius-sm:10px;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{background:var(--paper);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent;}
-  h1,h2,h3{font-family:"Space Grotesk",sans-serif;margin:0;}
-  button{font-family:inherit;cursor:pointer;}
-  input,select{font-family:inherit;}
-  .hidden{display:none!important;}
-
-  /* ---- Login ---- */
-  #loginView{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
-  .login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;width:100%;max-width:360px;}
-  .login-card h1{font-size:20px;margin-bottom:4px;}
-  .login-card p{color:var(--ink-soft);font-size:13px;margin:0 0 18px;}
-  .field{margin-bottom:14px;}
-  .field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:6px;font-weight:600;}
-  .field input,.field select{width:100%;background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;color:var(--ink);}
-  .btn{border:none;border-radius:999px;padding:11px 16px;font-size:13.5px;font-weight:600;font-family:"Space Grotesk";width:100%;}
-  .btn-primary{background:var(--ink);color:#fff;}
-  .btn-ghost{background:var(--paper);color:var(--ink-soft);border:1px solid var(--border);}
-  .btn-danger{background:none;color:var(--danger);border:1px solid var(--danger);}
-  .btn-sm{width:auto;padding:7px 12px;font-size:12.5px;border-radius:8px;}
-  .auth-msg{font-size:12.5px;color:var(--danger);margin-top:8px;min-height:1em;}
-
-  /* ---- Shell ---- */
-  #adminApp{max-width:920px;margin:0 auto;padding:16px 16px 60px;}
-  .topbar{display:flex;align-items:center;justify-content:space-between;padding:6px 2px 18px;}
-  .topbar h1{font-size:18px;}
-  .topbar .sub{font-size:11.5px;color:var(--ink-soft);}
-  .icon-btn{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:7px 14px;font-size:12.5px;color:var(--ink-soft);font-weight:600;}
-
-  .tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px;margin-bottom:18px;}
-  .tab-btn{flex:1;border:none;background:none;padding:9px 0;border-radius:999px;font-size:13px;font-weight:600;color:var(--ink-soft);font-family:"Space Grotesk";}
-  .tab-btn.active{background:var(--ink);color:#fff;}
-  .tab-panel{display:none;}
-  .tab-panel.active{display:block;}
-
-  /* ---- Activity Grid (User Style) ---- */
-  .category-section { margin-bottom: 24px; }
-  .category-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin-bottom: 12px; }
-  
-  .activity-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 8px;
-  }
-  .act-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: grab;
-    user-select: none;
-    position: relative;
-    transition: transform 0.1s;
-  }
-  .act-card:active { transform: scale(0.97); cursor: grabbing; }
-  .act-card.dragging { opacity: 0.5; border-style: dashed; }
-  .act-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex: none;
-  }
-  .act-name {
-    font-size: 14px;
-    font-weight: 600;
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden; text-overflow: ellipsis; } .act-drag-handle { color: var(--ink-faint); font-size: 12px; } .act-actions { position: absolute; top: 4px; right: 4px; display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; } .act-card:hover .act-actions { opacity: 1; } .act-actions button { background: var(--surface); border: 1px solid var(--border); width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--ink-soft); } .add-fab{width:100%;border:1.5px dashed var(--border-strong);background:none;border-radius:var(--radius-sm);padding:14px;font-size:13px;font-weight:600;color:var(--ink-soft);margin-top:6px;} .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;} .card h2{font-size:14px;margin-bottom:2px;} .card .hint{font-size:12px;color:var(--ink-soft);margin:4px 0 14px;} .search-input{width:100%;background:var(--paper);border:1px solid var(--border);border-radius:999px;padding:10px 14px;font-size:13.5px;margin-bottom:12px;} .user-row{display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid var(--border);} .user-row:last-child{border-bottom:none;} .user-av{width:34px;height:34px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex:none;} .user-info{flex:1;min-width:0;} .user-email{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .user-meta{font-size:11.5px;color:var(--ink-soft);} .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(28,30,27,0.45);z-index:100;align-items:flex-end;justify-content:center;} .modal-backdrop.open{display:flex;} .modal{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 18px 26px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;position:relative;} @media(min-width:520px){.modal-backdrop{align-items:center;}.modal{border-radius:var(--radius);}} .modal-close{position:absolute;top:16px;right:16px;background:var(--paper);border:none;width:30px;height:30px;border-radius:50%;font-size:14px;color:var(--ink-soft);z-index:10;} .user-dash-header { margin-bottom: 20px; } .user-dash-header h2 { font-size: 18px; } .user-dash-header .sub { font-size: 12px; color: var(--ink-soft); } .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin-bottom: 12px; margin-top: 24px; } .mock-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; } .mock-act { background: var(--paper); border-radius: 12px; padding: 12px 8px; text-align: center; border: 1px solid transparent; } .mock-act .dot { width: 8px; height: 8px; border-radius: 50%; margin: 0 auto 6px; } .mock-act .name { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .timeline { margin-top: 10px; } .tl-item { display: flex; gap: 12px; border-left: 1.5px solid var(--border); margin-left: 6px; padding: 0 0 16px 16px; position: relative; } .tl-item::before { content: ""; position: absolute; left: -5px; top: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--border-strong); } .tl-time { width: 45px; flex: none; font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--ink-faint); padding-top: 1px; } .tl-content { flex: 1; } .tl-act { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; } .tl-act .dot { width: 6px; height: 6px; border-radius: 50%; } .tl-detail { font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; } .stat-row { display: flex; gap: 8px; margin-top: 16px; } .stat-pill { flex: 1; background: var(--paper); border-radius: 10px; padding: 10px; text-align: center; } .stat-pill .val { font-family: "Space Grotesk"; font-weight: 700; font-size: 16px; } .stat-pill .lbl { font-size: 9px; text-transform: uppercase; color: var(--ink-soft); } .color-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:7px;margin-top:2px;} .color-swatch{width:100%;aspect-ratio:1;border-radius:50%;border:2px solid transparent;padding:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08);} .color-swatch.selected{border-color:var(--ink);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink);} .pill-row{display:flex;gap:8px;} .pill{flex:1;border:1px solid var(--border-strong);background:var(--paper);border-radius:var(--radius-sm);padding:9px;font-size:12.5px;font-weight:600;color:var(--ink-soft);text-align:center;} .pill.active{border-color:var(--ink);background:var(--surface);color:var(--ink);} </style> </head> <body> <div id="loginView"> <div class="login-card"> <h1>Admin · Chrono</h1> <p id="loginSub">Sign in with your admin account to continue.</p> <div class="field"><label>Email</label><input type="email" id="loginEmail" autocomplete="username"></div> <div class="field"><label>Password</label><input type="password" id="loginPassword" autocomplete="current-password"></div> <button class="btn btn-primary" id="loginBtn">Sign in</button> <div class="auth-msg" id="loginMsg"></div> </div> </div> <div id="adminApp" class="hidden"> <div class="topbar"> <div> <h1>Admin · Chrono</h1> <div class="sub" id="adminWhoami"></div> </div> <button class="icon-btn" id="signOutBtn">Sign out</button> </div> <div class="tabs"> <button class="tab-btn active" data-tab="activitiesTab">Starter Grid</button> <button class="tab-btn" data-tab="usersTab">Users</button> </div> <div class="tab-panel active" id="activitiesTab"> <div style="margin-bottom:12px;"> <h2 style="font-size:14px;">Starter Grid Template</h2> <p style="font-size:12px; color:var(--ink-soft); margin-top:4px;">Define the activities every <b>new user</b> starts with. Changes do not affect existing accounts. Drag to reorder, long press to edit.</p> </div> <div id="defaultsContainer"></div> <button class="add-fab" id="addDefaultBtn" style="margin-top:20px;">+ Add starter activity</button> </div> <div class="tab-panel" id="usersTab"> <div class="card"> <h2>User Directory</h2> <div class="hint">Click a user to see their dashboard as they see it.</div> <input type="text" class="search-input" id="userSearch" placeholder="Search by email or UID..."> <div id="usersList"><div class="loading-note">Loading users…</div></div> </div> </div> </div> <div class="modal-backdrop" id="actModal"> <div class="modal"> <button class="modal-close" data-close="actModal">✕</button> <h2 id="actModalTitle">Edit Activity</h2> <div class="field" style="margin-top:10px;"><label>Name</label><input type="text" id="actName" placeholder="e.g. Work"></div> <div class="field"> <label>Category</label> <div class="pill-row" id="actCatRow"> <button type="button" class="pill" data-cat="study">Study</button> <button type="button" class="pill" data-cat="social">Social and Fun</button> <button type="button" class="pill" data-cat="essential">Essential</button> </div> </div> <div class="field"> <label>Color</label> <div class="color-grid" id="actColorGrid"></div> </div> <div class="btn-row" style="display:flex;gap:10px;margin-top:20px;"> <button class="btn btn-ghost" data-close="actModal">Cancel</button> <button class="btn btn-primary" id="actSaveBtn">Save Changes</button> </div> </div> </div> <div class="modal-backdrop" id="userModal"> <div class="modal" style="max-width:440px; padding-bottom:40px;"> <button class="modal-close" data-close="userModal">✕</button> <div id="userModalBody"> <div class="loading-note">Loading user data...</div> </div> </div> </div> <script> (function(){ "use strict"; const firebaseConfig = { apiKey: "AIzaSyBkqINVQDvotNAlwezK6_fXhHduT7E2M_4", authDomain: "chrono-e6497.firebaseapp.com", projectId: "chrono-e6497", storageBucket: "chrono-e6497.firebasestorage.app", messagingSenderId: "954295376775", appId: "1:954295376775:web:5383634ba4a04e61289122" }; firebase.initializeApp(firebaseConfig); const auth = firebase.auth(); const db = firebase.firestore(); const CATEGORY_LABELS = { study:'Study', social:'Social and Fun', essential:'Essential' }; const PALETTE = ['#09090b','#1e1b4b','#14532d','#450a0a','#4a044e','#312e81','#1e3a8a','#115e59', '#7f1d1d','#701a75','#831843','#4338ca','#1d4ed8','#0f766e','#b91c1c','#a21caf','#be185d','#b45309', '#4d7c0f','#6366f1','#3b82f6','#14b8a6','#ef4444','#d946ef','#ec4899','#f59e0b','#84cc16','#10b981', '#818cf8','#60a5fa','#2dd4bf','#f87171','#e879f9','#f472b6','#fbbf24','#a3e635','#34d399', '#2563EB','#DC2626','#059669','#D97706','#7C3AED','#DB2777','#0891B2','#65A30D','#EA580C', '#0EA5E9','#CA8A04','#E11D48','#FACC15','#22C55E','#06B6D4','#8B5CF6','#A855F7','#F97316']; function slugId(name){ return 'default-' + String(name).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-'); } function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); } function fmtDate(iso){ if(!iso) return '—'; const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleString(); } function closeModal(id){ document.getElementById(id).classList.remove('open'); } function openModal(id){ document.getElementById(id).classList.add('open'); } document.querySelectorAll('[data-close]').forEach(btn=>{ btn.addEventListener('click', ()=> closeModal(btn.getAttribute('data-close'))); }); const loginMsg = document.getElementById('loginMsg'); document.getElementById('loginBtn').addEventListener('click', async ()=>{ const email = document.getElementById('loginEmail').value.trim(); const password = document.getElementById('loginPassword').value; loginMsg.textContent = ''; try{ await auth.signInWithEmailAndPassword(email, password); } catch(err){ loginMsg.textContent = err.message; } }); document.getElementById('signOutBtn').addEventListener('click', ()=> auth.signOut()); auth.onAuthStateChanged(async user => { if (user && user.email) { try { const adminDoc = await db.collection('admins').doc(user.email.toLowerCase()).get(); if (adminDoc.exists) { document.getElementById('loginView').classList.add('hidden'); document.getElementById('adminApp').classList.remove('hidden'); document.getElementById('adminWhoami').textContent = user.email; loadDefaults(); loadUsers(); return; } } catch (err) {} loginMsg.textContent = 'Unauthorized admin account.'; auth.signOut(); } else { document.getElementById('loginView').classList.remove('hidden'); document.getElementById('adminApp').classList.add('hidden'); } }); document.querySelectorAll('.tab-btn').forEach(btn=>{ btn.addEventListener('click', ()=>{ document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active')); btn.classList.add('active'); document.getElementById(btn.dataset.tab).classList.add('active'); }); }); const DEFAULTS_REF = db.collection('config').doc('defaults'); let defaultActivities = []; let editingActId = null; async function loadDefaults(){ try{ const snap = await DEFAULTS_REF.get(); if(snap.exists && Array.isArray(snap.data().activities)){ defaultActivities = snap.data().activities; } renderDefaults(); } catch(err){ console.error(err); } } function renderDefaults(){ const container = document.getElementById('defaultsContainer'); container.innerHTML = ''; const categories = ['study', 'social', 'essential']; categories.forEach(catId => { const section = document.createElement('div'); section.className = 'category-section'; section.innerHTML = `<div class="category-title">${CATEGORY_LABELS[catId]}</div>`; const grid = document.createElement('div'); grid.className = 'activity-grid'; const filtered = defaultActivities.filter(a => (a.category||'essential') === catId); filtered.forEach((a) => { const globalIdx = defaultActivities.indexOf(a); const card = document.createElement('div'); card.className = 'act-card'; card.draggable = true; card.dataset.id = a.id; card.dataset.index = globalIdx; card.innerHTML = ` <div class="act-dot" style="background:${a.color}"></div> <div class="act-name">${escapeHtml(a.name)}</div> <div class="act-drag-handle">::</div> <div class="act-actions"> <button data-edit="${a.id}">✎</button> <button data-del="${a.id}">✕</button> </div> `; let pressTimer; const startPress = () => { pressTimer = setTimeout(() => openActModal(a.id), 600); }; const cancelPress = () => { clearTimeout(pressTimer); }; card.addEventListener('mousedown', startPress); card.addEventListener('mouseup', cancelPress); card.addEventListener('mouseleave', cancelPress); card.addEventListener('touchstart', startPress); card.addEventListener('touchend', cancelPress); card.addEventListener('dragstart', e => { card.classList.add('dragging'); e.dataTransfer.setData('text/plain', globalIdx); }); card.addEventListener('dragend', () => card.classList.remove('dragging')); card.addEventListener('dragover', e => e.preventDefault()); card.addEventListener('drop', e => { e.preventDefault(); const fromIdx = parseInt(e.dataTransfer.getData('text/plain')); const toIdx = globalIdx; if(fromIdx === toIdx) return; const moved = defaultActivities.splice(fromIdx, 1)[0]; defaultActivities.splice(toIdx, 0, moved); renderDefaults(); persistDefaults(); }); card.querySelector('[data-edit]').addEventListener('click', (e)=>{ e.stopPropagation(); openActModal(a.id); }); card.querySelector('[data-del]').addEventListener('click', (e)=>{ e.stopPropagation(); deleteDefault(a.id); }); grid.appendChild(card); }); if (filtered.length > 0) { section.appendChild(grid); container.appendChild(section); } }); if (defaultActivities.length === 0) { container.innerHTML = '<div class="empty-note">No starter activities defined.</div>'; } } async function persistDefaults(){ await DEFAULTS_REF.set({ activities: defaultActivities, updated_at: new Date().toISOString() }, { merge: true }); } async function deleteDefault(id){ if(!confirm('Delete this starter activity?')) return; defaultActivities = defaultActivities.filter(a=>a.id!==id); renderDefaults(); persistDefaults(); } document.getElementById('addDefaultBtn').addEventListener('click', ()=> openActModal(null)); function openActModal(id){ editingActId = id; const existing = id ? defaultActivities.find(a=>a.id===id) : null; document.getElementById('actModalTitle').textContent = existing ? 'Edit Activity' : 'Add Activity'; document.getElementById('actName').value = existing ? existing.name : ''; const cat = existing ? existing.category : 'essential'; document.querySelectorAll('#actCatRow .pill').forEach(p=> p.classList.toggle('active', p.dataset.cat===cat)); const grid = document.getElementById('actColorGrid'); const selectedColor = existing ? existing.color : PALETTE[0]; grid.innerHTML = PALETTE.map(c => `<button type="button" class="color-swatch${c===selectedColor?' selected':''}" data-color="${c}" style="background:${c}"></button>`).join(''); grid.querySelectorAll('.color-swatch').forEach(b=>{ b.addEventListener('click', ()=>{ grid.querySelectorAll('.color-swatch').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); }); }); openModal('actModal'); } document.querySelectorAll('#actCatRow .pill').forEach(p=>{ p.addEventListener('click', ()=>{ document.querySelectorAll('#actCatRow .pill').forEach(x=>x.classList.remove('active')); p.classList.add('active'); }); }); document.getElementById('actSaveBtn').addEventListener('click', async ()=>{ const name = document.getElementById('actName').value.trim(); if(!name) return; const isDuplicate = defaultActivities.some(a => a.name.toLowerCase() === name.toLowerCase() && a.id !== editingActId ); if (isDuplicate) { alert('An activity with this name already exists.'); return; } const cat = document.querySelector('#actCatRow .pill.active').dataset.cat; const color = document.querySelector('#actColorGrid .color-swatch.selected').dataset.color; if(editingActId){ const a = defaultActivities.find(x=>x.id===editingActId); if(a){ a.name = name; a.category = cat; a.color = color; } } else { defaultActivities.push({ id: slugId(name)+'-'+Date.now().toString(36), name, category: cat, color }); } renderDefaults(); closeModal('actModal'); await persistDefaults(); }); let allUsers = []; async function loadUsers(){ try{ const usersSnap = await db.collection('users').get(); allUsers = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() })); allUsers.sort((a,b) => new Date(b.lastLogin||0) - new Date(a.lastLogin||0)); renderUsers(allUsers); } catch(err){ console.error(err); } } function renderUsers(list){ const el = document.getElementById('usersList'); if(!list.length){ el.innerHTML = '<div class="empty-note">No users found.</div>'; return; } el.innerHTML = list.map(u => ` <div class="user-row" style="cursor:pointer;" onclick="window.viewUser('${u.uid}')"> <div class="user-av">${escapeHtml((u.email||'U').slice(0,1).toUpperCase())}</div> <div class="user-info"> <div class="user-email">${escapeHtml(u.email || u.uid)}</div> <div class="user-meta">Last seen ${fmtDate(u.lastLogin)}</div> </div> </div> `).join(''); } document.getElementById('userSearch').addEventListener('input', (e)=>{ const q = e.target.value.toLowerCase(); renderUsers(allUsers.filter(u => (u.email||'').toLowerCase().includes(q) || u.uid.toLowerCase().includes(q))); }); window.viewUser = async function(uid){ openModal('userModal'); const body = document.getElementById('userModalBody'); body.innerHTML = '<div class="loading-note">Loading user dashboard...</div>'; try { const [profSnap, actsSnap, evsSnap] = await Promise.all([ db.collection('users').doc(uid).get(), db.collection('users').doc(uid).collection('activities').get(), db.collection('users').doc(uid).collection('events').limit(30).get() ]); const profile = profSnap.data() || {}; const acts = actsSnap.docs.map(d=>d.data()).sort((a,b) => (a.order ?? 0) - (b.order ?? 0)); const evs = evsSnap.docs.map(d=>d.data()).sort((a,b)=> new Date(b.start_time) - new Date(a.start_time)); let actsHtml = acts.map(a => ` <div class="mock-act"> <div class="dot" style="background:${a.color}"></div> <div class="name">${escapeHtml(a.name)}</div> </div> `).join(''); let evsHtml = evs.map(e => ` <div class="tl-item"> <div class="tl-time">${e.start_time ? new Date(e.start_time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:false}) : '—'}</div> <div class="tl-content"> <div class="tl-act"><div class="dot" style="background:${e.color||'#ccc'}"></div> ${escapeHtml(e.activity_name)}</div> ${e.detail ? `<div class="tl-detail">${escapeHtml(e.detail)}</div>` : ''} </div> </div> `).join(''); body.innerHTML = ` <div class="user-dash-header"> <div class="sub">CHRONO USER VIEW</div> <h2>${escapeHtml(profile.email || 'User')}</h2> <div class="sub">Joined ${profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '—'} · ${uid}</div> </div> <div class="stat-row"> <div class="stat-pill"><div class="val">${evs.length}</div><div class="lbl">Logs</div></div> <div class="stat-pill"><div class="val">${acts.length}</div><div class="lbl">Acts</div></div> </div> <div class="section-label">User's Grid</div> <div class="mock-grid"> ${actsHtml || '<div class="empty-note" style="grid-column:span 3">No activities.</div>'} </div> <div class="section-label">Recent Timeline</div> <div class="timeline"> ${evsHtml || '<div class="empty-note">No logs found for this user.</div>'} </div> `; } catch(err) { body.innerHTML = '<div class="empty-note">Error loading user dashboard.</div>'; console.error(err); } }; })(); </script> </body> </html>
+</html>
