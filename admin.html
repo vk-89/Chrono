@@ -24,7 +24,7 @@
   body{background:var(--paper);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent;}
   h1,h2,h3{font-family:"Space Grotesk",sans-serif;margin:0;}
   button{font-family:inherit;cursor:pointer;}
-  input,select{font-family:inherit;}
+  input,select,textarea{font-family:inherit;}
   .hidden{display:none!important;}
 
   /* ---- Login ---- */
@@ -34,7 +34,7 @@
   .login-card p{color:var(--ink-soft);font-size:13px;margin:0 0 18px;}
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:6px;font-weight:600;}
-  .field input,.field select{width:100%;background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;color:var(--ink);}
+  .field input,.field select,.field textarea{width:100%;background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;color:var(--ink);resize:vertical;}
   .btn{border:none;border-radius:999px;padding:11px 16px;font-size:13.5px;font-weight:600;font-family:"Space Grotesk";width:100%;}
   .btn-primary{background:var(--ink);color:#fff;}
   .btn-ghost{background:var(--paper);color:var(--ink-soft);border:1px solid var(--border);}
@@ -50,7 +50,7 @@
   .icon-btn{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:7px 14px;font-size:12.5px;color:var(--ink-soft);font-weight:600;}
 
   .tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px;margin-bottom:18px;}
-  .tab-btn{flex:1;border:none;background:none;padding:9px 0;border-radius:999px;font-size:13px;font-weight:600;color:var(--ink-soft);font-family:"Space Grotesk";}
+  .tab-btn{flex:1;border:none;background:none;padding:9px 0;border-radius:999px;font-size:13px;font-weight:600;color:var(--ink-soft);font-family:"Space Grotesk";white-space:nowrap;padding-inline:10px;}
   .tab-btn.active{background:var(--ink);color:#fff;}
   .tab-panel{display:none;}
   .tab-panel.active{display:block;}
@@ -199,6 +199,7 @@
   <div class="tabs">
     <button class="tab-btn active" data-tab="activitiesTab">Default Activities</button>
     <button class="tab-btn" data-tab="usersTab">Users</button>
+    <button class="tab-btn" data-tab="aiSettingsTab">AI Settings</button>
   </div>
 
   <div class="tab-panel active" id="activitiesTab">
@@ -216,6 +217,18 @@
       <div class="hint">Click a user to see their dashboard as they see it.</div>
       <input type="text" class="search-input" id="userSearch" placeholder="Search by email or UID...">
       <div id="usersList"><div class="loading-note">Loading users…</div></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="aiSettingsTab">
+    <div class="card">
+      <h2>Global AI Instructions</h2>
+      <p class="hint">Define the system instructions for the AI routine coach. This prompt is sent to every user's chat session.</p>
+      <div class="field">
+        <label>System Prompt</label>
+        <textarea id="globalAiPromptInput" rows="12" placeholder="You are a routine coach..."></textarea>
+      </div>
+      <button class="btn btn-primary" id="saveGlobalAiBtn">Save Global AI Prompt</button>
     </div>
   </div>
 </div>
@@ -314,6 +327,7 @@ auth.onAuthStateChanged(async user => {
         document.getElementById('adminWhoami').textContent = user.email;
         loadDefaults();
         loadUsers();
+        loadGlobalAiPrompt();
         return;
       }
     } catch (err) {}
@@ -568,7 +582,7 @@ window.viewUser = async function(uid){
             <h2>${escapeHtml(profile.email || 'User')}</h2>
             <div class="sub">Joined ${profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '—'} · ${uid}</div>
           </div>
-          <button class="btn btn-danger btn-sm" onclick="window.resetUserActivities('${uid}')" style="margin-top:10px;">Reset to Defaults</button>
+          <button class="btn btn-danger btn-sm" onclick="window.resetUserActivities('${uid}')" style="margin-top:10px;">Reset Grid</button>
         </div>
       </div>
 
@@ -582,6 +596,12 @@ window.viewUser = async function(uid){
         ${actsHtml || '<div class="empty-note" style="grid-column:span 3">No activities.</div>'}
       </div>
 
+      <div class="section-label">Custom AI Instructions (User Specific)</div>
+      <div class="field">
+        <textarea id="customAiPromptInput" rows="4" placeholder="Instructions specific only to this user...">${escapeHtml(profile.customPrompt || '')}</textarea>
+        <button class="btn btn-primary btn-sm" onclick="window.saveUserPrompt('${uid}')" style="margin-top:8px;">Save Instruction</button>
+      </div>
+
       <div class="section-label">Recent Timeline</div>
       <div class="timeline">
         ${evsHtml || '<div class="empty-note">No logs found for this user.</div>'}
@@ -591,6 +611,16 @@ window.viewUser = async function(uid){
   } catch(err) {
     body.innerHTML = '<div class="empty-note">Error loading user dashboard.</div>';
     console.error(err);
+  }
+};
+
+window.saveUserPrompt = async function(uid) {
+  const prompt = document.getElementById('customAiPromptInput').value.trim();
+  try {
+    await db.collection('users').doc(uid).update({ customPrompt: prompt });
+    alert("User-specific AI prompt saved.");
+  } catch(err) {
+    alert("Failed to save: " + err.message);
   }
 };
 
@@ -625,6 +655,28 @@ window.resetUserActivities = async function(uid) {
     console.error(err);
   }
 };
+
+/* ============================= GLOBAL AI SETTINGS ============================= */
+async function loadGlobalAiPrompt() {
+  try {
+    const snap = await db.collection('config').doc('ai_settings').get();
+    if (snap.exists) {
+      document.getElementById('globalAiPromptInput').value = snap.data().globalPrompt || '';
+    }
+  } catch(err) {
+    console.error("Error loading global prompt:", err);
+  }
+}
+
+document.getElementById('saveGlobalAiBtn').addEventListener('click', async () => {
+  const prompt = document.getElementById('globalAiPromptInput').value.trim();
+  try {
+    await db.collection('config').doc('ai_settings').set({ globalPrompt: prompt }, { merge: true });
+    alert("Global AI instructions saved.");
+  } catch(err) {
+    alert("Failed to save: " + err.message);
+  }
+});
 
 })();
 </script>

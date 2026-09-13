@@ -790,7 +790,9 @@ const state = {
   editingId: null,
   editingActivityId: null,
   historyDaysShown: 7,
-  dismissedGroupPrompt: false
+  dismissedGroupPrompt: false,
+  globalAiPrompt: '',
+  customAiPrompt: ''
 };
 
 state.activities.forEach(a=>{
@@ -1485,7 +1487,17 @@ function buildChatContext(){
   const {ranges} = computeGlobalSegments();
   const recentDates = lastNLogicalDates(3);
   const recentLines = recentDates.map(ds=>{ const segs = segmentsForDay(ds, ranges); if(!segs.length) return dayLabel(ds)+': no data'; const isOffgrid = state.offgridDays[ds] ? ' (Out of town / travel)' : ''; const parts = segs.map(s => s.activity_name + (s.detail?' ('+s.detail+')':'') + ' ' + fmt12(s.start)+'-'+fmt12(s.end)); return dayLabel(ds) + isOffgrid + ': ' + parts.join(', '); }).join('\n');
-  return [ 'You are a concise, encouraging personal routine coach inside a time-tracking app called Chrono.', 'The user logs activities in three categories: Study, Social & Fun, Essential.', 'Day starts at '+fmtHour12(getDayStartHour())+'.', 'Their averages over the last '+INSIGHTS_LOOKBACK_DAYS+' routine days (excluding travel days): wake time '+fmtWakeClock(personal.avgWakeMinutes)+ ', study '+durationLabel(personal.avgStudy||0)+'/day, social '+durationLabel(personal.avgSocial||0)+'/day, essential '+durationLabel(personal.avgEssential||0)+'/day.', 'Their last 5 logged days:', recentLines || 'No data yet.', 'Answer the user\'s question directly and briefly (a few sentences unless asked for more). Reference their actual logged data when relevant. Be honest, not just cheerleading.' ].join('\n');
+  
+  const ctx = [];
+  if(state.globalAiPrompt) ctx.push(state.globalAiPrompt);
+  if(state.customAiPrompt) ctx.push(state.customAiPrompt);
+  
+  ctx.push('Day starts at '+fmtHour12(getDayStartHour())+'.');
+  ctx.push('Their averages over the last '+INSIGHTS_LOOKBACK_DAYS+' routine days (excluding travel days): wake time '+fmtWakeClock(personal.avgWakeMinutes)+ ', study '+durationLabel(personal.avgStudy||0)+'/day, social '+durationLabel(personal.avgSocial||0)+'/day, essential '+durationLabel(personal.avgEssential||0)+'/day.');
+  ctx.push('Their last 5 logged days:');
+  ctx.push(recentLines || 'No data yet.');
+  
+  return ctx.join('\n');
 }
 
 function renderChatLog(){
@@ -1872,7 +1884,7 @@ async function syncPush(){
 async function syncPull(){
   if(!state.user) return; setSyncBusy(true);
   try {
-    const uid = state.user.uid; const [actsSnap, evsSnap, metaSnap, peopleSnap] = await Promise.all([ db.collection('users').doc(uid).collection('activities').get(), db.collection('users').doc(uid).collection('events').get(), db.collection('users').doc(uid).collection('meta').doc('settings').get(), db.collection('users').doc(uid).collection('people').get() ]);
+    const uid = state.user.uid; const [actsSnap, evsSnap, metaSnap, peopleSnap, aiSettingsSnap, userDocSnap] = await Promise.all([ db.collection('users').doc(uid).collection('activities').get(), db.collection('users').doc(uid).collection('events').get(), db.collection('users').doc(uid).collection('meta').doc('settings').get(), db.collection('users').doc(uid).collection('people').get(), db.collection('config').doc('ai_settings').get(), db.collection('users').doc(uid).get() ]);
     
     if(!actsSnap.empty){ 
       mergeActivities(actsSnap.docs.map(doc => doc.data())); 
@@ -1894,6 +1906,10 @@ async function syncPull(){
     if(!evsSnap.empty){ mergeEvents(evsSnap.docs.map(doc => doc.data())); }
     if(!peopleSnap.empty){ mergePeople(peopleSnap.docs.map(doc => doc.data())); }
     if(metaSnap.exists){ const remoteOffgrid = metaSnap.data().offgrid_days; if(remoteOffgrid && typeof remoteOffgrid === 'object'){ state.offgridDays = Object.assign({}, remoteOffgrid, state.offgridDays); persistOffgrid(); } }
+    
+    if(aiSettingsSnap.exists){ state.globalAiPrompt = aiSettingsSnap.data().globalPrompt || ''; }
+    if(userDocSnap.exists){ state.customAiPrompt = userDocSnap.data().customPrompt || ''; }
+
     persistActivities(); persistEvents(); persistPeople();
   } catch(err) { console.error('Firebase sync pull failed', err); }
   setSyncBusy(false);
