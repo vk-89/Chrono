@@ -1323,6 +1323,10 @@ function renderHistory(){
       stripHtml = '<div class="strip-empty">'+(isOffgrid?'Out of town / Vacation':'No data')+'</div>';
     } else {
       stripHtml = segs.map(s=> '<div class="strip-seg" style="flex-grow:'+((s.end-s.start)/60000)+';background:'+s.color+'" title="'+escapeHtml(s.activity_name)+' '+fmt12(s.start)+'–'+fmt12(s.end)+'"></div>').join('');
+      const remainder = 1440 - totalMins;
+      if (remainder > 0) {
+        stripHtml += '<div class="strip-seg" style="flex-grow:' + remainder + ';background:transparent;"></div>';
+      }
     }
     const rangeRows = segs.map(s=> {
       if(state.editingId === s.id){
@@ -1334,7 +1338,7 @@ function renderHistory(){
           '<button class="btn-save" data-action="saveEdit" data-id="'+s.id+'">Save</button>' +
           '<button class="btn-cancel" data-action="cancelEdit">✕</button></div>';
       }
-      const interTags = (s.interruptions && s.interruptions.length) ? s.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(it.note)+'</span>').join('') : '';
+      const interTags = (s.interruptions && s.interruptions.length) ? s.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(s.note)+'</span>').join('') : '';
       return '<div class="log-row"><span class="log-dot" style="background:'+s.color+'"></span><span class="log-name">'+escapeHtml(s.activity_name)+(s.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(s.detail)+'</span>':'')+interTags+'</span><span class="log-time mono">'+fmt12(s.start)+' – '+fmt12(s.end)+' ('+durationLabel((s.end-s.start)/60000)+')</span><button class="log-edit" data-action="edit" data-id="'+s.id+'">✎</button><button class="log-del" data-action="del" data-id="'+s.id+'">🗑</button></div>';
     }).join('');
     const markerRows = mks.map(m=> {
