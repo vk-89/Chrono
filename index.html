@@ -1252,6 +1252,7 @@ function renderTodayLog(){
     offgridBtn.style.color = isOffgrid ? '#fff' : 'var(--ink-soft)';
   }
 
+  const {ranges} = computeGlobalSegments();
   const dayEvents = state.events
     .filter(e => logicalDateStr(new Date(e.start_time)) === todayL)
     .sort((a,b)=> new Date(b.start_time)-new Date(a.start_time));
@@ -1267,6 +1268,15 @@ function renderTodayLog(){
         '<button class="btn-save" data-action="saveEdit" data-id="'+e.id+'">Save</button>' +
         '<button class="btn-cancel" data-action="cancelEdit">✕</button></div>';
     }
+
+    let timeStr = fmt12(new Date(e.start_time));
+    if(!e.instant){
+      const seg = ranges.find(r => r.id === e.id);
+      if(seg && !seg.live){
+        timeStr = fmt12(seg.start) + ' – ' + fmt12(seg.end) + ' (' + durationLabel((seg.end-seg.start)/60000) + ')';
+      }
+    }
+
     const interTags = (e.interruptions && e.interruptions.length)
       ? e.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(it.note)+'</span>').join('')
       : '';
@@ -1274,7 +1284,7 @@ function renderTodayLog(){
     return '<div class="log-row" data-id="'+e.id+'">' +
       '<span class="log-dot" style="background:'+e.color+'"></span>' +
       '<span class="log-name">'+nameHtml+'</span>' +
-      '<span class="log-time mono">'+fmt12(new Date(e.start_time))+'</span>' +
+      '<span class="log-time mono">'+timeStr+'</span>' +
       '<button class="log-edit" data-action="edit" data-id="'+e.id+'">✎</button>' +
       '<button class="log-del" data-action="del" data-id="'+e.id+'">🗑</button></div>';
   }).join('');
@@ -1825,14 +1835,38 @@ document.getElementById('undoBtn').addEventListener('click', ()=>{ const ev = cu
 
 document.getElementById('todayLog').addEventListener('click', (e)=>{
   const btn = e.target.closest('button'); if(!btn) return; const action = btn.dataset.action;
-  if(action === 'edit'){ state.editingId = btn.dataset.id; renderTodayLog(); } else if(action === 'del'){ deleteEvent(btn.dataset.id); } else if(action === 'cancelEdit'){ state.editingId = null; renderTodayLog(); } else if(action === 'saveEdit'){ const row = btn.closest('.log-editrow'); const timeInput = row.querySelector('.editTimeInput'); const detailInput = row.querySelector('.editDetailInput'); const parts = timeInput.value.split(':'); updateEvent(btn.dataset.id, parseInt(parts[0],10), parseInt(parts[1],10), detailInput.value); }
+  if(action === 'edit'){ state.editingId = btn.dataset.id; renderTodayLog(); } 
+  else if(action === 'del'){ 
+    if(!confirm('Are you sure you want to delete this logged activity?')) return;
+    deleteEvent(btn.dataset.id); 
+  } 
+  else if(action === 'cancelEdit'){ state.editingId = null; renderTodayLog(); } 
+  else if(action === 'saveEdit'){ 
+    const row = btn.closest('.log-editrow'); 
+    const timeInput = row.querySelector('.editTimeInput'); 
+    const detailInput = row.querySelector('.editDetailInput'); 
+    const parts = timeInput.value.split(':'); 
+    updateEvent(btn.dataset.id, parseInt(parts[0],10), parseInt(parts[1],10), detailInput.value); 
+  }
 });
 
 document.getElementById('historyList').addEventListener('click', (e)=>{
   const actionBtn = e.target.closest('button[data-action]');
   if(actionBtn){
     const action = actionBtn.dataset.action;
-    if(action === 'edit'){ state.editingId = actionBtn.dataset.id; renderHistory(); } else if(action === 'del'){ deleteEvent(actionBtn.dataset.id); } else if(action === 'cancelEdit'){ state.editingId = null; renderHistory(); } else if(action === 'saveEdit'){ const row = actionBtn.closest('.log-editrow'); const timeInput = row.querySelector('.editTimeInput'); const detailInput = row.querySelector('.editDetailInput'); const parts = timeInput.value.split(':'); updateEvent(actionBtn.dataset.id, parseInt(parts[0],10), parseInt(parts[1],10), detailInput.value); }
+    if(action === 'edit'){ state.editingId = actionBtn.dataset.id; renderHistory(); } 
+    else if(action === 'del'){ 
+      if(!confirm('Are you sure you want to delete this logged activity?')) return;
+      deleteEvent(actionBtn.dataset.id); 
+    } 
+    else if(action === 'cancelEdit'){ state.editingId = null; renderHistory(); } 
+    else if(action === 'saveEdit'){ 
+      const row = actionBtn.closest('.log-editrow'); 
+      const timeInput = row.querySelector('.editTimeInput'); 
+      const detailInput = row.querySelector('.editDetailInput'); 
+      const parts = timeInput.value.split(':'); 
+      updateEvent(actionBtn.dataset.id, parseInt(parts[0],10), parseInt(parts[1],10), detailInput.value); 
+    }
     return;
   }
   const toggleZone = e.target.closest('.hist-day-head') || e.target.closest('.hist-strip');
