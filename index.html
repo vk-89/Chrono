@@ -621,32 +621,17 @@ const CATEGORY_LABELS = { study:'Study', social:'Social & Fun', essential:'Essen
 const CATEGORY_HUE = { study:208, social:16, essential:150 };
 const CATEGORY_SAT = { study:62, social:72, essential:32 };
 
-const RAW_PALETTE = Array.from(new Set([
-  '#09090b', '#171717', '#1e1b4b', '#14532d', '#450a0a', '#4a044e',
-  '#27272a', '#312e81', '#1e3a8a', '#115e59', '#7f1d1d', '#701a75', '#831843',
-  '#3f3f46', '#4338ca', '#1d4ed8', '#0f766e', '#b91c1c', '#a21caf', '#be185d', '#b45309', '#4d7c0f',
-  '#52525b', '#6366f1', '#3b82f6', '#14b8a6', '#ef4444', '#d946ef', '#ec4899', '#f59e0b', '#84cc16', '#10b981',
-  '#71717a', '#818cf8', '#60a5fa', '#2dd4bf', '#f87171', '#e879f9', '#f472b6', '#fbbf24', '#a3e635', '#34d399',
-  '#a1a1aa', '#a5b4fc', '#93c5fd', '#5eead4', '#fca5a5', '#f0abfc', '#f9a8d4', '#fcd34d', '#d9f99d', '#6ee7b7',
-  '#d4d4d8', '#c7d2fe', '#bfdbfe', '#99f6e4', '#fecaca', '#fae8ff', '#fbcfe8', '#fde68a', '#ecfccb', '#a7f3d0',
-  '#1C1E1B','#2563EB','#DC2626','#059669','#D97706','#7C3AED','#DB2777',
-  '#0891B2','#65A30D','#EA580C','#4F46E5','#0D9488','#C026D3',
-  '#BE123C','#15803D','#9333EA','#0EA5E9','#CA8A04','#E11D48',
-  '#166534','#7E22CE','#0369A1','#A16207','#F43F5E','#FB923C',
-  '#FACC15','#22C55E','#06B6D4','#8B5CF6','#A855F7','#F97316',
-  '#64748B','#78716C','#57534E','#44403C','#7C2D12','#134E4A'
-]));
-
-function getLuminance(hex) {
-    if (hex.startsWith('#')) hex = hex.substring(1);
-    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
-    let r = parseInt(hex.substring(0, 2), 16);
-    let g = parseInt(hex.substring(2, 4), 16);
-    let b = parseInt(hex.substring(4, 6), 16);
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-const PALETTE = RAW_PALETTE.slice().sort((a, b) => getLuminance(a) - getLuminance(b));
+const PALETTE = [
+  '#09090b', '#1c1e1b', '#3f3f46', '#71717a', '#a1a1aa',
+  '#450a0a', '#7f1d1d', '#b91c1c', '#dc2626', '#ef4444', '#f87171', '#fca5a5',
+  '#7c2d12', '#b45309', '#ea580c', '#f97316', '#fb923c', '#fdba74',
+  '#713f12', '#a16207', '#ca8a04', '#eab308', '#facc15', '#fef08a',
+  '#14532d', '#166534', '#15803d', '#10b981', '#22c55e', '#4ade80', '#86efac',
+  '#134e4a', '#115e59', '#0f766e', '#06b6d4', '#2dd4bf', '#5eead4', '#99f6e4',
+  '#1e3a8a', '#1e40af', '#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd',
+  '#312e81', '#4c1d95', '#6d28d9', '#7c3aed', '#8b5cf6', '#a78bfa', '#c7d2fe',
+  '#4a044e', '#701a75', '#9d174d', '#be185d', '#db2777', '#ec4899', '#f472b6'
+];
 
 const QUOTES = [
   "Discipline is choosing between what you want now and what you want most.",
