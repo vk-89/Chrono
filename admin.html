@@ -253,10 +253,21 @@
       </div>
     </div>
     <div class="field">
+      <label>Options</label>
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:4px;">
+        <label style="display:flex; align-items:center; gap:8px; font-weight:normal; cursor:pointer; font-size:13px;">
+          <input type="checkbox" id="actAskNote" style="width:auto; margin:0;"> <span>Prompt for a note when logging</span>
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; font-weight:normal; cursor:pointer; font-size:13px;">
+          <input type="checkbox" id="actSaveNote" style="width:auto; margin:0;"> <span>Save notes as a reusable checklist</span>
+        </label>
+      </div>
+    </div>
+    <div class="field">
       <label>Color</label>
       <div class="color-grid" id="actColorGrid"></div>
     </div>
-    <div class="btn-row" style="display:flex;gap:10px;margin-top:20px;">
+    <div class="btn-row" style="display:flex; gap:10px; margin-top:20px;">
       <button class="btn btn-ghost" data-close="actModal">Cancel</button>
       <button class="btn btn-primary" id="actSaveBtn">Save Changes</button>
     </div>
@@ -397,9 +408,16 @@ function renderDefaults(){
       card.draggable = true;
       card.dataset.id = a.id;
       card.dataset.index = globalIdx;
+      
+      const showNote = a.actAskNote || a.needsDetail;
+      const showCheck = a.actSaveNote || a.peoplePicker;
+      
       card.innerHTML = `
         <div class="act-dot" style="background:${a.color}"></div>
-        <div class="act-name">${escapeHtml(a.name)}</div>
+        <div class="act-info" style="flex:1; min-width:0;">
+          <div class="act-name">${escapeHtml(a.name)}</div>
+          <div style="font-size:10px; opacity:0.6;">${showNote?'📝':''} ${showCheck?'☑️':''}</div>
+        </div>
         <div class="act-drag-handle">::</div>
         <div class="act-actions">
           <button data-edit="${a.id}">✎</button>
@@ -474,6 +492,12 @@ function openActModal(id){
   const cat = existing ? existing.category : 'essential';
   document.querySelectorAll('#actCatRow .pill').forEach(p=> p.classList.toggle('active', p.dataset.cat===cat));
 
+  // Options mapping with backward compatibility
+  const askNote = existing ? (existing.actAskNote ?? existing.needsDetail ?? false) : false;
+  const saveNote = existing ? (existing.actSaveNote ?? existing.peoplePicker ?? false) : false;
+  document.getElementById('actAskNote').checked = askNote;
+  document.getElementById('actSaveNote').checked = saveNote;
+
   const grid = document.getElementById('actColorGrid');
   const selectedColor = existing ? existing.color : PALETTE[0];
   grid.innerHTML = PALETTE.map(c => `<button type="button" class="color-swatch${c===selectedColor?' selected':''}" data-color="${c}" style="background:${c}"></button>`).join('');
@@ -507,12 +531,30 @@ document.getElementById('actSaveBtn').addEventListener('click', async ()=>{
 
   const cat = document.querySelector('#actCatRow .pill.active').dataset.cat;
   const color = document.querySelector('#actColorGrid .color-swatch.selected').dataset.color;
+  const actAskNote = document.getElementById('actAskNote').checked;
+  const actSaveNote = document.getElementById('actSaveNote').checked;
 
   if(editingActId){
     const a = defaultActivities.find(x=>x.id===editingActId);
-    if(a){ a.name = name; a.category = cat; a.color = color; }
+    if(a){ 
+      a.name = name; 
+      a.category = cat; 
+      a.color = color; 
+      a.actAskNote = actAskNote;
+      a.actSaveNote = actSaveNote;
+      // Cleanup legacy fields
+      delete a.needsDetail;
+      delete a.peoplePicker;
+    }
   } else {
-    defaultActivities.push({ id: slugId(name)+'-'+Date.now().toString(36), name, category: cat, color });
+    defaultActivities.push({ 
+      id: slugId(name)+'-'+Date.now().toString(36), 
+      name, 
+      category: cat, 
+      color,
+      actAskNote,
+      actSaveNote
+    });
   }
   renderDefaults();
   closeModal('actModal');
@@ -577,12 +619,17 @@ window.viewUser = async function(uid){
     const evs = evsSnap.docs.map(d=>d.data()).sort((a,b)=> new Date(b.start_time) - new Date(a.start_time));
     const identity = profile.displayName || profile.email || profile.phoneNumber || uid;
 
-    let actsHtml = acts.map(a => `
-      <div class="qa-btn" style="border-left: 4px solid ${a.color}">
-        <div class="qa-dot" style="background:${a.color}"></div>
-        <div style="font-size:11px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">${escapeHtml(a.name)}</div>
-      </div>
-    `).join('');
+    let actsHtml = acts.map(a => {
+      const showNote = a.actAskNote || a.needsDetail;
+      const showCheck = a.actSaveNote || a.peoplePicker;
+      return `
+        <div class="qa-btn" style="border-left: 4px solid ${a.color}">
+          <div class="qa-dot" style="background:${a.color}"></div>
+          <div style="font-size:11px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">${escapeHtml(a.name)}</div>
+          <div style="font-size:10px; margin-top:-4px; opacity:0.6;">${showNote?'📝':''} ${showCheck?'☑️':''}</div>
+        </div>
+      `;
+    }).join('');
 
     let evsHtml = evs.map(e => `
       <div class="log-row">

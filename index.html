@@ -97,9 +97,6 @@
   .tl-seg{position:absolute;top:0;bottom:0;min-width:3px;border-radius:3px;}
   .tl-seg.live::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,0.35);animation:pulse 1.6s ease-in-out infinite;border-radius:3px;}
   
-  .tl-marker{position:absolute;top:-4px;width:2px;height:30px;border-radius:1px;z-index:3;background:var(--mc,var(--ink));}
-  .tl-marker::after{content:"";position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:var(--mc,var(--ink));}
-  
   .tl-now{position:absolute;top:0;width:2px;background:var(--accent);z-index:5;pointer-events:none;}
   .tl-now::before{content:"now";position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--accent);font-weight:700;font-family:"JetBrains Mono";white-space:nowrap;}
   @keyframes pulse{0%,100%{opacity:0.15;}50%{opacity:0;}}
@@ -141,7 +138,6 @@
   }
   .qa-btn:active{transform:scale(0.97);background:var(--paper);}
   .qa-dot{width:9px;height:9px;border-radius:50%;flex:none;}
-  .qa-instant{opacity:.55;font-size:11px;margin-left:2px;}
   .qa-add{
     margin-top:16px;width:100%;background:none;border:1.5px dashed var(--border-strong);
     border-radius:var(--radius-sm);padding:12px;font-size:13.5px;color:var(--ink-soft);font-weight:600;font-family:"Space Grotesk";
@@ -281,12 +277,12 @@
   .btn-outline{background:none;border:1.5px solid var(--border-strong);color:var(--ink);}
   .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:15px;color:var(--ink-faint);}
 
-  /* ---- People picker list ---- */
-  .person-row{display:flex;align-items:center;gap:8px;padding:8px 2px;border-bottom:1px solid var(--border);font-size:14px;}
-  .person-row:last-child{border-bottom:none;}
-  .person-row input[type=checkbox]{width:17px;height:17px;flex:none;}
-  .person-row button[data-del]{background:none;border:none;font-size:13px;padding:4px 6px;color:var(--ink-faint);flex:none;}
-  .person-empty{font-size:12.5px;color:var(--ink-faint);padding:8px 2px;}
+  /* ---- Item picker list ---- */
+  .item-row{display:flex;align-items:center;gap:8px;padding:8px 2px;border-bottom:1px solid var(--border);font-size:14px;}
+  .item-row:last-child{border-bottom:none;}
+  .item-row input[type=checkbox]{width:17px;height:17px;flex:none;}
+  .item-row button[data-del]{background:none;border:none;font-size:13px;padding:4px 6px;color:var(--ink-faint);flex:none;}
+  .item-empty{font-size:12.5px;color:var(--ink-faint);padding:8px 2px;}
 
   /* ---- Quote banner ---- */
   .quote-banner{
@@ -476,20 +472,12 @@
       <input type="time" id="actTime">
     </div>
     <div class="field check-row">
-      <input type="checkbox" id="actPin" checked style="width:16px;height:16px;">
-      <label style="margin:0;font-weight:400;">Pin to quick-add grid</label>
+      <input type="checkbox" id="actAskNote" style="width:16px;height:16px;">
+      <label style="margin:0;font-weight:400;">Prompt for a note when logging</label>
     </div>
     <div class="field check-row">
-      <input type="checkbox" id="actInstant" style="width:16px;height:16px;">
-      <label style="margin:0;font-weight:400;">Instant marker (like Wake Up) — a moment, not an ongoing activity</label>
-    </div>
-    <div class="field check-row">
-      <input type="checkbox" id="actNeedsDetail" style="width:16px;height:16px;">
-      <label style="margin:0;font-weight:400;">Ask for a short note each time (a free-text note)</label>
-    </div>
-    <div class="field check-row">
-      <input type="checkbox" id="actPeoplePicker" style="width:16px;height:16px;">
-      <label style="margin:0;font-weight:400;">Multi-person picker (choose who's involved)</label>
+      <input type="checkbox" id="actSaveNote" style="width:16px;height:16px;">
+      <label style="margin:0;font-weight:400;">Save notes as a reusable checklist</label>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="deleteActBtn" style="display:none;color:var(--danger);">Delete</button>
@@ -515,23 +503,23 @@
   </div>
 </div>
 
-<!-- People picker modal -->
-<div class="modal-backdrop" id="peopleModal">
+<!-- Reusable checklist modal -->
+<div class="modal-backdrop" id="checklistModal">
   <div class="modal">
-    <button class="modal-close" data-close="peopleModal">✕</button>
-    <h2 id="peopleModalTitle">Who's on the call?</h2>
-    <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;">Select everyone involved — tap as many as apply. Not listed yet? Add them below.</div>
-    <div id="peopleCheckList" style="max-height:280px;overflow-y:auto;margin-bottom:12px;"></div>
+    <button class="modal-close" data-close="checklistModal">✕</button>
+    <h2 id="checklistModalTitle">Select Notes</h2>
+    <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;">Select items from your list — tap as many as apply. Not listed yet? Add them below.</div>
+    <div id="checklistItems" style="max-height:280px;overflow-y:auto;margin-bottom:12px;"></div>
     <div class="field" style="display:flex;gap:8px;align-items:flex-end;margin-bottom:0;">
       <div style="flex:1;">
-        <label>Add a new person</label>
-        <input type="text" id="newPersonInput" placeholder="Name" maxlength="40">
+        <label>Add to list</label>
+        <input type="text" id="newNoteInput" placeholder="Item name" maxlength="40">
       </div>
-      <button class="btn btn-outline" id="addPersonBtn" type="button" style="flex:none;padding:11px 14px;">Add</button>
+      <button class="btn btn-outline" id="addNoteBtn" type="button" style="flex:none;padding:11px 14px;">Add</button>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" id="peopleSkipBtn">Skip</button>
-      <button class="btn btn-primary" id="peopleLogBtn">Log it</button>
+      <button class="btn btn-ghost" id="checklistSkipBtn">Skip</button>
+      <button class="btn btn-primary" id="checklistLogBtn">Log it</button>
     </div>
   </div>
 </div>
@@ -663,7 +651,7 @@ const LS = {
   actDeletes:'chrono_pending_act_deletes_v2',
   settings:'chrono_user_settings_v2',
   offgridDays:'chrono_offgrid_days_v1',
-  people:'chrono_people_v1'
+  savedNotes:'chrono_people_v1'
 };
 
 function uid(){ return (crypto.randomUUID ? crypto.randomUUID() : 'id-'+Date.now()+'-'+Math.random().toString(16).slice(2)); }
@@ -678,18 +666,7 @@ function hashStr(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h*31+str.charC
 function paletteColor(name){ return PALETTE[hashStr((name||'').toLowerCase().trim()) % PALETTE.length]; }
 
 function colorForEntry(activity, detail){
-  if (!detail || !detail.trim()) return activity.color;
-  let hex = activity.color.replace('#', '');
-  if(hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
-  const seed = hashStr(detail.trim().toLowerCase());
-  const amount = 30 + (seed % 40); 
-  const direction = (seed % 2 === 0) ? 1 : -1;
-  const shift = amount * direction;
-  let num = parseInt(hex, 16);
-  let r = Math.min(255, Math.max(0, (num >> 16) + shift));
-  let g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + shift));
-  let b = Math.min(255, Math.max(0, (num & 0x0000FF) + shift));
-  return '#' + (r << 16 | g << 8 | b).toString(16).padStart(6, '0');
+  return activity.color;
 }
 
 function categoryColor(cat){ return 'hsl(' + CATEGORY_HUE[cat] + ' ' + CATEGORY_SAT[cat] + '% 46%)'; }
@@ -778,7 +755,6 @@ function defaultPeoplePicker(name){
   return n === 'call';
 }
 
-// ---- Initialization ----
 const rawStoredActivities = loadLS(LS.activities, []);
 const rawStoredEvents = loadLS(LS.events, []);
 const activityDedupMap = new Map();
@@ -801,7 +777,7 @@ const state = {
   pendingDeletes: loadLS(LS.deletes, []),
   pendingActivityDeletes: loadLS(LS.actDeletes, []),
   offgridDays: loadLS(LS.offgridDays, {}),
-  people: loadLS(LS.people, []),
+  savedNotes: loadLS(LS.savedNotes, []),
   editingId: null,
   editingActivityId: null,
   historyDaysShown: 7,
@@ -812,9 +788,8 @@ const state = {
 
 state.activities.forEach(a=>{
   if(!a.color) a.color = paletteColor(a.name);
-  if(a.instant === undefined) a.instant = (a.name === 'Wake Up');
-  if(a.needsDetail === undefined) a.needsDetail = defaultNeedsDetail(a.name);
-  if(a.peoplePicker === undefined) a.peoplePicker = defaultPeoplePicker(a.name);
+  if(a.actAskNote === undefined) a.actAskNote = (a.needsDetail !== undefined) ? !!a.needsDetail : defaultNeedsDetail(a.name);
+  if(a.actSaveNote === undefined) a.actSaveNote = (a.peoplePicker !== undefined) ? !!a.peoplePicker : defaultPeoplePicker(a.name);
 });
 saveLS(LS.activities, state.activities);
 saveLS(LS.events, state.events);
@@ -825,7 +800,7 @@ function persistDeletes(){ saveLS(LS.deletes, state.pendingDeletes); }
 function persistActivityDeletes(){ saveLS(LS.actDeletes, state.pendingActivityDeletes); }
 function persistOffgrid(){ saveLS(LS.offgridDays, state.offgridDays); }
 function persistSettings(){ saveLS(LS.settings, userSettings); }
-function persistPeople(){ saveLS(LS.people, state.people); }
+function persistSavedNotes(){ saveLS(LS.savedNotes, state.savedNotes); }
 
 function currentEvent(){
   const todayL = todayLogicalDate();
@@ -840,8 +815,7 @@ function logActivity(activity, atDate, detail){
   const ev = {
     id: uid(), client_id: uid(),
     activity_id: activity.id, activity_name: activity.name,
-    category: activity.category, color: colorForEntry(activity, detail),
-    instant: !!activity.instant,
+    category: activity.category, color: activity.color,
     detail: (detail||'').trim(),
     interruptions: [],
     start_time: atDate.toISOString(), date: logicalDateStr(atDate),
@@ -851,13 +825,13 @@ function logActivity(activity, atDate, detail){
   state.events.sort((a,b)=> new Date(a.start_time) - new Date(b.start_time));
   persistEvents();
   renderAll();
-  showToast((activity.instant ? 'Marked ' : 'Logged ') + activity.name + (ev.detail ? ' — '+ev.detail : '') + ' · ' + fmt12(atDate));
+  showToast('Logged ' + activity.name + (ev.detail ? ' — '+ev.detail : '') + ' · ' + fmt12(atDate));
   queueSync();
 }
 
 function addInterruptionToActive(note, mins){
   const ev = currentEvent();
-  if(!ev || ev.instant) return;
+  if(!ev) return;
   if(!ev.interruptions) ev.interruptions = [];
   ev.interruptions.push({
     id: uid(),
@@ -904,10 +878,8 @@ function addActivity(opts){
   if(!name) return null;
   const existing = state.activities.find(a => a.name.toLowerCase() === name.toLowerCase());
   if(existing){
-    if(opts.pin !== undefined) existing.is_pinned = !!opts.pin;
-    if(opts.instant !== undefined) existing.instant = !!opts.instant;
-    if(opts.needsDetail !== undefined) existing.needsDetail = !!opts.needsDetail;
-    if(opts.peoplePicker !== undefined) existing.peoplePicker = !!opts.peoplePicker;
+    if(opts.actAskNote !== undefined) existing.actAskNote = !!opts.actAskNote;
+    if(opts.actSaveNote !== undefined) existing.actSaveNote = !!opts.actSaveNote;
     if(opts.category !== undefined) existing.category = opts.category;
     if(opts.color && opts.color !== existing.color){
       existing.color = opts.color;
@@ -921,24 +893,23 @@ function addActivity(opts){
   const act = {
     id: uid(), name, category: opts.category || 'essential',
     color: opts.color || paletteColor(name),
-    instant: !!opts.instant,
-    needsDetail: opts.needsDetail !== undefined ? !!opts.needsDetail : defaultNeedsDetail(name),
-    peoplePicker: opts.peoplePicker !== undefined ? !!opts.peoplePicker : defaultPeoplePicker(name),
-    is_pinned: opts.pin !== undefined ? !!opts.pin : true, synced:false, updated_at: new Date().toISOString(),
+    actAskNote: opts.actAskNote !== undefined ? !!opts.actAskNote : defaultNeedsDetail(name),
+    actSaveNote: opts.actSaveNote !== undefined ? !!opts.actSaveNote : defaultPeoplePicker(name),
+    synced:false, updated_at: new Date().toISOString(),
   };
   state.activities.push(act);
   persistActivities();
   return act;
 }
 
-function addPerson(name){
+function addToSavedNotes(name){
   name = (name||'').trim();
   if(!name) return null;
-  const existing = state.people.find(p => p.name.toLowerCase() === name.toLowerCase());
+  const existing = state.savedNotes.find(p => p.name.toLowerCase() === name.toLowerCase());
   if(existing) return existing;
-  const p = { id: uid(), name, synced:false, updated_at: p.updated_at };
-  state.people.push(p);
-  persistPeople();
+  const p = { id: uid(), name, synced:false, updated_at: new Date().toISOString() };
+  state.savedNotes.push(p);
+  persistSavedNotes();
   return p;
 }
 
@@ -947,7 +918,7 @@ function propagateActivityUpdate(actId, newName, newColor){
   state.events.forEach(e=>{
     if(e.activity_id !== actId) return;
     e.activity_name = newName;
-    e.color = colorForEntry({color: newColor}, e.detail);
+    e.color = newColor;
     e.synced = false;
     changed = true;
   });
@@ -956,18 +927,13 @@ function propagateActivityUpdate(actId, newName, newColor){
 
 function computeGlobalSegments(){
   const events = state.events.slice().sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
-  const ranges = [], markers = [];
+  const ranges = [];
   const now = new Date();
   const nowLogical = todayLogicalDate();
 
   for(let i=0;i<events.length;i++){
     const ev = events[i];
     const start = new Date(ev.start_time);
-    if(ev.instant){
-      markers.push(Object.assign({}, ev, {start}));
-      continue;
-    }
-    
     let end, live=false;
     const isSleep = isSleepOrRest(ev.activity_name);
     const maxMs = isSleep ? (14 * 3600000) : (6 * 3600000);
@@ -991,7 +957,7 @@ function computeGlobalSegments(){
     if(end <= start) end = new Date(start.getTime()+60000);
     ranges.push(Object.assign({}, ev, {start, end, live, isSleep}));
   }
-  return {ranges, markers};
+  return {ranges};
 }
 
 function isSleepOrRest(name){
@@ -1009,19 +975,13 @@ function segmentsForDay(dateStr, ranges){
   });
   return out;
 }
-function markersForDay(dateStr, markers){
-  const ds = dayBoundaryStart(dateStr), de = new Date(ds.getTime()+24*3600000);
-  return markers.filter(m=> m.start >= ds && m.start < de);
-}
 
-function firstMomentOfDay(dateStr, ranges, markers){
+function firstMomentOfDay(dateStr, ranges){
   const segs = segmentsForDay(dateStr, ranges);
-  const mks = markersForDay(dateStr, markers);
   let earliest = null;
   if(segs.length){
     segs.forEach(s=>{ if(!earliest || s.start < earliest) earliest = s.start; });
   }
-  mks.forEach(m=>{ if(!earliest || m.start < earliest) earliest = m.start; });
   return earliest;
 }
 
@@ -1058,7 +1018,7 @@ function checkMicroSwitchSequence(){
   if(!userSettings.autoGroupPrompt || state.dismissedGroupPrompt) return null;
   const todayL = todayLogicalDate();
   const dayEvents = state.events
-    .filter(e => logicalDateStr(new Date(e.start_time)) === todayL && !e.instant)
+    .filter(e => logicalDateStr(new Date(e.start_time)) === todayL)
     .sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
   
   if(dayEvents.length < 3) return null;
@@ -1082,7 +1042,7 @@ function applyAutoGroup(eventsToGroup){
   if(!eventsToGroup || !eventsToGroup.length) return;
   const first = eventsToGroup[0];
   const combinedNotes = eventsToGroup.map(e => e.activity_name + (e.detail ? ' ('+e.detail+')' : '')).join(' → ');
-  const adminAct = state.activities.find(a => a.name.toLowerCase() === 'admin / switching') || addActivity({ name:'Admin / Switching', category:'essential', pin:true });
+  const adminAct = state.activities.find(a => a.name.toLowerCase() === 'admin / switching') || addActivity({ name:'Admin / Switching', category:'essential' });
   const idsToRemove = new Set(eventsToGroup.map(e => e.id));
   eventsToGroup.forEach(e=>{ if(e.synced) state.pendingDeletes.push(e.id); });
   persistDeletes();
@@ -1107,14 +1067,13 @@ function renderRuler(){
 
 function renderTimeline(){
   renderRuler();
-  const {ranges, markers} = computeGlobalSegments();
+  const {ranges} = computeGlobalSegments();
   const dates = last7LogicalDates();
   const rowsEl = document.getElementById('tlRows');
   let html = '';
   dates.forEach(dateStr=>{
     const isOffgrid = !!state.offgridDays[dateStr];
     const segs = segmentsForDay(dateStr, ranges);
-    const mks = markersForDay(dateStr, markers);
     let inner = '';
     segs.forEach(s=>{
       const left = minutesIntoDay(s.start, dateStr) * PX_PER_HOUR/60;
@@ -1122,10 +1081,6 @@ function renderTimeline(){
       const isSleep = s.isSleep;
       const titleStr = escapeHtml(s.activity_name) + ' · ' + fmt12(s.originalStart||s.start) + '–' + (s.live ? 'now' : fmt12(s.originalEnd||s.end)) + (isSleep ? ' (Sleep Cycle)' : '');
       inner += '<div class="tl-seg'+(s.live?' live':'')+'" style="left:'+left+'px;width:'+width+'px;background:'+s.color+';opacity:'+(isOffgrid?'0.4':'1')+'" title="'+titleStr+'"></div>';
-    });
-    mks.forEach(m=>{
-      const left = minutesIntoDay(m.start, dateStr) * PX_PER_HOUR/60;
-      inner += '<div class="tl-marker" style="left:'+left+'px;--mc:'+m.color+'" title="'+escapeHtml(m.activity_name)+' · '+fmt12(m.start)+'"></div>';
     });
     const trackClass = isOffgrid ? "tl-track offgrid-track" : "tl-track";
     const offgridTag = isOffgrid ? '<span class="badge-offgrid">Out of town</span>' : '';
@@ -1165,19 +1120,13 @@ function renderStatus(){
   const start = new Date(ev.start_time);
   const isSleep = isSleepOrRest(ev.activity_name);
   const maxMs = isSleep ? (14 * 3600000) : (6 * 3600000);
-  const timedOut = !ev.instant && (Date.now() - start.getTime() > maxMs);
+  const timedOut = (Date.now() - start.getTime() > maxMs);
 
   const interTags = (ev.interruptions && ev.interruptions.length) 
     ? ev.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(it.note)+' ('+it.mins+'m)</span>').join('')
     : '';
 
-  if(ev.instant){
-    el.innerHTML =
-      '<span class="status-dot" style="background:'+ev.color+'"></span>' +
-      '<div><div class="status-name">'+escapeHtml(ev.activity_name)+'</div>' +
-      '<div class="status-since mono">at '+fmt12(start)+' · log what\'s next</div></div>';
-    interruptBtn.style.display = 'none';
-  } else if (timedOut) {
+  if (timedOut) {
     el.innerHTML =
       '<span class="status-dot" style="background:#ccc"></span>' +
       '<div><div class="status-name" style="color:var(--ink-faint);">'+escapeHtml(ev.activity_name)+' (Auto-stopped)</div>' +
@@ -1238,13 +1187,13 @@ function renderAutoGroupOffer(){
 function renderQuickAdd(){
   const container = document.getElementById('quickAdd');
   const groups = { study:[], social:[], essential:[] };
-  state.activities.filter(a=>a.is_pinned).forEach(a=>{ if(groups[a.category]) groups[a.category].push(a); });
+  state.activities.forEach(a=>{ if(groups[a.category]) groups[a.category].push(a); });
   let html = '';
   ['study','social','essential'].forEach(cat=>{
     if(!groups[cat].length) return;
     html += '<div class="qa-group"><div class="qa-label" style="color:'+categoryColor(cat)+'">'+CATEGORY_LABELS[cat]+'</div><div class="qa-grid">';
     groups[cat].forEach(a=>{
-      html += '<button class="qa-btn" style="border-left-color:'+a.color+'" data-id="'+a.id+'"><span class="qa-dot" style="background:'+a.color+'"></span>'+escapeHtml(a.name)+(a.instant?' <span class="qa-instant">⚡</span>':'')+'</button>';
+      html += '<button class="qa-btn" style="border-left-color:'+a.color+'" data-id="'+a.id+'"><span class="qa-dot" style="background:'+a.color+'"></span>'+escapeHtml(a.name)+'</button>';
     });
     html += '</div></div>';
   });
@@ -1281,17 +1230,15 @@ function renderTodayLog(){
     }
 
     let timeStr = fmt12(new Date(e.start_time));
-    if(!e.instant){
-      const seg = ranges.find(r => r.id === e.id);
-      if(seg && !seg.live){
-        timeStr = fmt12(seg.start) + ' – ' + fmt12(seg.end) + ' (' + durationLabel((seg.end-seg.start)/60000) + ')';
-      }
+    const seg = ranges.find(r => r.id === e.id);
+    if(seg && !seg.live){
+      timeStr = fmt12(seg.start) + ' – ' + fmt12(seg.end) + ' (' + durationLabel((seg.end-seg.start)/60000) + ')';
     }
 
     const interTags = (e.interruptions && e.interruptions.length)
       ? e.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(it.note)+'</span>').join('')
       : '';
-    const nameHtml = escapeHtml(e.activity_name) + (e.detail ? ' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(e.detail)+'</span>' : '') + interTags + (e.instant?' ⚡':'');
+    const nameHtml = escapeHtml(e.activity_name) + (e.detail ? ' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(e.detail)+'</span>' : '') + interTags;
     return '<div class="log-row" data-id="'+e.id+'">' +
       '<span class="log-dot" style="background:'+e.color+'"></span>' +
       '<span class="log-name">'+nameHtml+'</span>' +
@@ -1310,14 +1257,13 @@ function allDatesWithData(limit){
 function renderHistory(){
   const container = document.getElementById('historyList');
   const dates = allDatesWithData(state.historyDaysShown);
-  const {ranges, markers} = computeGlobalSegments();
+  const {ranges} = computeGlobalSegments();
   container.innerHTML = dates.map(dateStr=>{
     const isOffgrid = !!state.offgridDays[dateStr];
     const segs = segmentsForDay(dateStr, ranges);
-    const mks = markersForDay(dateStr, markers);
     const totalMins = segs.reduce((s,x)=> s + (x.end-x.start)/60000, 0);
     let stripHtml = '';
-    if(!segs.length && !mks.length){
+    if(!segs.length){
       stripHtml = '<div class="strip-empty">'+(isOffgrid?'Out of town / Vacation':'No data')+'</div>';
     } else {
       stripHtml = segs.map(s=> '<div class="strip-seg" style="flex-grow:'+((s.end-s.start)/60000)+';background:'+s.color+'" title="'+escapeHtml(s.activity_name)+' '+fmt12(s.start)+'–'+fmt12(s.end)+'"></div>').join('');
@@ -1336,22 +1282,11 @@ function renderHistory(){
           '<button class="btn-save" data-action="saveEdit" data-id="'+s.id+'">Save</button>' +
           '<button class="btn-cancel" data-action="cancelEdit">✕</button></div>';
       }
-      const interTags = (s.interruptions && s.interruptions.length) ? s.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(s.note)+'</span>').join('') : '';
+      const interTags = (s.interruptions && s.interruptions.length) ? s.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(it.note)+'</span>').join('') : '';
       return '<div class="log-row" data-id="'+s.id+'"><span class="log-dot" style="background:'+s.color+'"></span><span class="log-name">'+escapeHtml(s.activity_name)+(s.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(s.detail)+'</span>':'')+interTags+'</span><span class="log-time mono">'+fmt12(s.start)+' – '+fmt12(s.end)+' ('+durationLabel((s.end-s.start)/60000)+')</span><button class="log-edit" data-action="edit" data-id="'+s.id+'">✎</button><button class="log-del" data-action="del" data-id="'+s.id+'">🗑</button></div>';
     }).join('');
-    const markerRows = mks.map(m=> {
-      if(state.editingId === m.id){
-        const d = m.start;
-        const val = pad(d.getHours())+':'+pad(d.getMinutes());
-        return '<div class="log-editrow" data-id="'+m.id+'">' +
-          '<input type="time" class="editTimeInput" value="'+val+'">' +
-          '<input type="text" class="editDetailInput" value="'+escapeHtml(m.detail||'')+'" placeholder="Note (optional)">' +
-          '<button class="btn-save" data-action="saveEdit" data-id="'+m.id+'">Save</button>' +
-          '<button class="btn-cancel" data-action="cancelEdit">✕</button></div>';
-      }
-      return '<div class="log-row" data-id="'+m.id+'"><span class="log-dot" style="background:'+m.color+'"></span><span class="log-name">'+escapeHtml(m.activity_name)+(m.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(m.detail)+'</span>':'')+' ⚡</span><span class="log-time mono">'+fmt12(m.start)+'</span><button class="log-edit" data-action="edit" data-id="'+m.id+'">✎</button><button class="log-del" data-action="del" data-id="'+m.id+'">🗑</button></div>';
-    }).join('');
-    const detailHtml = (rangeRows + markerRows) || '<div class="empty-note">No entries.</div>';
+    
+    const detailHtml = rangeRows || '<div class="empty-note">No entries.</div>';
     const offgridTag = isOffgrid ? '<span class="badge-offgrid">Out of town</span>' : '';
     return '<div class="hist-day" data-date="'+dateStr+'">' +
       '<div class="hist-day-head"><span class="hist-date"><span>'+dayLabel(dateStr)+'</span>'+offgridTag+'</span><span class="hist-total mono">'+(totalMins?durationLabel(totalMins):'')+'</span></div>' +
@@ -1422,15 +1357,15 @@ function downloadBlob(filename, content, mime){
 }
 function exportJson(){
   const events = state.events.slice().sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
-  const payload = { exported_at: new Date().toISOString(), day_start_hour: getDayStartHour(), offgrid_days: state.offgridDays, people: state.people.map(p=>({ id:p.id, name:p.name })), activities: state.activities.map(a=>({ id:a.id, name:a.name, category:a.category, instant:!!a.instant, needsDetail:!!a.needsDetail, peoplePicker:!!a.peoplePicker })), events: events.map(e=>({ id:e.id, activity_name:e.activity_name, category:e.category, detail:e.detail||'', instant:!!e.instant, interruptions:e.interruptions||[], start_time:e.start_time, date:e.date })) };
+  const payload = { exported_at: new Date().toISOString(), day_start_hour: getDayStartHour(), offgrid_days: state.offgridDays, savedNotes: state.savedNotes.map(p=>({ id:p.id, name:p.name })), activities: state.activities.map(a=>({ id:a.id, name:a.name, category:a.category, actAskNote:!!a.actAskNote, actSaveNote:!!a.actSaveNote })), events: events.map(e=>({ id:e.id, activity_name:e.activity_name, category:e.category, detail:e.detail||'', interruptions:e.interruptions||[], start_time:e.start_time, date:e.date })) };
   downloadBlob('chrono-export-'+localDateStr()+'.json', JSON.stringify(payload, null, 2), 'application/json');
   showToast('Exported '+events.length+' activities as JSON');
 }
 function csvEscape(v){ v = String(v==null?'':v); return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
 function exportCsv(){
   const events = state.events.slice().sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
-  const rows = [['date','start_time','activity','category','detail','interruptions','instant','offgrid_day']];
-  events.forEach(e=>{ const interStr = (e.interruptions && e.interruptions.length) ? e.interruptions.map(i=>i.note+' ('+i.mins+'m)').join('; ') : ''; rows.push([e.date, e.start_time, e.activity_name, e.category, e.detail||'', interStr, e.instant?'yes':'no', state.offgridDays[e.date]?'yes':'no']); });
+  const rows = [['date','start_time','activity','category','detail','interruptions','offgrid_day']];
+  events.forEach(e=>{ const interStr = (e.interruptions && e.interruptions.length) ? e.interruptions.map(i=>i.note+' ('+i.mins+'m)').join('; ') : ''; rows.push([e.date, e.start_time, e.activity_name, e.category, e.detail||'', interStr, state.offgridDays[e.date]?'yes':'no']); });
   const csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
   downloadBlob('chrono-export-'+localDateStr()+'.csv', csv, 'text/csv');
   showToast('Exported '+events.length+' activities as CSV');
@@ -1439,7 +1374,7 @@ document.getElementById('exportJsonBtn').addEventListener('click', exportJson);
 document.getElementById('exportCsvBtn').addEventListener('click', exportCsv);
 
 function computePersonalAverages(days, filterOffgrid){
-  const {ranges, markers} = computeGlobalSegments();
+  const {ranges} = computeGlobalSegments();
   const dates = lastNLogicalDates(days);
   const totals = {study:[], social:[], essential:[]};
   const wakeMinutesArr = [];
@@ -1450,7 +1385,7 @@ function computePersonalAverages(days, filterOffgrid){
     const dayTotals = {study:0, social:0, essential:0};
     segs.forEach(s=>{ dayTotals[s.category] += (s.end-s.start)/60000; });
     ['study','social','essential'].forEach(c=> totals[c].push(dayTotals[c]));
-    const firstStart = firstMomentOfDay(ds, ranges, markers);
+    const firstStart = firstMomentOfDay(ds, ranges);
     if(firstStart) wakeMinutesArr.push(minutesIntoDay(firstStart, ds));
   });
   function avg(arr){ return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null; }
@@ -1465,9 +1400,9 @@ function fmtWakeClock(mins){
 }
 
 function computeTodayWakeDeviation(personal){
-  const {ranges, markers} = computeGlobalSegments();
+  const {ranges} = computeGlobalSegments();
   const todayL = todayLogicalDate();
-  const firstStart = firstMomentOfDay(todayL, ranges, markers);
+  const firstStart = firstMomentOfDay(todayL, ranges);
   if(!firstStart || personal.avgWakeMinutes==null) return null;
   const todayWake = minutesIntoDay(firstStart, todayL);
   return todayWake - personal.avgWakeMinutes;
@@ -1596,7 +1531,7 @@ function renderAll(){
 setInterval(()=>{
   const ev = currentEvent();
   const elEl = document.getElementById('statusElapsed');
-  if(ev && !ev.instant && elEl){ elEl.textContent = durationLabel((Date.now()-new Date(ev.start_time))/60000); }
+  if(ev && elEl){ elEl.textContent = durationLabel((Date.now()-new Date(ev.start_time))/60000); }
   renderTimeline();
   renderStatus();
   renderSleepBanner();
@@ -1643,10 +1578,8 @@ function openEditActivity(id){
   document.getElementById('addModalTitle').textContent = 'Edit Activity';
   document.getElementById('actName').value = act.name;
   document.getElementById('actTime').value = nowTimeValue();
-  document.getElementById('actPin').checked = !!act.is_pinned;
-  document.getElementById('actInstant').checked = !!act.instant;
-  document.getElementById('actNeedsDetail').checked = !!act.needsDetail;
-  document.getElementById('actPeoplePicker').checked = !!act.peoplePicker;
+  document.getElementById('actAskNote').checked = !!act.actAskNote;
+  document.getElementById('actSaveNote').checked = !!act.actSaveNote;
   document.querySelectorAll('#catPills .pill').forEach(p=>p.classList.remove('active'));
   document.querySelector('#catPills .pill[data-cat="'+act.category+'"]').classList.add('active');
   selectedActColor = act.color;
@@ -1680,10 +1613,8 @@ qaContainer.addEventListener('click', (e)=>{
     document.getElementById('actName').value = '';
     document.getElementById('actNameHint').style.display = 'none';
     document.getElementById('actTime').value = nowTimeValue();
-    document.getElementById('actPin').checked = true;
-    document.getElementById('actInstant').checked = false;
-    document.getElementById('actNeedsDetail').checked = false;
-    document.getElementById('actPeoplePicker').checked = false;
+    document.getElementById('actAskNote').checked = false;
+    document.getElementById('actSaveNote').checked = false;
     document.querySelectorAll('#catPills .pill').forEach(p=>p.classList.remove('active'));
     document.querySelector('#catPills .pill[data-cat="study"]').classList.add('active');
     selectedActColor = null;
@@ -1700,9 +1631,9 @@ qaContainer.addEventListener('click', (e)=>{
     const act = state.activities.find(a=>a.id===qb.dataset.id);
     if(!act) return;
     const cur = currentEvent();
-    if(cur && cur.activity_id === act.id && !act.needsDetail && !act.peoplePicker){ showToast(act.name + ' is already active'); return; }
-    if(act.peoplePicker) openPeopleModal(act, new Date());
-    else if(act.needsDetail) openDetailModal(act, new Date());
+    if(cur && cur.activity_id === act.id && !act.actAskNote && !act.actSaveNote){ showToast(act.name + ' is already active'); return; }
+    if(act.actSaveNote) openChecklistModal(act, new Date());
+    else if(act.actAskNote) openDetailModal(act, new Date());
     else logActivity(act, new Date());
   }
 });
@@ -1712,7 +1643,7 @@ document.getElementById('deleteActBtn').addEventListener('click', () => {
   const act = state.activities.find(a => a.id === state.editingActivityId);
   if(!act) return;
   const stillUsed = state.events.some(ev => ev.activity_id === act.id);
-  const msg = stillUsed ? 'Remove "'+act.name+'" from your quick-add list? Past logged entries for it are kept.' : 'Remove "'+act.name+'"?';
+  const msg = stillUsed ? 'Remove "'+act.name+'" from your grid? Past logged entries for it are kept.' : 'Remove "'+act.name+'"?';
   if(!confirm(msg)) return;
   if(act.synced){ state.pendingActivityDeletes.push(act.id); persistActivityDeletes(); }
   state.activities = state.activities.filter(a => a.id !== state.editingActivityId);
@@ -1739,8 +1670,8 @@ document.getElementById('resetActivitiesBtn').addEventListener('click', async ()
       state.activities.forEach(a => { if(a.synced) state.pendingActivityDeletes.push(a.id); });
       state.activities = remoteDefaults.map(a => ({
         id: a.id || slugId(a.name), name:a.name, category:a.category, color: a.color || paletteColor(a.name),
-        instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name),
-        is_pinned:true, synced:false, updated_at: new Date().toISOString(),
+        actAskNote: defaultNeedsDetail(a.name), actSaveNote: defaultPeoplePicker(a.name),
+        synced:false, updated_at: new Date().toISOString(),
       }));
       persistActivities(); persistActivityDeletes();
       renderAll();
@@ -1756,33 +1687,33 @@ document.getElementById('resetActivitiesBtn').addEventListener('click', async ()
   }
 });
 
-let pendingDetailAct = null, pendingDetailTime = null;
-function openDetailModal(act, atDate){ pendingDetailAct = act; pendingDetailTime = atDate; document.getElementById('detailModalTitle').textContent = act.name; document.getElementById('detailModalLabel').textContent = act.name.toLowerCase() === 'timepass' ? 'What exactly are you doing?' : 'Note'; const input = document.getElementById('detailModalInput'); input.value = ''; openModal('detailModal'); setTimeout(()=> input.focus(), 150); }
+let pendingNoteAct = null, pendingNoteTime = null;
+function openDetailModal(act, atDate){ pendingNoteAct = act; pendingNoteTime = atDate; document.getElementById('detailModalTitle').textContent = act.name; document.getElementById('detailModalLabel').textContent = act.name.toLowerCase() === 'timepass' ? 'What exactly are you doing?' : 'Note'; const input = document.getElementById('detailModalInput'); input.value = ''; openModal('detailModal'); setTimeout(()=> input.focus(), 150); }
 
-let pendingPeopleAct = null, pendingPeopleTime = null;
-let selectedPeopleIds = new Set();
+let pendingChecklistAct = null, pendingChecklistTime = null;
+let selectedItemIds = new Set();
 
-function renderPeopleCheckList(){
-  const container = document.getElementById('peopleCheckList');
-  const people = state.people.slice().sort((a,b)=> a.name.localeCompare(b.name));
-  if(!people.length){ container.innerHTML = '<div class="person-empty">No one saved yet — add someone below.</div>'; return; }
-  container.innerHTML = people.map(p=> '<div class="person-row">' + '<label style="display:flex;align-items:center;gap:9px;flex:1;min-width:0;">' + '<input type="checkbox" data-id="'+p.id+'" '+(selectedPeopleIds.has(p.id)?'checked':'')+'>' + '<span>'+escapeHtml(p.name)+'</span>' + '</label>' + '<button type="button" data-del="'+p.id+'" title="Remove from list">🗑</button>' + '</div>' ).join('');
+function renderChecklistItems(){
+  const container = document.getElementById('checklistItems');
+  const items = state.savedNotes.slice().sort((a,b)=> a.name.localeCompare(b.name));
+  if(!items.length){ container.innerHTML = '<div class="item-empty">No items saved yet — add one below.</div>'; return; }
+  container.innerHTML = items.map(p=> '<div class="item-row">' + '<label style="display:flex;align-items:center;gap:9px;flex:1;min-width:0;">' + '<input type="checkbox" data-id="'+p.id+'" '+(selectedItemIds.has(p.id)?'checked':'')+'>' + '<span>'+escapeHtml(p.name)+'</span>' + '</label>' + '<button type="button" data-del="'+p.id+'" title="Remove from list">🗑</button>' + '</div>' ).join('');
 }
 
-function openPeopleModal(act, atDate){ pendingPeopleAct = act; pendingPeopleTime = atDate; selectedPeopleIds = new Set(); document.getElementById('peopleModalTitle').textContent = act.name.toLowerCase() === 'call' ? "Who's on the call?" : "Who's involved — " + act.name; document.getElementById('newPersonInput').value = ''; renderPeopleCheckList(); openModal('peopleModal'); setTimeout(()=> document.getElementById('newPersonInput').focus(), 150); }
+function openChecklistModal(act, atDate){ pendingChecklistAct = act; pendingChecklistTime = atDate; selectedItemIds = new Set(); document.getElementById('checklistModalTitle').textContent = "Select Notes: " + act.name; document.getElementById('newNoteInput').value = ''; renderChecklistItems(); openModal('checklistModal'); setTimeout(()=> document.getElementById('newNoteInput').focus(), 150); }
 
-function resolvePendingPeople(skip){ if(!pendingPeopleAct) return; let detail = ''; if(!skip){ const names = state.people.filter(p => selectedPeopleIds.has(p.id)).map(p=>p.name); detail = names.join(', '); } logActivity(pendingPeopleAct, pendingPeopleTime, detail); pendingPeopleAct = null; pendingPeopleTime = null; closeModal('peopleModal'); }
+function resolveChecklist(skip){ if(!pendingChecklistAct) return; let detail = ''; if(!skip){ const names = state.savedNotes.filter(p => selectedItemIds.has(p.id)).map(p=>p.name); detail = names.join(', '); } logActivity(pendingChecklistAct, pendingChecklistTime, detail); pendingChecklistAct = null; pendingChecklistTime = null; closeModal('checklistModal'); }
 
-document.getElementById('peopleCheckList').addEventListener('change', (e)=>{ const cb = e.target.closest('input[type=checkbox]'); if(!cb) return; if(cb.checked) selectedPeopleIds.add(cb.dataset.id); else selectedPeopleIds.delete(cb.dataset.id); });
-document.getElementById('peopleCheckList').addEventListener('click', (e)=>{ const delBtn = e.target.closest('button[data-del]'); if(!delBtn) return; const id = delBtn.dataset.del; if(!confirm('Remove this person from your list? Past logged entries will keep their name.')) return; state.people = state.people.filter(p=>p.id!==id); selectedPeopleIds.delete(id); persistPeople(); renderPeopleCheckList(); queueSync(); });
-document.getElementById('addPersonBtn').addEventListener('click', ()=>{ const input = document.getElementById('newPersonInput'); const p = addPerson(input.value); if(p){ selectedPeopleIds.add(p.id); input.value = ''; renderPeopleCheckList(); queueSync(); input.focus(); } });
-document.getElementById('newPersonInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('addPersonBtn').click(); } });
-document.getElementById('peopleLogBtn').addEventListener('click', ()=> resolvePendingPeople(false));
-document.getElementById('peopleSkipBtn').addEventListener('click', ()=> resolvePendingPeople(true));
-function resolvePendingDetail(detail){ if(!pendingDetailAct) return; logActivity(pendingDetailAct, pendingDetailTime, detail); pendingDetailAct = null; pendingDetailTime = null; closeModal('detailModal'); }
-document.getElementById('detailSaveBtn').addEventListener('click', ()=>{ resolvePendingDetail(document.getElementById('detailModalInput').value); });
-document.getElementById('detailSkipBtn').addEventListener('click', ()=>{ resolvePendingDetail(''); });
-document.getElementById('detailModalInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') resolvePendingDetail(e.target.value); });
+document.getElementById('checklistItems').addEventListener('change', (e)=>{ const cb = e.target.closest('input[type=checkbox]'); if(!cb) return; if(cb.checked) selectedItemIds.add(cb.dataset.id); else selectedItemIds.delete(cb.dataset.id); });
+document.getElementById('checklistItems').addEventListener('click', (e)=>{ const delBtn = e.target.closest('button[data-del]'); if(!delBtn) return; const id = delBtn.dataset.del; if(!confirm('Remove this from your list? Past logged entries will keep it.')) return; state.savedNotes = state.savedNotes.filter(p=>p.id!==id); selectedItemIds.delete(id); persistSavedNotes(); renderChecklistItems(); queueSync(); });
+document.getElementById('addNoteBtn').addEventListener('click', ()=>{ const input = document.getElementById('newNoteInput'); const p = addToSavedNotes(input.value); if(p){ selectedItemIds.add(p.id); input.value = ''; renderChecklistItems(); queueSync(); input.focus(); } });
+document.getElementById('newNoteInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('addNoteBtn').click(); } });
+document.getElementById('checklistLogBtn').addEventListener('click', ()=> resolveChecklist(false));
+document.getElementById('checklistSkipBtn').addEventListener('click', ()=> resolveChecklist(true));
+function resolvePendingNote(detail){ if(!pendingNoteAct) return; logActivity(pendingNoteAct, pendingNoteTime, detail); pendingNoteAct = null; pendingNoteTime = null; closeModal('detailModal'); }
+document.getElementById('detailSaveBtn').addEventListener('click', ()=>{ resolvePendingNote(document.getElementById('detailModalInput').value); });
+document.getElementById('detailSkipBtn').addEventListener('click', ()=>{ resolvePendingNote(''); });
+document.getElementById('detailModalInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') resolvePendingNote(e.target.value); });
 
 let selectedActColor = null;
 document.getElementById('actColorGrid').addEventListener('click', (e)=>{ const btn = e.target.closest('.color-swatch'); if(!btn) return; selectedActColor = btn.dataset.color || null; document.querySelectorAll('#actColorGrid .color-swatch').forEach(s=>s.classList.remove('selected')); btn.classList.add('selected'); });
@@ -1796,7 +1727,7 @@ document.getElementById('actName').addEventListener('input', (e)=>{ const name =
 function saveActivityFromModal(logNow){
   const name = document.getElementById('actName').value.trim();
   if(!name) return;
-  const opts = { name, category:getSelectedCat(), color: selectedActColor, pin: document.getElementById('actPin').checked, instant: document.getElementById('actInstant').checked, needsDetail: document.getElementById('actNeedsDetail').checked, peoplePicker: document.getElementById('actPeoplePicker').checked };
+  const opts = { name, category:getSelectedCat(), color: selectedActColor, actAskNote: document.getElementById('actAskNote').checked, actSaveNote: document.getElementById('actSaveNote').checked };
   let act;
   if(state.editingActivityId){
     act = state.activities.find(a => a.id === state.editingActivityId);
@@ -1814,8 +1745,8 @@ function saveActivityFromModal(logNow){
   if(!act) return;
   if(logNow){
     const when = timeInputToDate(document.getElementById('actTime').value);
-    if(act.peoplePicker) openPeopleModal(act, when);
-    else if(act.needsDetail) openDetailModal(act, when);
+    if(act.actSaveNote) openChecklistModal(act, when);
+    else if(act.actAskNote) openDetailModal(act, when);
     else logActivity(act, when);
   } else {
     renderAll();
@@ -1846,7 +1777,6 @@ document.getElementById('todayLog').addEventListener('click', (e)=>{
   }
 });
 
-// Contextual Past Activity Insertion Logic
 let pendingInsertEvent = null;
 let historyLpTimer = null;
 let isHistoryLpTriggered = false;
@@ -1969,16 +1899,16 @@ async function syncPush(){
   try {
     const uid = state.user.uid; const batch = db.batch();
     const unsyncedActs = state.activities.filter(a => !a.synced);
-    unsyncedActs.forEach(a => { const ref = db.collection('users').doc(uid).collection('activities').doc(a.id); batch.set(ref, { id: a.id, name: a.name, category: a.category, color: a.color, instant: !!a.instant, is_pinned: a.is_pinned, updated_at: new Date().toISOString() }, { merge: true }); });
+    unsyncedActs.forEach(a => { const ref = db.collection('users').doc(uid).collection('activities').doc(a.id); batch.set(ref, { id: a.id, name: a.name, category: a.category, color: a.color, actAskNote: !!a.actAskNote, actSaveNote: !!a.actSaveNote, updated_at: new Date().toISOString() }, { merge: true }); });
     const unsyncedEvs = state.events.filter(e => !e.synced);
-    unsyncedEvs.forEach(e => { const ref = db.collection('users').doc(uid).collection('events').doc(e.id); batch.set(ref, { id: e.id, client_id: e.client_id || e.id, activity_id: e.activity_id, activity_name: e.activity_name, category: e.category, color: e.color, instant: !!e.instant, detail: e.detail || '', interruptions: e.interruptions || [], start_time: e.start_time, date: e.date }, { merge: true }); });
-    const unsyncedPeople = state.people.filter(p => !p.synced);
-    unsyncedPeople.forEach(p => { const ref = db.collection('users').doc(uid).collection('people').doc(p.id); batch.set(ref, { id: p.id, name: p.name, updated_at: p.updated_at }, { merge: true }); });
+    unsyncedEvs.forEach(e => { const ref = db.collection('users').doc(uid).collection('events').doc(e.id); batch.set(ref, { id: e.id, client_id: e.client_id || e.id, activity_id: e.activity_id, activity_name: e.activity_name, category: e.category, color: e.color, detail: e.detail || '', interruptions: e.interruptions || [], start_time: e.start_time, date: e.date }, { merge: true }); });
+    const unsyncedSavedNotes = state.savedNotes.filter(p => !p.synced);
+    unsyncedSavedNotes.forEach(p => { const ref = db.collection('users').doc(uid).collection('people').doc(p.id); batch.set(ref, { id: p.id, name: p.name, updated_at: p.updated_at }, { merge: true }); });
     if(state.pendingDeletes.length){ state.pendingDeletes.forEach(id => { const ref = db.collection('users').doc(uid).collection('events').doc(id); batch.delete(ref); }); }
     if(state.pendingActivityDeletes.length){ state.pendingActivityDeletes.forEach(id => { const ref = db.collection('users').doc(uid).collection('activities').doc(id); batch.delete(ref); }); }
     const settingsRef = db.collection('users').doc(uid).collection('meta').doc('settings'); batch.set(settingsRef, { offgrid_days: state.offgridDays, updated_at: new Date().toISOString() }, { merge: true });
     await batch.commit();
-    unsyncedActs.forEach(a => a.synced = true); unsyncedEvs.forEach(e => e.synced = true); unsyncedPeople.forEach(p => p.synced = true); state.pendingDeletes = []; state.pendingActivityDeletes = []; persistActivities(); persistEvents(); persistDeletes(); persistActivityDeletes(); persistPeople();
+    unsyncedActs.forEach(a => a.synced = true); unsyncedEvs.forEach(e => e.synced = true); unsyncedSavedNotes.forEach(p => p.synced = true); state.pendingDeletes = []; state.pendingActivityDeletes = []; persistActivities(); persistEvents(); persistDeletes(); persistActivityDeletes(); persistSavedNotes();
   } catch(err) { console.error('Firebase sync push failed', err); }
   setSyncBusy(false);
 }
@@ -1997,8 +1927,8 @@ async function syncPull(){
         if(Array.isArray(remoteDefaults) && remoteDefaults.length){ 
           state.activities = remoteDefaults.map(a => ({ 
             id: a.id || slugId(a.name), name: a.name, category: a.category, color: a.color || paletteColor(a.name), 
-            instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultNeedsDetail(a.name), 
-            is_pinned: true, synced: false, updated_at: new Date().toISOString(), 
+            actAskNote: defaultNeedsDetail(a.name), actSaveNote: defaultPeoplePicker(a.name), 
+            synced: false, updated_at: new Date().toISOString(), 
           })); 
           persistActivities();
         } 
@@ -2006,18 +1936,18 @@ async function syncPull(){
     }
     
     if(!evsSnap.empty){ mergeEvents(evsSnap.docs.map(doc => doc.data())); }
-    if(!peopleSnap.empty){ mergePeople(peopleSnap.docs.map(doc => doc.data())); }
+    if(!peopleSnap.empty){ mergeSavedNotes(peopleSnap.docs.map(doc => doc.data())); }
     if(metaSnap.exists){ const remoteOffgrid = metaSnap.data().offgrid_days; if(remoteOffgrid && typeof remoteOffgrid === 'object'){ state.offgridDays = Object.assign({}, remoteOffgrid, state.offgridDays); persistOffgrid(); } }
     
     if(aiSettingsSnap.exists){ state.globalAiPrompt = aiSettingsSnap.data().globalPrompt || ''; }
     if(userDocSnap.exists){ state.customAiPrompt = userDocSnap.data().customPrompt || ''; }
 
-    persistActivities(); persistEvents(); persistPeople();
+    persistActivities(); persistEvents(); persistSavedNotes();
   } catch(err) { console.error('Firebase sync pull failed', err); }
   setSyncBusy(false);
 }
 
-function mergePeople(remoteRows){ const byId = new Map(state.people.map(p=>[p.id, p])); remoteRows.forEach(r=>{ const local = byId.get(r.id); if(!local){ byId.set(r.id, { id:r.id, name:r.name, synced:true, updated_at:r.updated_at }); } else if(local.synced){ Object.assign(local, { name:r.name, synced:true, updated_at:r.updated_at }); } }); state.people = Array.from(byId.values()); }
+function mergeSavedNotes(remoteRows){ const byId = new Map(state.savedNotes.map(p=>[p.id, p])); remoteRows.forEach(r=>{ const local = byId.get(r.id); if(!local){ byId.set(r.id, { id:r.id, name:r.name, synced:true, updated_at:r.updated_at }); } else if(local.synced){ Object.assign(local, { name:r.name, synced:true, updated_at:r.updated_at }); } }); state.savedNotes = Array.from(byId.values()); }
 
 function mergeActivities(remoteRows){ 
   const byId = new Map(state.activities.map(a=>[a.id, a])); 
@@ -2037,22 +1967,21 @@ function mergeActivities(remoteRows){
     }
 
     if(!local){ 
-      const newAct = { id:r.id, name:r.name, category:r.category, color:r.color, instant:!!r.instant, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at, needsDetail: defaultNeedsDetail(r.name), peoplePicker: defaultPeoplePicker(r.name) };
+      const newAct = { id:r.id, name:r.name, category:r.category, color:r.color, actAskNote:!!(r.actAskNote || r.needsDetail), actSaveNote:!!(r.actSaveNote || r.peoplePicker), synced:true, updated_at:r.updated_at };
       byId.set(r.id, newAct);
       byName.set(normName, newAct);
     } else {
       const isInitialDefault = String(local.id).startsWith('default-') && !local.synced;
       if(local.synced || isInitialDefault){
-        Object.assign(local, { name:r.name, category:r.category, color:r.color, instant:!!r.instant, is_pinned:r.is_pinned, synced:true, updated_at:r.updated_at }); 
+        Object.assign(local, { name:r.name, category:r.category, color:r.color, actAskNote:!!(r.actAskNote || r.needsDetail), actSaveNote:!!(r.actSaveNote || r.peoplePicker), synced:true, updated_at:r.updated_at }); 
       }
     }
   }); 
   state.activities = Array.from(byId.values()); 
 }
 
-function mergeEvents(remoteRows){ const pendingSet = new Set(state.pendingDeletes); const byId = new Map(state.events.map(e=>[e.id, e])); remoteRows.forEach(r=>{ if(pendingSet.has(r.id)) return; const local = byId.get(r.id); if(!local){ byId.set(r.id, { id:r.id, client_id:r.client_id||r.id, activity_id:r.activity_id, activity_name:r.activity_name, category:r.category, color:r.color, instant:!!r.instant, detail:r.detail||'', interruptions:r.interruptions||[], start_time:r.start_time, date:r.date, synced:true }); } else if(local.synced){ Object.assign(local, { activity_name:r.activity_name, category:r.category, color:r.color, instant:!!r.instant, detail:r.detail||'', interruptions:r.interruptions||[], start_time:r.start_time, date:r.date, synced:true }); } }); state.events = Array.from(byId.values()).sort((a,b)=> new Date(a.start_time)-new Date(b.start_time)); }
+function mergeEvents(remoteRows){ const pendingSet = new Set(state.pendingDeletes); const byId = new Map(state.events.map(e=>[e.id, e])); remoteRows.forEach(r=>{ if(pendingSet.has(r.id)) return; const local = byId.get(r.id); if(!local){ byId.set(r.id, { id:r.id, client_id:r.client_id||r.id, activity_id:r.activity_id, activity_name:r.activity_name, category:r.category, color:r.color, detail:r.detail||'', interruptions:r.interruptions||[], start_time:r.start_time, date:r.date, synced:true }); } else if(local.synced){ Object.assign(local, { activity_name:r.activity_name, category:r.category, color:r.color, detail:r.detail||'', interruptions:r.interruptions||[], start_time:r.start_time, date:r.date, synced:true }); } }); state.events = Array.from(byId.values()).sort((a,b)=> new Date(a.start_time)-new Date(b.start_time)); }
 
-// Authentication Guard
 if (auth) {
   auth.onAuthStateChanged(async (user) => {
     if (!user) {
@@ -2068,11 +1997,11 @@ if (auth) {
     if (!prevUser) {
       const migratedKey = 'chrono_migrated_v2_' + user.uid;
       const alreadyMigrated = loadLS(migratedKey, false);
-      const hasLocalDataToMigrate = !alreadyMigrated && (state.events.length > 0 || state.people.length > 0);
+      const hasLocalDataToMigrate = !alreadyMigrated && (state.events.length > 0 || state.savedNotes.length > 0);
       if (hasLocalDataToMigrate) {
         state.activities.forEach(a => a.synced = false);
         state.events.forEach(e => e.synced = false);
-        state.people.forEach(p => p.synced = false);
+        state.savedNotes.forEach(p => p.synced = false);
         await syncPush();
       }
       saveLS(migratedKey, true);
