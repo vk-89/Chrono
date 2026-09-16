@@ -160,7 +160,7 @@
   /* ---- Log list ---- */
   .log-section{margin-top:22px;}
   .section-title{font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:8px;font-family:"Space Grotesk";display:flex;justify-content:space-between;align-items:center;}
-  .log-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--border);}
+  .log-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--border);-webkit-user-select:none;user-select:none;}
   .log-row:last-child{border-bottom:none;}
   .log-dot{width:8px;height:8px;border-radius:50%;flex:none;}
   .log-name{flex:1;font-size:14px;}
@@ -379,19 +379,6 @@
 
   <!-- History -->
   <div class="tab-panel" id="tab-history">
-    <div class="hist-day" style="margin-top:16px; background:var(--paper); border:1.5px dashed var(--border-strong);">
-      <div style="font-size:13px; font-weight:600; margin-bottom:10px; color:var(--ink-soft); font-family:'Space Grotesk';">Quick Log Past Activity</div>
-      <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
-        <select id="inlinePastActSelect" style="flex:1; min-width:120px; border:1px solid var(--border-strong); border-radius:7px; padding:7px; font-size:13px; background:var(--surface);"></select>
-        <input type="date" id="inlinePastActDate" style="flex:1; min-width:110px; border:1px solid var(--border-strong); border-radius:7px; padding:7px; font-size:13px; background:var(--surface);">
-        <input type="time" id="inlinePastActTime" style="flex:1; min-width:90px; border:1px solid var(--border-strong); border-radius:7px; padding:7px; font-size:13px; background:var(--surface);">
-      </div>
-      <div style="display:flex; gap:8px;">
-        <input type="text" id="inlinePastActDetail" placeholder="Notes (optional)" style="flex:1; border:1px solid var(--border-strong); border-radius:7px; padding:7px; font-size:13px; background:var(--surface);">
-        <button class="btn-save" id="inlinePastSaveBtn" style="padding:7px 14px; border:none; border-radius:7px; font-weight:600;">Log it</button>
-      </div>
-    </div>
-
     <div style="margin-top:16px;" id="historyList"></div>
     <button class="load-more" id="loadMoreBtn">Load earlier days</button>
   </div>
@@ -545,6 +532,49 @@
     <div class="modal-actions">
       <button class="btn btn-ghost" id="peopleSkipBtn">Skip</button>
       <button class="btn btn-primary" id="peopleLogBtn">Log it</button>
+    </div>
+  </div>
+</div>
+
+<!-- Insert Menu Modal -->
+<div class="modal-backdrop" id="insertMenuModal">
+  <div class="modal">
+    <button class="modal-close" data-close="insertMenuModal">✕</button>
+    <h2 id="insertMenuTitle">Insert Activity</h2>
+    <div style="font-size:13px;color:var(--ink-soft);margin-bottom:16px;">Would you like to log an activity relative to this entry?</div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="insertBeforeBtn">Log Before</button>
+      <button class="btn btn-outline" id="insertAfterBtn">Log After</button>
+    </div>
+  </div>
+</div>
+
+<!-- Past Log Modal -->
+<div class="modal-backdrop" id="pastLogModal">
+  <div class="modal">
+    <button class="modal-close" data-close="pastLogModal">✕</button>
+    <h2>Log Past Activity</h2>
+    <div class="field">
+      <label>Activity</label>
+      <select id="pastActSelect"></select>
+    </div>
+    <div class="pill-row">
+      <div class="field" style="flex:1;">
+        <label>Date</label>
+        <input type="date" id="pastActDate">
+      </div>
+      <div class="field" style="flex:1;">
+        <label>Time</label>
+        <input type="time" id="pastActTime">
+      </div>
+    </div>
+    <div class="field">
+      <label>Notes (optional)</label>
+      <input type="text" id="pastActDetail" placeholder="e.g. gym notes, meal details" maxlength="60">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close="pastLogModal">Cancel</button>
+      <button class="btn btn-primary" id="savePastLogBtn">Log it</button>
     </div>
   </div>
 </div>
@@ -1296,20 +1326,7 @@ function allDatesWithData(limit){
   return Array.from(set).sort().reverse().slice(0, limit);
 }
 
-function renderInlinePastAdd(){
-  const sel = document.getElementById('inlinePastActSelect');
-  if(!sel) return;
-  const currentVal = sel.value;
-  sel.innerHTML = state.activities.map(a => '<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
-  if(currentVal && state.activities.find(a=>a.id===currentVal)) sel.value = currentVal;
-  else if(state.activities.length) sel.value = state.activities[0].id;
-  const now = new Date();
-  if(!document.getElementById('inlinePastActDate').value){ document.getElementById('inlinePastActDate').value = localDateStr(now); }
-  if(!document.getElementById('inlinePastActTime').value){ document.getElementById('inlinePastActTime').value = pad(now.getHours())+':'+pad(now.getMinutes()); }
-}
-
 function renderHistory(){
-  renderInlinePastAdd();
   const container = document.getElementById('historyList');
   const dates = allDatesWithData(state.historyDaysShown);
   const {ranges, markers} = computeGlobalSegments();
@@ -1338,8 +1355,8 @@ function renderHistory(){
           '<button class="btn-save" data-action="saveEdit" data-id="'+s.id+'">Save</button>' +
           '<button class="btn-cancel" data-action="cancelEdit">✕</button></div>';
       }
-      const interTags = (s.interruptions && s.interruptions.length) ? s.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(s.note)+'</span>').join('') : '';
-      return '<div class="log-row"><span class="log-dot" style="background:'+s.color+'"></span><span class="log-name">'+escapeHtml(s.activity_name)+(s.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(s.detail)+'</span>':'')+interTags+'</span><span class="log-time mono">'+fmt12(s.start)+' – '+fmt12(s.end)+' ('+durationLabel((s.end-s.start)/60000)+')</span><button class="log-edit" data-action="edit" data-id="'+s.id+'">✎</button><button class="log-del" data-action="del" data-id="'+s.id+'">🗑</button></div>';
+      const interTags = (s.interruptions && s.interruptions.length) ? s.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(it.note)+'</span>').join('') : '';
+      return '<div class="log-row" data-id="'+s.id+'"><span class="log-dot" style="background:'+s.color+'"></span><span class="log-name">'+escapeHtml(s.activity_name)+(s.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(s.detail)+'</span>':'')+interTags+'</span><span class="log-time mono">'+fmt12(s.start)+' – '+fmt12(s.end)+' ('+durationLabel((s.end-s.start)/60000)+')</span><button class="log-edit" data-action="edit" data-id="'+s.id+'">✎</button><button class="log-del" data-action="del" data-id="'+s.id+'">🗑</button></div>';
     }).join('');
     const markerRows = mks.map(m=> {
       if(state.editingId === m.id){
@@ -1351,7 +1368,7 @@ function renderHistory(){
           '<button class="btn-save" data-action="saveEdit" data-id="'+m.id+'">Save</button>' +
           '<button class="btn-cancel" data-action="cancelEdit">✕</button></div>';
       }
-      return '<div class="log-row"><span class="log-dot" style="background:'+m.color+'"></span><span class="log-name">'+escapeHtml(m.activity_name)+(m.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(m.detail)+'</span>':'')+' ⚡</span><span class="log-time mono">'+fmt12(m.start)+'</span><button class="log-edit" data-action="edit" data-id="'+m.id+'">✎</button><button class="log-del" data-action="del" data-id="'+m.id+'">🗑</button></div>';
+      return '<div class="log-row" data-id="'+m.id+'"><span class="log-dot" style="background:'+m.color+'"></span><span class="log-name">'+escapeHtml(m.activity_name)+(m.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(m.detail)+'</span>':'')+' ⚡</span><span class="log-time mono">'+fmt12(m.start)+'</span><button class="log-edit" data-action="edit" data-id="'+m.id+'">✎</button><button class="log-del" data-action="del" data-id="'+m.id+'">🗑</button></div>';
     }).join('');
     const detailHtml = (rangeRows + markerRows) || '<div class="empty-note">No entries.</div>';
     const offgridTag = isOffgrid ? '<span class="badge-offgrid">Out of town</span>' : '';
@@ -1750,19 +1767,6 @@ document.getElementById('resetActivitiesBtn').addEventListener('click', async ()
   }
 });
 
-document.getElementById('inlinePastSaveBtn').addEventListener('click', ()=>{
-  const actId = document.getElementById('inlinePastActSelect').value;
-  const act = state.activities.find(a=>a.id===actId);
-  if(!act) return;
-  const dateVal = document.getElementById('inlinePastActDate').value; 
-  const timeVal = document.getElementById('inlinePastActTime').value; 
-  if(!dateVal || !timeVal) return;
-  const d = new Date(dateVal + 'T' + timeVal + ':00');
-  const detail = document.getElementById('inlinePastActDetail').value;
-  logActivity(act, d, detail);
-  document.getElementById('inlinePastActDetail').value = '';
-});
-
 let pendingDetailAct = null, pendingDetailTime = null;
 function openDetailModal(act, atDate){ pendingDetailAct = act; pendingDetailTime = atDate; document.getElementById('detailModalTitle').textContent = act.name; document.getElementById('detailModalLabel').textContent = act.name.toLowerCase() === 'timepass' ? 'What exactly are you doing?' : 'Note'; const input = document.getElementById('detailModalInput'); input.value = ''; openModal('detailModal'); setTimeout(()=> input.focus(), 150); }
 
@@ -1781,7 +1785,7 @@ function openPeopleModal(act, atDate){ pendingPeopleAct = act; pendingPeopleTime
 function resolvePendingPeople(skip){ if(!pendingPeopleAct) return; let detail = ''; if(!skip){ const names = state.people.filter(p => selectedPeopleIds.has(p.id)).map(p=>p.name); detail = names.join(', '); } logActivity(pendingPeopleAct, pendingPeopleTime, detail); pendingPeopleAct = null; pendingPeopleTime = null; closeModal('peopleModal'); }
 
 document.getElementById('peopleCheckList').addEventListener('change', (e)=>{ const cb = e.target.closest('input[type=checkbox]'); if(!cb) return; if(cb.checked) selectedPeopleIds.add(cb.dataset.id); else selectedPeopleIds.delete(cb.dataset.id); });
-document.getElementById('peopleCheckList').addEventListener('click', (e)=>{ const delBtn = e.target.closest('button[data-del]'); if(!btn) return; const id = delBtn.dataset.del; if(!confirm('Remove this person from your list? Past logged entries will keep their name.')) return; state.people = state.people.filter(p=>p.id!==id); selectedPeopleIds.delete(id); persistPeople(); renderPeopleCheckList(); queueSync(); });
+document.getElementById('peopleCheckList').addEventListener('click', (e)=>{ const delBtn = e.target.closest('button[data-del]'); if(!delBtn) return; const id = delBtn.dataset.del; if(!confirm('Remove this person from your list? Past logged entries will keep their name.')) return; state.people = state.people.filter(p=>p.id!==id); selectedPeopleIds.delete(id); persistPeople(); renderPeopleCheckList(); queueSync(); });
 document.getElementById('addPersonBtn').addEventListener('click', ()=>{ const input = document.getElementById('newPersonInput'); const p = addPerson(input.value); if(p){ selectedPeopleIds.add(p.id); input.value = ''; renderPeopleCheckList(); queueSync(); input.focus(); } });
 document.getElementById('newPersonInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('addPersonBtn').click(); } });
 document.getElementById('peopleLogBtn').addEventListener('click', ()=> resolvePendingPeople(false));
@@ -1854,7 +1858,79 @@ document.getElementById('todayLog').addEventListener('click', (e)=>{
   }
 });
 
+// Contextual Past Activity Insertion Logic
+let pendingInsertEvent = null;
+let historyLpTimer = null;
+let isHistoryLpTriggered = false;
+
+function renderPastLogModalActivities() {
+  const sel = document.getElementById('pastActSelect');
+  if(!sel) return;
+  sel.innerHTML = state.activities.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+}
+
+const historyList = document.getElementById('historyList');
+historyList.addEventListener('pointerdown', (e) => {
+  const row = e.target.closest('.log-row');
+  if(!row) return;
+  isHistoryLpTriggered = false;
+  historyLpTimer = setTimeout(() => {
+    isHistoryLpTriggered = true;
+    pendingInsertEvent = state.events.find(ev => ev.id === row.dataset.id);
+    if(pendingInsertEvent) {
+      document.getElementById('insertMenuTitle').textContent = 'Insert near ' + pendingInsertEvent.activity_name;
+      openModal('insertMenuModal');
+    }
+  }, 600);
+});
+
+historyList.addEventListener('pointerup', () => clearTimeout(historyLpTimer));
+historyList.addEventListener('pointerleave', () => clearTimeout(historyLpTimer));
+historyList.addEventListener('contextmenu', (e) => {
+  if(isHistoryLpTriggered) e.preventDefault();
+});
+
+document.getElementById('tab-history').addEventListener('scroll', () => clearTimeout(historyLpTimer), {passive: true});
+
+document.getElementById('insertBeforeBtn').addEventListener('click', () => {
+  if(!pendingInsertEvent) return;
+  const d = new Date(pendingInsertEvent.start_time);
+  document.getElementById('pastActDate').value = localDateStr(d);
+  document.getElementById('pastActTime').value = pad(d.getHours()) + ':' + pad(d.getMinutes());
+  document.getElementById('pastActDetail').value = '';
+  renderPastLogModalActivities();
+  closeModal('insertMenuModal');
+  openModal('pastLogModal');
+});
+
+document.getElementById('insertAfterBtn').addEventListener('click', () => {
+  if(!pendingInsertEvent) return;
+  const {ranges} = computeGlobalSegments();
+  const seg = ranges.find(r => r.id === pendingInsertEvent.id);
+  const d = seg ? seg.end : new Date();
+  document.getElementById('pastActDate').value = localDateStr(d);
+  document.getElementById('pastActTime').value = pad(d.getHours()) + ':' + pad(d.getMinutes());
+  document.getElementById('pastActDetail').value = '';
+  renderPastLogModalActivities();
+  closeModal('insertMenuModal');
+  openModal('pastLogModal');
+});
+
+document.getElementById('savePastLogBtn').addEventListener('click', () => {
+  const actId = document.getElementById('pastActSelect').value;
+  const act = state.activities.find(a => a.id === actId);
+  if(!act) return;
+  const dateVal = document.getElementById('pastActDate').value;
+  const timeVal = document.getElementById('pastActTime').value;
+  if(!dateVal || !timeVal) return;
+  const d = new Date(dateVal + 'T' + timeVal + ':00');
+  const detail = document.getElementById('pastActDetail').value;
+  logActivity(act, d, detail);
+  closeModal('pastLogModal');
+});
+
 document.getElementById('historyList').addEventListener('click', (e)=>{
+  if(isHistoryLpTriggered) return;
   const actionBtn = e.target.closest('button[data-action]');
   if(actionBtn){
     const action = actionBtn.dataset.action;
