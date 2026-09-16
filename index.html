@@ -821,8 +821,8 @@ const state = {
   editingActivityId: null,
   historyDaysShown: 7,
   dismissedGroupPrompt: false,
-  globalAiPrompt: '',
-  customAiPrompt: ''
+  globalAiPrompt: null,
+  customAiPrompt: null
 };
 
 state.activities.forEach(a=>{
@@ -1517,13 +1517,21 @@ function buildChatContext(){
   const recentLines = recentDates.map(ds=>{ const segs = segmentsForDay(ds, ranges); if(!segs.length) return dayLabel(ds)+': no data'; const isOffgrid = state.offgridDays[ds] ? ' (Out of town / travel)' : ''; const parts = segs.map(s => s.activity_name + (s.detail?' ('+s.detail+')':'') + ' ' + fmt12(s.start)+'-'+fmt12(s.end)); return dayLabel(ds) + isOffgrid + ': ' + parts.join(', '); }).join('\n');
   
   const ctx = [];
-  if(state.globalAiPrompt) ctx.push(state.globalAiPrompt);
-  if(state.customAiPrompt) ctx.push(state.customAiPrompt);
+  
+  if (state.globalAiPrompt && state.globalAiPrompt.trim()) {
+    ctx.push(state.globalAiPrompt);
+  } else {
+    ctx.push("You are a concise, encouraging personal routine coach. Analyze the user's data and provide helpful insights.");
+  }
   
   ctx.push('Day starts at '+fmtHour12(getDayStartHour())+'.');
   ctx.push('Their averages over the last '+INSIGHTS_LOOKBACK_DAYS+' routine days (excluding travel days): wake time '+fmtWakeClock(personal.avgWakeMinutes)+ ', study '+durationLabel(personal.avgStudy||0)+'/day, social '+durationLabel(personal.avgSocial||0)+'/day, essential '+durationLabel(personal.avgEssential||0)+'/day.');
   ctx.push('Their last 5 logged days:');
   ctx.push(recentLines || 'No data yet.');
+  
+  if (state.customAiPrompt && state.customAiPrompt.trim()) {
+    ctx.push(state.customAiPrompt);
+  }
   
   return ctx.join('\n');
 }
