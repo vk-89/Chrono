@@ -926,7 +926,7 @@ function addActivity(opts){
     if(opts.category !== undefined) existing.category = opts.category;
     if(opts.color && opts.color !== existing.color){
       existing.color = opts.color;
-      propagateActivityColor(existing.name, opts.color); 
+      propagateActivityColor(existing.name, existing.id, opts.color); 
     }
     existing.synced = false;
     existing.updated_at = new Date().toISOString();
@@ -957,17 +957,15 @@ function addPerson(name){
   return p;
 }
 
-function propagateActivityColor(activityName, newColor){
+function propagateActivityColor(activityName, newActivityId, newColor){
   let changed = false;
   const targetName = (activityName || '').toLowerCase().trim();
   state.events.forEach(e=>{
     if((e.activity_name || '').toLowerCase().trim() !== targetName) return;
-    const targetColor = colorForEntry({color: newColor}, e.detail);
-    if(e.color !== targetColor){ 
-      e.color = targetColor; 
-      e.synced = false; 
-      changed = true; 
-    }
+    e.color = colorForEntry({color: newColor}, e.detail);
+    e.activity_id = newActivityId;
+    e.synced = false;
+    changed = true;
   });
   if(changed){ persistEvents(); }
 }
@@ -1811,17 +1809,15 @@ function saveActivityFromModal(logNow){
   if(state.editingActivityId){
     act = state.activities.find(a => a.id === state.editingActivityId);
     if(act){
-      const oldColor = act.color;
       Object.assign(act, opts);
       act.synced = false;
       act.updated_at = new Date().toISOString();
       persistActivities();
-      if(oldColor !== act.color) propagateActivityColor(act.name, act.color);
     }
   } else {
     act = addActivity(opts);
-    if(act) propagateActivityColor(act.name, act.color);
   }
+  if (act) { propagateActivityColor(act.name, act.id, act.color); }
   closeModal('addModal');
   if(!act) return;
   if(logNow){
@@ -2009,7 +2005,7 @@ async function syncPull(){
         if(Array.isArray(remoteDefaults) && remoteDefaults.length){ 
           state.activities = remoteDefaults.map(a => ({ 
             id: a.id || slugId(a.name), name: a.name, category: a.category, color: a.color || paletteColor(a.name), 
-            instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultPeoplePicker(a.name), 
+            instant: !!a.instant, needsDetail: defaultNeedsDetail(a.name), peoplePicker: defaultNeedsDetail(a.name), 
             is_pinned: true, synced: false, updated_at: new Date().toISOString(), 
           })); 
           persistActivities();
