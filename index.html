@@ -638,7 +638,7 @@ const QUOTES = [
   "You don't rise to the level of your goals, you fall to the level of your systems.",
   "The days are long, but the logged hours don't lie.",
   "Small, boring, repeated actions compound into a life.",
-  "What gets tracked gets noticed. What gets noticed gets better.",
+  "What gets tracked gets noticed. What gets tracked gets better.",
   "Motivation gets you started. Routine keeps you going.",
   "A day well-logged is a day you can actually learn from.",
   "You can't manage what you don't measure — start with today.",
@@ -911,7 +911,7 @@ function addActivity(opts){
     if(opts.category !== undefined) existing.category = opts.category;
     if(opts.color && opts.color !== existing.color){
       existing.color = opts.color;
-      propagateActivityColor(existing.name, existing.id, opts.color); 
+      propagateActivityUpdate(existing.id, existing.name, existing.color);
     }
     existing.synced = false;
     existing.updated_at = new Date().toISOString();
@@ -936,19 +936,18 @@ function addPerson(name){
   if(!name) return null;
   const existing = state.people.find(p => p.name.toLowerCase() === name.toLowerCase());
   if(existing) return existing;
-  const p = { id: uid(), name, synced:false, updated_at: new Date().toISOString() };
+  const p = { id: uid(), name, synced:false, updated_at: p.updated_at };
   state.people.push(p);
   persistPeople();
   return p;
 }
 
-function propagateActivityColor(activityName, newActivityId, newColor){
+function propagateActivityUpdate(actId, newName, newColor){
   let changed = false;
-  const targetName = (activityName || '').toLowerCase().trim();
   state.events.forEach(e=>{
-    if((e.activity_name || '').toLowerCase().trim() !== targetName) return;
+    if(e.activity_id !== actId) return;
+    e.activity_name = newName;
     e.color = colorForEntry({color: newColor}, e.detail);
-    e.activity_id = newActivityId;
     e.synced = false;
     changed = true;
   });
@@ -1810,7 +1809,7 @@ function saveActivityFromModal(logNow){
   } else {
     act = addActivity(opts);
   }
-  if (act) { propagateActivityColor(act.name, act.id, act.color); }
+  if (act) { propagateActivityUpdate(act.id, act.name, act.color); }
   closeModal('addModal');
   if(!act) return;
   if(logNow){
