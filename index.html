@@ -926,7 +926,7 @@ function addActivity(opts){
     if(opts.category !== undefined) existing.category = opts.category;
     if(opts.color && opts.color !== existing.color){
       existing.color = opts.color;
-      propagateActivityColor(existing.id, opts.color); 
+      propagateActivityColor(existing.name, opts.color); 
     }
     existing.synced = false;
     existing.updated_at = new Date().toISOString();
@@ -957,12 +957,11 @@ function addPerson(name){
   return p;
 }
 
-function propagateActivityColor(activityId, newColor){
-  const act = state.activities.find(a=>a.id===activityId);
-  if(!act) return;
+function propagateActivityColor(activityName, newColor){
   let changed = false;
+  const targetName = (activityName || '').toLowerCase().trim();
   state.events.forEach(e=>{
-    if(e.activity_id !== activityId) return;
+    if((e.activity_name || '').toLowerCase().trim() !== targetName) return;
     const targetColor = colorForEntry({color: newColor}, e.detail);
     if(e.color !== targetColor){ 
       e.color = targetColor; 
@@ -1355,7 +1354,7 @@ function renderHistory(){
           '<button class="btn-save" data-action="saveEdit" data-id="'+s.id+'">Save</button>' +
           '<button class="btn-cancel" data-action="cancelEdit">✕</button></div>';
       }
-      const interTags = (s.interruptions && s.interruptions.length) ? s.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(it.note)+'</span>').join('') : '';
+      const interTags = (s.interruptions && s.interruptions.length) ? s.interruptions.map(it => '<span class="interrupt-tag">'+escapeHtml(s.note)+'</span>').join('') : '';
       return '<div class="log-row" data-id="'+s.id+'"><span class="log-dot" style="background:'+s.color+'"></span><span class="log-name">'+escapeHtml(s.activity_name)+(s.detail?' <span style="color:var(--ink-faint);font-weight:400;">— '+escapeHtml(s.detail)+'</span>':'')+interTags+'</span><span class="log-time mono">'+fmt12(s.start)+' – '+fmt12(s.end)+' ('+durationLabel((s.end-s.start)/60000)+')</span><button class="log-edit" data-action="edit" data-id="'+s.id+'">✎</button><button class="log-del" data-action="del" data-id="'+s.id+'">🗑</button></div>';
     }).join('');
     const markerRows = mks.map(m=> {
@@ -1817,10 +1816,11 @@ function saveActivityFromModal(logNow){
       act.synced = false;
       act.updated_at = new Date().toISOString();
       persistActivities();
-      if(oldColor !== act.color) propagateActivityColor(act.id, act.color);
+      if(oldColor !== act.color) propagateActivityColor(act.name, act.color);
     }
   } else {
     act = addActivity(opts);
+    if(act) propagateActivityColor(act.name, act.color);
   }
   closeModal('addModal');
   if(!act) return;
