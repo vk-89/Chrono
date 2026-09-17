@@ -902,12 +902,12 @@ function addActivity(opts){
   return act;
 }
 
-function addToSavedNotes(name){
+function addToSavedNotes(name, activityId){
   name = (name||'').trim();
   if(!name) return null;
-  const existing = state.savedNotes.find(p => p.name.toLowerCase() === name.toLowerCase());
+  const existing = state.savedNotes.find(p => p.name.toLowerCase() === name.toLowerCase() && (p.activityId === activityId));
   if(existing) return existing;
-  const p = { id: uid(), name, synced:false, updated_at: new Date().toISOString() };
+  const p = { id: uid(), name, activityId, synced:false, updated_at: new Date().toISOString() };
   state.savedNotes.push(p);
   persistSavedNotes();
   return p;
@@ -1356,7 +1356,7 @@ function downloadBlob(filename, content, mime){
 }
 function exportJson(){
   const events = state.events.slice().sort((a,b)=> new Date(a.start_time)-new Date(b.start_time));
-  const payload = { exported_at: new Date().toISOString(), day_start_hour: getDayStartHour(), offgrid_days: state.offgridDays, savedNotes: state.savedNotes.map(p=>({ id:p.id, name:p.name })), activities: state.activities.map(a=>({ id:a.id, name:a.name, category:a.category, actAskNote:!!a.actAskNote, actSaveNote:!!a.actSaveNote })), events: events.map(e=>({ id:e.id, activity_name:e.activity_name, category:e.category, detail:e.detail||'', interruptions:e.interruptions||[], start_time:e.start_time, date:e.date })) };
+  const payload = { exported_at: new Date().toISOString(), day_start_hour: getDayStartHour(), offgrid_days: state.offgridDays, savedNotes: state.savedNotes.map(p=>({ id:p.id, name:p.name, activityId: p.activityId || null })), activities: state.activities.map(a=>({ id:a.id, name:a.name, category:a.category, actAskNote:!!a.actAskNote, actSaveNote:!!a.actSaveNote })), events: events.map(e=>({ id:e.id, activity_name:e.activity_name, category:e.category, detail:e.detail||'', interruptions:e.interruptions||[], start_time:e.start_time, date:e.date })) };
   downloadBlob('chrono-export-'+localDateStr()+'.json', JSON.stringify(payload, null, 2), 'application/json');
   showToast('Exported '+events.length+' activities as JSON');
 }
@@ -1694,19 +1694,23 @@ let selectedItemIds = new Set();
 
 function renderChecklistItems(){
   const container = document.getElementById('checklistItems');
-  const items = state.savedNotes.slice().sort((a,b)=> a.name.localeCompare(b.name));
+  const currentActId = pendingChecklistAct ? pendingChecklistAct.id : null;
+  const items = state.savedNotes
+    .filter(p => !p.activityId || p.activityId === currentActId)
+    .slice()
+    .sort((a,b)=> a.name.localeCompare(b.name));
   if(!items.length){ container.innerHTML = '<div class="item-empty">No items saved yet — add one below.</div>'; return; }
   container.innerHTML = items.map(p=> '<div class="item-row">' + '<label style="display:flex;align-items:center;gap:9px;flex:1;min-width:0;">' + '<input type="checkbox" data-id="'+p.id+'" '+(selectedItemIds.has(p.id)?'checked':'')+'>' + '<span>'+escapeHtml(p.name)+'</span>' + '</label>' + '<button type="button" data-del="'+p.id+'" title="Remove from list">🗑</button>' + '</div>' ).join('');
 }
 
-function openChecklistModal(act, atDate){ pendingChecklistAct = act; pendingChecklistTime = atDate; selectedItemIds = new Set(); document.getElementById('checklistModalTitle').textContent = "Select Notes: " + act.name; document.getElementById('newNoteInput').value = ''; renderChecklistItems(); openModal('checklistModal'); setTimeout(()=> document.getElementById('newNoteInput').focus(), 150); }
+function openChecklistModal(act, atDate){ pendingChecklistAct = act; pendingChecklistTime = atDate; selectedItemIds = new Set(); document.getElementById('checklistModalTitle').textContent = "Select Notes: " + act.name; document.getElementById('newNoteInput').value = ''; renderChecklistItems(); openModal('checklistModal'); }
 
 function resolveChecklist(skip){ if(!pendingChecklistAct) return; let detail = ''; if(!skip){ const names = state.savedNotes.filter(p => selectedItemIds.has(p.id)).map(p=>p.name); detail = names.join(', '); } logActivity(pendingChecklistAct, pendingChecklistTime, detail); pendingChecklistAct = null; pendingChecklistTime = null; closeModal('checklistModal'); }
 
 document.getElementById('checklistItems').addEventListener('change', (e)=>{ const cb = e.target.closest('input[type=checkbox]'); if(!cb) return; if(cb.checked) selectedItemIds.add(cb.dataset.id); else selectedItemIds.delete(cb.dataset.id); });
 document.getElementById('checklistItems').addEventListener('click', (e)=>{ const delBtn = e.target.closest('button[data-del]'); if(!delBtn) return; const id = delBtn.dataset.del; if(!confirm('Remove this from your list? Past logged entries will keep it.')) return; state.savedNotes = state.savedNotes.filter(p=>p.id!==id); selectedItemIds.delete(id); persistSavedNotes(); renderChecklistItems(); queueSync(); });
-document.getElementById('addNoteBtn').addEventListener('click', ()=>{ const input = document.getElementById('newNoteInput'); const p = addToSavedNotes(input.value); if(p){ selectedItemIds.add(p.id); input.value = ''; renderChecklistItems(); queueSync(); input.focus(); } });
-document.getElementById('newNoteInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('addNoteBtn').click(); } });
+document.getElementById('addNoteBtn').addEventListener('click', ()=>{ const input = document.getElementById('newNoteInput'); const p = addToSavedNotes(input.value, pendingChecklistAct ? pendingChecklistAct.id : null); if(p){ selectedItemIds.add(p.id); input.value = ''; renderChecklistItems(); queueSync(); } });
+document.getElementById('newNoteInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); const p = addToSavedNotes(e.target.value, pendingChecklistAct ? pendingChecklistAct.id : null); if(p){ selectedItemIds.add(p.id); e.target.value = ''; renderChecklistItems(); queueSync(); } } });
 document.getElementById('checklistLogBtn').addEventListener('click', ()=> resolveChecklist(false));
 document.getElementById('checklistSkipBtn').addEventListener('click', ()=> resolveChecklist(true));
 function resolvePendingNote(detail){ if(!pendingNoteAct) return; logActivity(pendingNoteAct, pendingNoteTime, detail); pendingNoteAct = null; pendingNoteTime = null; closeModal('detailModal'); }
@@ -1902,7 +1906,7 @@ async function syncPush(){
     const unsyncedEvs = state.events.filter(e => !e.synced);
     unsyncedEvs.forEach(e => { const ref = db.collection('users').doc(uid).collection('events').doc(e.id); batch.set(ref, { id: e.id, client_id: e.client_id || e.id, activity_id: e.activity_id, activity_name: e.activity_name, category: e.category, color: e.color, detail: e.detail || '', interruptions: e.interruptions || [], start_time: e.start_time, date: e.date }, { merge: true }); });
     const unsyncedSavedNotes = state.savedNotes.filter(p => !p.synced);
-    unsyncedSavedNotes.forEach(p => { const ref = db.collection('users').doc(uid).collection('people').doc(p.id); batch.set(ref, { id: p.id, name: p.name, updated_at: p.updated_at }, { merge: true }); });
+    unsyncedSavedNotes.forEach(p => { const ref = db.collection('users').doc(uid).collection('people').doc(p.id); batch.set(ref, { id: p.id, name: p.name, activityId: p.activityId || null, updated_at: p.updated_at }, { merge: true }); });
     if(state.pendingDeletes.length){ state.pendingDeletes.forEach(id => { const ref = db.collection('users').doc(uid).collection('events').doc(id); batch.delete(ref); }); }
     if(state.pendingActivityDeletes.length){ state.pendingActivityDeletes.forEach(id => { const ref = db.collection('users').doc(uid).collection('activities').doc(id); batch.delete(ref); }); }
     const settingsRef = db.collection('users').doc(uid).collection('meta').doc('settings'); batch.set(settingsRef, { offgrid_days: state.offgridDays, updated_at: new Date().toISOString() }, { merge: true });
@@ -1946,7 +1950,7 @@ async function syncPull(){
   setSyncBusy(false);
 }
 
-function mergeSavedNotes(remoteRows){ const byId = new Map(state.savedNotes.map(p=>[p.id, p])); remoteRows.forEach(r=>{ const local = byId.get(r.id); if(!local){ byId.set(r.id, { id:r.id, name:r.name, synced:true, updated_at:r.updated_at }); } else if(local.synced){ Object.assign(local, { name:r.name, synced:true, updated_at:r.updated_at }); } }); state.savedNotes = Array.from(byId.values()); }
+function mergeSavedNotes(remoteRows){ const byId = new Map(state.savedNotes.map(p=>[p.id, p])); remoteRows.forEach(r=>{ const local = byId.get(r.id); if(!local){ byId.set(r.id, { id:r.id, name:r.name, activityId: r.activityId, synced:true, updated_at:r.updated_at }); } else if(local.synced){ Object.assign(local, { name:r.name, activityId: r.activityId, synced:true, updated_at:r.updated_at }); } }); state.savedNotes = Array.from(byId.values()); }
 
 function mergeActivities(remoteRows){ 
   const byId = new Map(state.activities.map(a=>[a.id, a])); 
