@@ -156,7 +156,7 @@
   /* ---- Log list ---- */
   .log-section{margin-top:22px;}
   .section-title{font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:8px;font-family:"Space Grotesk";display:flex;justify-content:space-between;align-items:center;}
-  .log-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--border);-webkit-user-select:none;user-select:none;}
+  .log-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--border)-webkit-user-select:none;user-select:none;}
   .log-row:last-child{border-bottom:none;}
   .log-dot{width:8px;height:8px;border-radius:50%;flex:none;}
   .log-name{flex:1;font-size:14px;}
@@ -941,12 +941,7 @@ function computeGlobalSegments(){
     if(i < events.length-1){
       end = new Date(events[i+1].start_time);
     } else {
-      const evLogical = logicalDateStr(start);
-      if(evLogical === nowLogical){
-        end = now; live = true;
-      } else {
-        end = new Date(dayBoundaryStart(evLogical).getTime() + 24*3600000);
-      }
+      end = now; live = true;
     }
 
     if (end.getTime() - start.getTime() > maxMs) {
@@ -1214,7 +1209,11 @@ function renderTodayLog(){
 
   const {ranges} = computeGlobalSegments();
   const dayEvents = state.events
-    .filter(e => logicalDateStr(new Date(e.start_time)) === todayL)
+    .filter(e => {
+      const startedToday = (logicalDateStr(new Date(e.start_time)) === todayL);
+      const seg = ranges.find(r => r.id === e.id);
+      return startedToday || (seg && seg.live);
+    })
     .sort((a,b)=> new Date(b.start_time)-new Date(a.start_time));
   if(!dayEvents.length){ container.innerHTML = '<div class="empty-note">Nothing logged yet today.</div>'; return; }
   
