@@ -123,16 +123,38 @@
   .add-fab{width:100%;border:1.5px dashed var(--border-strong);background:none;border-radius:var(--radius-sm);padding:14px;font-size:13px;font-weight:600;color:var(--ink-soft);margin-top:6px;}
 
   /* ---- Ported User UI CSS ---- */
-  .qa-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+  .tl-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px;}
+  .tl-head{padding:14px 16px 12px;display:flex;justify-content:space-between;align-items:flex-end;}
+  .tl-title{font-size:16px;font-family:"Space Grotesk";font-weight:700;}
+  .tl-sub{font-size:12px;color:var(--ink-soft);}
+  .tl-scroll{overflow-x:auto;padding:0 16px 20px;scrollbar-width:none;}
+  .tl-scroll::-webkit-scrollbar{display:none;}
+  .tl-inner{position:relative;width:1008px;height:48px;margin-top:10px;}
+  .tl-ruler{position:absolute;inset:0;display:flex;justify-content:space-between;pointer-events:none;}
+  .tl-tick{width:1px;height:100%;background:var(--border);position:relative;}
+  .tl-tick::after{content:attr(data-h);position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--ink-faint);font-family:"JetBrains Mono";}
+  .tl-track{position:absolute;top:12px;left:0;right:0;height:24px;background:var(--paper);border-radius:6px;overflow:hidden;}
+  .tl-seg{position:absolute;top:0;height:100%;min-width:2px;border-right:1px solid rgba(255,255,255,0.2);}
+
+  .status-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
+  .status-main{display:flex;align-items:center;gap:12px;}
+  .status-dot{width:12px;height:12px;border-radius:50%;position:relative;}
+  .status-dot::after{content:'';position:absolute;inset:-4px;border:2px solid currentColor;border-radius:50%;opacity:0.3;}
+  .status-name{font-size:17px;font-weight:700;font-family:"Space Grotesk";}
+  .status-since{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .status-empty{color:var(--ink-faint);font-size:14px;font-style:italic;}
+
+  .qa-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 24px; }
   .qa-btn {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius-sm); padding: 12px 8px; display: flex; flex-direction: column;
-    align-items: center; gap: 8px; text-align: center; transition: transform 0.1s;
+    align-items: center; gap: 8px; text-align: center;
   }
-  .qa-btn:active { transform: scale(0.97); }
   .qa-dot { width: 8px; height: 8px; border-radius: 50%; }
 
+  .log-section{margin-bottom:24px;}
   .log-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .log-row:last-child{border-bottom:none;}
   .log-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
   .log-name { flex: 1; font-size: 13.5px; font-weight: 600; line-height: 1.2; }
   .log-detail { font-size: 11px; font-weight: 400; color: var(--ink-soft); margin-top: 2px; }
@@ -164,13 +186,6 @@
   .user-dash-header .sub { font-size: 12px; color: var(--ink-soft); }
   .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin-bottom: 12px; margin-top: 24px; }
   
-  .timeline { margin-top: 10px; }
-
-  .stat-row { display: flex; gap: 8px; margin-top: 16px; }
-  .stat-pill { flex: 1; background: var(--paper); border-radius: 10px; padding: 10px; text-align: center; }
-  .stat-pill .val { font-family: "Space Grotesk"; font-weight: 700; font-size: 16px; }
-  .stat-pill .lbl { font-size: 9px; text-transform: uppercase; color: var(--ink-soft); }
-
   .color-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:7px;margin-top:2px;}
   .color-swatch{width:100%;aspect-ratio:1;border-radius:50%;border:2px solid transparent;padding:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08);}
   .color-swatch.selected{border-color:var(--ink);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink);}
@@ -314,6 +329,11 @@ const PALETTE = [
 function slugId(name){ return 'default-' + String(name).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-'); }
 function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtDate(iso){ if(!iso) return '—'; const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleString(); }
+function pad(n){ return n<10?'0'+n:n; }
+function localDateStr(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function fmt12(d){ let h=d.getHours(), m=pad(d.getMinutes()), a=h>=12?'PM':'AM'; h=h%12||12; return h+':'+m+' '+a; }
+function logicalDateStr(d){ return localDateStr(d); }
+
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 function openModal(id){ document.getElementById(id).classList.add('open'); }
 document.querySelectorAll('[data-close]').forEach(btn=>{
@@ -489,7 +509,6 @@ function openActModal(id){
   const cat = existing ? existing.category : 'essential';
   document.querySelectorAll('#actCatRow .pill').forEach(p=> p.classList.toggle('active', p.dataset.cat===cat));
 
-  // Options mapping with backward compatibility
   const askNote = existing ? (existing.actAskNote ?? existing.needsDetail ?? false) : false;
   const saveNote = existing ? (existing.actSaveNote ?? existing.peoplePicker ?? false) : false;
   document.getElementById('actAskNote').checked = askNote;
@@ -539,7 +558,6 @@ document.getElementById('actSaveBtn').addEventListener('click', async ()=>{
       a.color = color; 
       a.actAskNote = ask;
       a.actSaveNote = save;
-      // Cleanup legacy fields
       delete a.needsDetail;
       delete a.peoplePicker;
     }
@@ -608,34 +626,64 @@ window.viewUser = async function(uid){
     const [profSnap, actsSnap, evsSnap] = await Promise.all([
       db.collection('users').doc(uid).get(),
       db.collection('users').doc(uid).collection('activities').get(),
-      db.collection('users').doc(uid).collection('events').limit(30).get()
+      db.collection('users').doc(uid).collection('events').orderBy('start_time', 'desc').limit(50).get()
     ]);
 
     const profile = profSnap.data() || {};
     const acts = actsSnap.docs.map(d=>d.data()).sort((a,b) => (a.order ?? 0) - (b.order ?? 0));
-    const evs = evsSnap.docs.map(d=>d.data()).sort((a,b)=> new Date(b.start_time) - new Date(a.start_time));
+    const allEvs = evsSnap.docs.map(d=>({id:d.id, ...d.data()}));
+    
+    const now = new Date();
+    const todayStr = logicalDateStr(now);
+    const todayEvs = allEvs.filter(e => logicalDateStr(new Date(e.start_time)) === todayStr).reverse();
+    
+    // Status Logic
+    let activeEvent = null;
+    if(todayEvs.length > 0){
+      const last = todayEvs[todayEvs.length-1];
+      const start = new Date(last.start_time);
+      const timeout = last.activity_name === 'Sleep' ? 14 : 6;
+      if((now - start) < timeout * 3600000) activeEvent = last;
+    }
+
+    // Timeline Segments
+    let segmentsHtml = '';
+    todayEvs.forEach((ev, idx) => {
+      const start = new Date(ev.start_time);
+      const next = todayEvs[idx+1];
+      let end = next ? new Date(next.start_time) : now;
+      
+      const timeout = ev.activity_name === 'Sleep' ? 14 : 6;
+      if (!next && (now - start) > timeout * 3600000) {
+        end = new Date(start.getTime() + timeout * 3600000);
+      }
+      
+      const startSecs = start.getHours()*3600 + start.getMinutes()*60 + start.getSeconds();
+      const endSecs = end.getHours()*3600 + end.getMinutes()*60 + end.getSeconds();
+      const left = (startSecs / 3600) * 42;
+      const width = Math.max(2, ((endSecs - startSecs) / 3600) * 42);
+      
+      segmentsHtml += `<div class="tl-seg" style="left:${left}px; width:${width}px; background:${ev.color||'#ccc'}"></div>`;
+    });
+
+    // Components
     const identity = profile.displayName || profile.email || profile.phoneNumber || uid;
 
-    let actsHtml = acts.map(a => {
-      const showNote = a.actAskNote || a.needsDetail;
-      const showCheck = a.actSaveNote || a.peoplePicker;
-      return `
-        <div class="qa-btn" style="border-left: 4px solid ${a.color}">
-          <div class="qa-dot" style="background:${a.color}"></div>
-          <div style="font-size:11px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">${escapeHtml(a.name)}</div>
-          <div style="font-size:10px; margin-top:-4px; opacity:0.6;">${showNote?'📝':''} ${showCheck?'☑️':''}</div>
-        </div>
-      `;
-    }).join('');
+    let actsHtml = acts.map(a => `
+      <div class="qa-btn" style="border-left: 3px solid ${a.color}">
+        <div class="qa-dot" style="background:${a.color}"></div>
+        <div style="font-size:10px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">${escapeHtml(a.name)}</div>
+      </div>
+    `).join('');
 
-    let evsHtml = evs.map(e => `
+    let logHtml = [...todayEvs].reverse().map(e => `
       <div class="log-row">
         <div class="log-dot" style="background:${e.color||'#ccc'}"></div>
         <div class="log-name">
           ${escapeHtml(e.activity_name)}
           ${e.detail ? `<div class="log-detail">${escapeHtml(e.detail)}</div>` : ''}
         </div>
-        <div class="log-time mono">${e.start_time ? new Date(e.start_time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:false}) : '—'}</div>
+        <div class="log-time mono">${fmt12(new Date(e.start_time))}</div>
       </div>
     `).join('');
 
@@ -651,27 +699,63 @@ window.viewUser = async function(uid){
         </div>
       </div>
 
-      <div class="stat-row">
-        <div class="stat-pill"><div class="val">${evs.length}</div><div class="lbl">Logs</div></div>
-        <div class="stat-pill"><div class="val">${acts.length}</div><div class="lbl">Acts</div></div>
+      <div class="tl-card">
+        <div class="tl-head">
+          <div class="tl-title">Today</div>
+          <div class="tl-sub">${new Date().toLocaleDateString(undefined, {weekday:'long', month:'short', day:'numeric'})}</div>
+        </div>
+        <div class="tl-scroll">
+          <div class="tl-inner">
+            <div class="tl-ruler">
+              ${[0,4,8,12,16,20,24].map(h => `<div class="tl-tick" data-h="${h}:00"></div>`).join('')}
+            </div>
+            <div class="tl-track">
+              ${segmentsHtml}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="section-label">User's Grid</div>
+      <div class="status-card">
+        ${activeEvent ? `
+          <div class="status-main">
+            <div class="status-dot" style="color:${activeEvent.color}"></div>
+            <div>
+              <div class="status-name">${escapeHtml(activeEvent.activity_name)}</div>
+              <div class="status-since">Started ${fmt12(new Date(activeEvent.start_time))}</div>
+            </div>
+          </div>
+        ` : `<div class="status-empty">No active activity</div>`}
+      </div>
+
+      <div class="section-label">User Grid</div>
       <div class="qa-grid">
         ${actsHtml || '<div class="empty-note" style="grid-column:span 3">No activities.</div>'}
       </div>
 
-      <div class="section-label">Custom AI Instructions (User Specific)</div>
-      <div class="field">
-        <textarea id="customAiPromptInput" rows="4" placeholder="Instructions specific only to this user...">${escapeHtml(profile.customPrompt || '')}</textarea>
-        <button class="btn btn-primary btn-sm" onclick="window.saveUserPrompt('${uid}')" style="margin-top:8px;">Save Instruction</button>
+      <div class="section-label">Today's Log</div>
+      <div class="log-section">
+        ${logHtml || '<div class="empty-note">No logs today.</div>'}
       </div>
 
-      <div class="section-label">Recent Timeline</div>
-      <div class="timeline">
-        ${evsHtml || '<div class="empty-note">No logs found for this user.</div>'}
+      <div class="section-label">Admin: AI Instructions</div>
+      <div class="card" style="padding:14px; margin-top:0;">
+        <div class="field">
+          <label>User-Specific Prompt</label>
+          <textarea id="customAiPromptInput" rows="4" placeholder="Instructions specific only to this user...">${escapeHtml(profile.customPrompt || '')}</textarea>
+          <button class="btn btn-primary btn-sm" onclick="window.saveUserPrompt('${uid}')" style="margin-top:8px;">Save Instruction</button>
+        </div>
       </div>
     `;
+
+    // Auto-scroll timeline to current time
+    setTimeout(() => {
+      const scrollEl = body.querySelector('.tl-scroll');
+      if(scrollEl){
+        const curX = ((now.getHours() + now.getMinutes()/60) * 42) - (scrollEl.clientWidth/2);
+        scrollEl.scrollLeft = curX;
+      }
+    }, 100);
 
   } catch(err) {
     body.innerHTML = '<div class="empty-note">Error loading user dashboard.</div>';
@@ -690,47 +774,33 @@ window.saveUserPrompt = async function(uid) {
 };
 
 window.resetUserActivities = async function(uid) {
-  if (!confirm("Are you sure you want to reset this user's grid to the admin-defined defaults? All current custom activities for this user will be removed.")) return;
-  
+  if (!confirm("Are you sure you want to reset this user's grid to the admin-defined defaults?")) return;
   try {
     const defaultsSnap = await db.collection('config').doc('defaults').get();
-    if (!defaultsSnap.exists) throw new Error("No default activities defined in system config.");
+    if (!defaultsSnap.exists) throw new Error("No default activities defined.");
     const defaults = defaultsSnap.data().activities || [];
-    
-    // 1. Get existing activities for user
     const currentActsSnap = await db.collection('users').doc(uid).collection('activities').get();
-    
-    // 2. Perform batch update
     const batch = db.batch();
-    
-    // Delete existing
     currentActsSnap.forEach(doc => batch.delete(doc.ref));
-    
-    // Add defaults
     defaults.forEach((act, idx) => {
       const newRef = db.collection('users').doc(uid).collection('activities').doc();
       batch.set(newRef, { ...act, order: idx });
     });
-    
     await batch.commit();
-    alert("User's activities have been reset to system defaults.");
-    window.viewUser(uid); // Refresh the modal
+    alert("User's activities have been reset.");
+    window.viewUser(uid);
   } catch(err) {
     alert("Reset failed: " + err.message);
-    console.error(err);
   }
 };
 
-/* ============================= GLOBAL AI SETTINGS ============================= */
 async function loadGlobalAiPrompt() {
   try {
     const snap = await db.collection('config').doc('ai_settings').get();
     if (snap.exists) {
       document.getElementById('globalAiPromptInput').value = snap.data().globalPrompt || '';
     }
-  } catch(err) {
-    console.error("Error loading global prompt:", err);
-  }
+  } catch(err) { console.error(err); }
 }
 
 document.getElementById('saveGlobalAiBtn').addEventListener('click', async () => {
