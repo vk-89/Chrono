@@ -253,19 +253,16 @@
       </div>
     </div>
     <div class="field">
-      <label>Options</label>
-      <div style="display:flex; flex-direction:column; gap:10px; margin-top:4px;">
-        <label style="display:flex; align-items:center; gap:8px; font-weight:normal; cursor:pointer; font-size:13px;">
-          <input type="checkbox" id="actAskNote" style="width:auto; margin:0;"> <span>Prompt for a note when logging</span>
-        </label>
-        <label style="display:flex; align-items:center; gap:8px; font-weight:normal; cursor:pointer; font-size:13px;">
-          <input type="checkbox" id="actSaveNote" style="width:auto; margin:0;"> <span>Save notes as a reusable checklist</span>
-        </label>
-      </div>
-    </div>
-    <div class="field">
       <label>Color</label>
       <div class="color-grid" id="actColorGrid"></div>
+    </div>
+    <div class="field" style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" id="actAskNote" style="width:16px;height:16px;">
+      <label for="actAskNote" style="margin:0;font-weight:400;">Prompt for a note when logging</label>
+    </div>
+    <div class="field" style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" id="actSaveNote" style="width:16px;height:16px;">
+      <label for="actSaveNote" style="margin:0;font-weight:400;">Save notes as a reusable checklist</label>
     </div>
     <div class="btn-row" style="display:flex; gap:10px; margin-top:20px;">
       <button class="btn btn-ghost" data-close="actModal">Cancel</button>
@@ -531,8 +528,8 @@ document.getElementById('actSaveBtn').addEventListener('click', async ()=>{
 
   const cat = document.querySelector('#actCatRow .pill.active').dataset.cat;
   const color = document.querySelector('#actColorGrid .color-swatch.selected').dataset.color;
-  const actAskNote = document.getElementById('actAskNote').checked;
-  const actSaveNote = document.getElementById('actSaveNote').checked;
+  const ask = document.getElementById('actAskNote').checked;
+  const save = document.getElementById('actSaveNote').checked;
 
   if(editingActId){
     const a = defaultActivities.find(x=>x.id===editingActId);
@@ -540,8 +537,8 @@ document.getElementById('actSaveBtn').addEventListener('click', async ()=>{
       a.name = name; 
       a.category = cat; 
       a.color = color; 
-      a.actAskNote = actAskNote;
-      a.actSaveNote = actSaveNote;
+      a.actAskNote = ask;
+      a.actSaveNote = save;
       // Cleanup legacy fields
       delete a.needsDetail;
       delete a.peoplePicker;
@@ -552,8 +549,8 @@ document.getElementById('actSaveBtn').addEventListener('click', async ()=>{
       name, 
       category: cat, 
       color,
-      actAskNote,
-      actSaveNote
+      actAskNote: ask,
+      actSaveNote: save
     });
   }
   renderDefaults();
