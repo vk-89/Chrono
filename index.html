@@ -776,6 +776,7 @@ const state = {
   events: rawStoredEvents,
   pendingDeletes: loadLS(LS.deletes, []),
   pendingActivityDeletes: loadLS(LS.actDeletes, []),
+  pendingPeopleDeletes: loadLS('chrono_pending_people_deletes_v1', []),
   offgridDays: loadLS(LS.offgridDays, {}),
   savedNotes: loadLS(LS.savedNotes, []),
   editingId: null,
@@ -791,16 +792,42 @@ state.activities.forEach(a=>{
   if(a.actAskNote === undefined) a.actAskNote = (a.needsDetail !== undefined) ? !!a.needsDetail : defaultNeedsDetail(a.name);
   if(a.actSaveNote === undefined) a.actSaveNote = (a.peoplePicker !== undefined) ? !!a.peoplePicker : defaultPeoplePicker(a.name);
 });
-saveLS(LS.activities, state.activities);
-saveLS(LS.events, state.events);
 
 function persistActivities(){ saveLS(LS.activities, state.activities); }
 function persistEvents(){ saveLS(LS.events, state.events); }
 function persistDeletes(){ saveLS(LS.deletes, state.pendingDeletes); }
 function persistActivityDeletes(){ saveLS(LS.actDeletes, state.pendingActivityDeletes); }
+function persistPeopleDeletes(){ saveLS('chrono_pending_people_deletes_v1', state.pendingPeopleDeletes); }
 function persistOffgrid(){ saveLS(LS.offgridDays, state.offgridDays); }
 function persistSettings(){ saveLS(LS.settings, userSettings); }
 function persistSavedNotes(){ saveLS(LS.savedNotes, state.savedNotes); }
+
+(function migrateLegacyData(){
+  const defaultChecklistAct = state.activities.find(a => (a.name||'').toLowerCase() === 'call') || state.activities.find(a => a.actSaveNote);
+  const migIdsToDelete = [];
+  const seenItems = new Set();
+  state.savedNotes = state.savedNotes.filter(p => {
+    if (!p.activityId && defaultChecklistAct) {
+      p.activityId = defaultChecklistAct.id;
+      p.synced = false;
+    }
+    const key = (p.name||'').toLowerCase().trim() + '|' + (p.activityId || 'none');
+    if (seenItems.has(key)) {
+      if (p.synced) migIdsToDelete.push(p.id);
+      return false;
+    }
+    seenItems.add(key);
+    return true;
+  });
+  if (migIdsToDelete.length) {
+    state.pendingPeopleDeletes = Array.from(new Set([...state.pendingPeopleDeletes, ...migIdsToDelete]));
+    persistPeopleDeletes();
+  }
+  persistSavedNotes();
+})();
+
+saveLS(LS.activities, state.activities);
+saveLS(LS.events, state.events);
 
 function currentEvent(){
   const todayL = todayLogicalDate();
@@ -905,7 +932,7 @@ function addActivity(opts){
 function addToSavedNotes(name, activityId){
   name = (name||'').trim();
   if(!name) return null;
-  const existing = state.savedNotes.find(p => p.name.toLowerCase() === name.toLowerCase() && (p.activityId === activityId));
+  const existing = state.savedNotes.find(p => p.name.toLowerCase() === name.toLowerCase() && p.activityId === activityId);
   if(existing) return existing;
   const p = { id: uid(), name, activityId, synced:false, updated_at: new Date().toISOString() };
   state.savedNotes.push(p);
@@ -1696,7 +1723,7 @@ function renderChecklistItems(){
   const container = document.getElementById('checklistItems');
   const currentActId = pendingChecklistAct ? pendingChecklistAct.id : null;
   const items = state.savedNotes
-    .filter(p => !p.activityId || p.activityId === currentActId)
+    .filter(p => p.activityId === currentActId)
     .slice()
     .sort((a,b)=> a.name.localeCompare(b.name));
   if(!items.length){ container.innerHTML = '<div class="item-empty">No items saved yet — add one below.</div>'; return; }
@@ -1708,7 +1735,7 @@ function openChecklistModal(act, atDate){ pendingChecklistAct = act; pendingChec
 function resolveChecklist(skip){ if(!pendingChecklistAct) return; let detail = ''; if(!skip){ const names = state.savedNotes.filter(p => selectedItemIds.has(p.id)).map(p=>p.name); detail = names.join(', '); } logActivity(pendingChecklistAct, pendingChecklistTime, detail); pendingChecklistAct = null; pendingChecklistTime = null; closeModal('checklistModal'); }
 
 document.getElementById('checklistItems').addEventListener('change', (e)=>{ const cb = e.target.closest('input[type=checkbox]'); if(!cb) return; if(cb.checked) selectedItemIds.add(cb.dataset.id); else selectedItemIds.delete(cb.dataset.id); });
-document.getElementById('checklistItems').addEventListener('click', (e)=>{ const delBtn = e.target.closest('button[data-del]'); if(!delBtn) return; const id = delBtn.dataset.del; if(!confirm('Remove this from your list? Past logged entries will keep it.')) return; state.savedNotes = state.savedNotes.filter(p=>p.id!==id); selectedItemIds.delete(id); persistSavedNotes(); renderChecklistItems(); queueSync(); });
+document.getElementById('checklistItems').addEventListener('click', (e)=>{ const delBtn = e.target.closest('button[data-del]'); if(!delBtn) return; const id = delBtn.dataset.del; if(!confirm('Remove this from your list? Past logged entries will keep it.')) return; const itemToRemove = state.savedNotes.find(p=>p.id===id); if(itemToRemove && itemToRemove.synced){ state.pendingPeopleDeletes.push(id); persistPeopleDeletes(); } state.savedNotes = state.savedNotes.filter(p=>p.id!==id); selectedItemIds.delete(id); persistSavedNotes(); renderChecklistItems(); queueSync(); });
 document.getElementById('addNoteBtn').addEventListener('click', ()=>{ const input = document.getElementById('newNoteInput'); const p = addToSavedNotes(input.value, pendingChecklistAct ? pendingChecklistAct.id : null); if(p){ selectedItemIds.add(p.id); input.value = ''; renderChecklistItems(); queueSync(); } });
 document.getElementById('newNoteInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); const p = addToSavedNotes(e.target.value, pendingChecklistAct ? pendingChecklistAct.id : null); if(p){ selectedItemIds.add(p.id); e.target.value = ''; renderChecklistItems(); queueSync(); } } });
 document.getElementById('checklistLogBtn').addEventListener('click', ()=> resolveChecklist(false));
@@ -1909,9 +1936,10 @@ async function syncPush(){
     unsyncedSavedNotes.forEach(p => { const ref = db.collection('users').doc(uid).collection('people').doc(p.id); batch.set(ref, { id: p.id, name: p.name, activityId: p.activityId || null, updated_at: p.updated_at }, { merge: true }); });
     if(state.pendingDeletes.length){ state.pendingDeletes.forEach(id => { const ref = db.collection('users').doc(uid).collection('events').doc(id); batch.delete(ref); }); }
     if(state.pendingActivityDeletes.length){ state.pendingActivityDeletes.forEach(id => { const ref = db.collection('users').doc(uid).collection('activities').doc(id); batch.delete(ref); }); }
+    if(state.pendingPeopleDeletes.length){ state.pendingPeopleDeletes.forEach(id => { const ref = db.collection('users').doc(uid).collection('people').doc(id); batch.delete(ref); }); }
     const settingsRef = db.collection('users').doc(uid).collection('meta').doc('settings'); batch.set(settingsRef, { offgrid_days: state.offgridDays, updated_at: new Date().toISOString() }, { merge: true });
     await batch.commit();
-    unsyncedActs.forEach(a => a.synced = true); unsyncedEvs.forEach(e => e.synced = true); unsyncedSavedNotes.forEach(p => p.synced = true); state.pendingDeletes = []; state.pendingActivityDeletes = []; persistActivities(); persistEvents(); persistDeletes(); persistActivityDeletes(); persistSavedNotes();
+    unsyncedActs.forEach(a => a.synced = true); unsyncedEvs.forEach(e => e.synced = true); unsyncedSavedNotes.forEach(p => p.synced = true); state.pendingDeletes = []; state.pendingActivityDeletes = []; state.pendingPeopleDeletes = []; persistActivities(); persistEvents(); persistDeletes(); persistActivityDeletes(); persistSavedNotes(); persistPeopleDeletes();
   } catch(err) { console.error('Firebase sync push failed', err); }
   setSyncBusy(false);
 }
@@ -1950,7 +1978,7 @@ async function syncPull(){
   setSyncBusy(false);
 }
 
-function mergeSavedNotes(remoteRows){ const byId = new Map(state.savedNotes.map(p=>[p.id, p])); remoteRows.forEach(r=>{ const local = byId.get(r.id); if(!local){ byId.set(r.id, { id:r.id, name:r.name, activityId: r.activityId, synced:true, updated_at:r.updated_at }); } else if(local.synced){ Object.assign(local, { name:r.name, activityId: r.activityId, synced:true, updated_at:r.updated_at }); } }); state.savedNotes = Array.from(byId.values()); }
+function mergeSavedNotes(remoteRows){ const pendingSet = new Set(state.pendingPeopleDeletes); const byId = new Map(state.savedNotes.map(p=>[p.id, p])); remoteRows.forEach(r=>{ if(pendingSet.has(r.id)) return; const local = byId.get(r.id); if(!local){ byId.set(r.id, { id:r.id, name:r.name, activityId: r.activityId, synced:true, updated_at:r.updated_at }); } else if(local.synced){ Object.assign(local, { name:r.name, activityId: r.activityId, synced:true, updated_at:r.updated_at }); } }); state.savedNotes = Array.from(byId.values()); }
 
 function mergeActivities(remoteRows){ 
   const byId = new Map(state.activities.map(a=>[a.id, a])); 
