@@ -32,7 +32,7 @@
   #loginView{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
   .login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;width:100%;max-width:360px;}
   .login-card h1{font-size:20px;margin-bottom:4px;}
-  .login-card p{color:var(--ink-soft);font-size:13px;margin:0 0 18px;}
+  .login-card p{color:var(--ink-soft);font-size:13px;margin:0 0 188px;}
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:6px;font-weight:600;}
   .field input,.field select,.field textarea{width:100%;background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;color:var(--ink);resize:vertical;}
@@ -111,6 +111,9 @@
     transition: opacity 0.15s;
   }
   .act-card:hover .act-actions { opacity: 1; }
+  @media (hover: none) {
+    .act-actions { opacity: 1 !important; }
+  }
   .act-actions button {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -201,6 +204,36 @@
   .pill-row{display:flex;gap:8px;}
   .pill{flex:1;border:1px solid var(--border-strong);background:var(--paper);border-radius:var(--radius-sm);padding:9px;font-size:12.5px;font-weight:600;color:var(--ink-soft);text-align:center;}
   .pill.active{border-color:var(--ink);background:var(--surface);color:var(--ink);}
+
+  /* ---- Toast Notification ---- */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: "Space Grotesk", sans-serif;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .toast.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+  .toast.error {
+    background: var(--danger);
+  }
 </style>
 </head>
 <body>
@@ -305,6 +338,8 @@
   </div>
 </div>
 
+<div id="adminToast" class="toast"></div>
+
 <script>
 (function(){
 "use strict";
@@ -334,6 +369,18 @@ const PALETTE = [
   '#312e81', '#4c1d95', '#6d28d9', '#7c3aed', '#8b5cf6', '#a78bfa', '#c7d2fe',
   '#4a044e', '#701a75', '#9d174d', '#be185d', '#db2777', '#ec4899', '#f472b6'
 ];
+
+let toastTimeout;
+function showToast(msg, isError = false) {
+  const t = document.getElementById('adminToast');
+  t.textContent = msg;
+  t.classList.toggle('error', isError);
+  t.classList.add('visible');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => {
+    t.classList.remove('visible');
+  }, 2500);
+}
 
 function slugId(name){ return 'default-' + String(name).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-'); }
 function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -550,7 +597,7 @@ document.getElementById('actSaveBtn').addEventListener('click', async ()=>{
     a.name.toLowerCase() === name.toLowerCase() && a.id !== editingActId
   );
   if(isDuplicate) {
-    alert('An activity with this name already exists.');
+    showToast('An activity with this name already exists.', true);
     return;
   }
 
@@ -776,9 +823,9 @@ window.saveUserPrompt = async function(uid) {
   const prompt = document.getElementById('customAiPromptInput').value.trim();
   try {
     await db.collection('users').doc(uid).update({ customPrompt: prompt });
-    alert("User-specific AI prompt saved.");
+    showToast("User-specific AI prompt saved.");
   } catch(err) {
-    alert("Failed to save: " + err.message);
+    showToast("Failed to save: " + err.message, true);
   }
 };
 
@@ -796,10 +843,10 @@ window.resetUserActivities = async function(uid) {
       batch.set(newRef, { ...act, order: idx });
     });
     await batch.commit();
-    alert("User's activities have been reset.");
+    showToast("User's activities have been reset.");
     window.viewUser(uid);
   } catch(err) {
-    alert("Reset failed: " + err.message);
+    showToast("Reset failed: " + err.message, true);
   }
 };
 
@@ -816,9 +863,9 @@ document.getElementById('saveGlobalAiBtn').addEventListener('click', async () =>
   const prompt = document.getElementById('globalAiPromptInput').value.trim();
   try {
     await db.collection('config').doc('ai_settings').set({ globalPrompt: prompt }, { merge: true });
-    alert("Global AI instructions saved.");
+    showToast("Global AI instructions saved.");
   } catch(err) {
-    alert("Failed to save: " + err.message);
+    showToast("Failed to save: " + err.message, true);
   }
 });
 
