@@ -129,8 +129,49 @@
 
   .add-fab{width:100%;border:1.5px dashed var(--border-strong);background:none;border-radius:var(--radius-sm);padding:14px;font-size:13px;font-weight:600;color:var(--ink-soft);margin-top:6px;}
 
+  /* ---- Ported User UI CSS ---- */
+  .tl-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:var(--sp-4);box-shadow: 0 1px 2px rgba(28,30,27,0.04), 0 4px 12px rgba(28,30,27,0.05);}
+  .tl-head{padding:var(--sp-4) var(--sp-4) var(--sp-3);display:flex;justify-content:space-between;align-items:flex-end;}
+  .tl-title{font-size:16px;font-family:"Space Grotesk";font-weight:700;}
+  .tl-sub{font-size:12px;color:var(--ink-soft);}
+  .tl-scroll{overflow-x:auto;padding:0 var(--sp-4) var(--sp-5);scrollbar-width:none;}
+  .tl-scroll::-webkit-scrollbar{display:none;}
+  .tl-inner{position:relative;width:1008px;height:48px;margin-top:10px;}
+  .tl-ruler{position:absolute;inset:0;display:flex;justify-content:space-between;pointer-events:none;}
+  .tl-tick{width:1px;height:100%;background:var(--border);position:relative;}
+  .tl-tick::after{content:attr(data-h);position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--ink-faint);font-family:"JetBrains Mono";}
+  .tl-track{position:absolute;top:12px;left:0;right:0;height:24px;background:var(--paper);border-radius:6px;overflow:hidden;}
+  .tl-seg{position:absolute;top:0;height:100%;min-width:2px;border-right:1px solid rgba(255,255,255,0.2);}
+
+  .status-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:var(--sp-4);margin-bottom:var(--sp-4);box-shadow: 0 1px 2px rgba(28,30,27,0.04), 0 4px 12px rgba(28,30,27,0.05);}
+  .status-main{display:flex;align-items:center;gap:12px;}
+  .status-dot{width:15px;height:15px;border-radius:50%;position:relative;}
+  .status-dot::after{content:'';position:absolute;inset:-4px;border:2px solid currentColor;border-radius:50%;opacity:0.3;}
+  .status-name{font-size:17px;font-weight:700;font-family:"Space Grotesk";}
+  .status-since{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .status-empty{color:var(--ink-faint);font-size:13.5px;padding:var(--sp-2) 0;display:flex;align-items:center;gap:var(--sp-2);line-height:1.5;}
+  .status-empty::before{content:'○';font-size:14px;opacity:0.5;}
+
+  .qa-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); margin-bottom: var(--sp-5); }
+  .qa-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px 8px; display: flex; flex-direction: column;
+    align-items: center; gap: 8px; text-align: center; transition: transform .1s ease;
+  }
+  .qa-btn:active{transform:scale(0.96);}
+  .qa-dot { width: 8px; height: 8px; border-radius: 50%; }
+
   .empty-note { color: var(--ink-faint); font-size: 13.5px; padding: var(--sp-2) 0; display: flex; align-items: center; gap: var(--sp-2); line-height: 1.5; }
   .empty-note::before { content: '✦'; font-size: 12px; opacity: 0.4; }
+
+  .log-section{margin-bottom:24px;}
+  .log-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .log-row:last-child{border-bottom:none;}
+  .log-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .log-name { flex: 1; font-size: 13.5px; font-weight: 600; line-height: 1.2; }
+  .log-detail { font-size: 11px; font-weight: 400; color: var(--ink-soft); margin-top: 2px; }
+  .log-time { font-size: 11.5px; color: var(--ink-faint); white-space: nowrap; }
+  .mono { font-family: "JetBrains Mono", monospace; }
 
   /* ---- Users list ---- */
   .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:var(--sp-4);margin-bottom:var(--sp-4);box-shadow: 0 1px 2px rgba(28,30,27,0.04), 0 4px 12px rgba(28,30,27,0.05);}
@@ -149,7 +190,7 @@
   .modal-backdrop.open{display:flex;}
   .modal{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 18px 26px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;position:relative;}
   @media(min-width:520px){.modal-backdrop{align-items:center;}.modal{border-radius:var(--radius);}}
-  .modal-close{position:absolute;top:16px;right:16px;background:var(--paper);border:none;width:30px;height:30px;border-radius:50%;font-size:14px;color:var(--ink-soft);z-index:11;}
+  .modal-close{position:absolute;top:16px;right:16px;background:var(--paper);border:none;width:30px;height:30px;border-radius:50%;font-size:14px;color:var(--ink-soft);z-index:10;}
 
   /* ---- User Dashboard Simulation ---- */
   .user-dash-header { margin-bottom: 20px; }
@@ -287,11 +328,11 @@
   </div>
 </div>
 
-<!-- User Detail / Dashboard Modal -->
+<!-- User Detail / Dashboard Mock Modal -->
 <div class="modal-backdrop" id="userModal">
-  <div class="modal" id="userModalContainer" style="max-width:720px; width:95%; height:90vh; display:flex; flex-direction:column; padding:20px 18px 20px;">
+  <div class="modal" style="max-width:440px; padding-bottom:40px;">
     <button class="modal-close" data-close="userModal">✕</button>
-    <div id="userModalBody" style="flex:1; display:flex; flex-direction:column; min-height:0;">
+    <div id="userModalBody">
       <div class="loading-note">Loading user data...</div>
     </div>
   </div>
@@ -344,6 +385,10 @@ function showToast(msg, isError = false) {
 function slugId(name){ return 'default-' + String(name).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-'); }
 function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtDate(iso){ if(!iso) return '—'; const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleString(); }
+function pad(n){ return n<10?'0'+n:n; }
+function localDateStr(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function fmt12(d){ let h=d.getHours(), m=pad(d.getMinutes()), a=h>=12?'PM':'AM'; h=h%12||12; return h+':'+m+' '+a; }
+function logicalDateStr(d){ return localDateStr(d); }
 
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 function openModal(id){ document.getElementById(id).classList.add('open'); }
@@ -631,41 +676,144 @@ document.getElementById('userSearch').addEventListener('input', (e)=>{
 window.viewUser = async function(uid){
   openModal('userModal');
   const body = document.getElementById('userModalBody');
-  body.innerHTML = '<div class="loading-note">Loading user profile...</div>';
+  body.innerHTML = '<div class="loading-note">Loading user dashboard...</div>';
 
   try {
-    const profSnap = await db.collection('users').doc(uid).get();
+    const [profSnap, actsSnap, evsSnap] = await Promise.all([
+      db.collection('users').doc(uid).get(),
+      db.collection('users').doc(uid).collection('activities').get(),
+      db.collection('users').doc(uid).collection('events').orderBy('start_time', 'desc').limit(50).get()
+    ]);
+
     const profile = profSnap.data() || {};
+    const acts = actsSnap.docs.map(d=>d.data()).sort((a,b) => (a.order ?? 0) - (b.order ?? 0));
+    const allEvs = evsSnap.docs.map(d=>({id:d.id, ...d.data()}));
+    
+    const now = new Date();
+    const todayStr = logicalDateStr(now);
+    const todayEvs = allEvs.filter(e => logicalDateStr(new Date(e.start_time)) === todayStr).reverse();
+    
+    // Status Logic
+    let activeEvent = null;
+    if(todayEvs.length > 0){
+      const last = todayEvs[todayEvs.length-1];
+      const start = new Date(last.start_time);
+      const timeout = last.activity_name === 'Sleep' ? 14 : 6;
+      if((now - start) < timeout * 3600000) activeEvent = last;
+    }
+
+    // Timeline Segments
+    let segmentsHtml = '';
+    todayEvs.forEach((ev, idx) => {
+      const start = new Date(ev.start_time);
+      const next = todayEvs[idx+1];
+      let end = next ? new Date(next.start_time) : now;
+      
+      const timeout = ev.activity_name === 'Sleep' ? 14 : 6;
+      if (!next && (now - start) > timeout * 3600000) {
+        end = new Date(start.getTime() + timeout * 3600000);
+      }
+      
+      const startSecs = start.getHours()*3600 + start.getMinutes()*60 + start.getSeconds();
+      const endSecs = end.getHours()*3600 + end.getMinutes()*60 + end.getSeconds();
+      const left = (startSecs / 3600) * 42;
+      const width = Math.max(2, ((endSecs - startSecs) / 3600) * 42);
+      
+      segmentsHtml += `<div class="tl-seg" style="left:${left}px; width:${width}px; background:${ev.color||'#ccc'}"></div>`;
+    });
+
+    // Components
     const identity = profile.displayName || profile.email || profile.phoneNumber || uid;
 
+    let actsHtml = acts.map(a => `
+      <div class="qa-btn" style="border-left: 3px solid ${a.color}">
+        <div class="qa-dot" style="background:${a.color}"></div>
+        <div style="font-size:10px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">${escapeHtml(a.name)}</div>
+      </div>
+    `).join('');
+
+    let logHtml = [...todayEvs].reverse().map(e => `
+      <div class="log-row">
+        <div class="log-dot" style="background:${e.color||'#ccc'}"></div>
+        <div class="log-name">
+          ${escapeHtml(e.activity_name)}
+          ${e.detail ? `<div class="log-detail">${escapeHtml(e.detail)}</div>` : ''}
+        </div>
+        <div class="log-time mono">${fmt12(new Date(e.start_time))}</div>
+      </div>
+    `).join('');
+
     body.innerHTML = `
-      <div class="user-dash-header" style="margin-bottom:12px;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-          <div>
-            <div class="sub">CHRONO USER VIEW</div>
-            <h2 style="font-size:18px;">${escapeHtml(identity)}</h2>
-            <div class="sub">Joined ${profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '—'} · ${uid}</div>
-          </div>
-          <button class="btn btn-danger btn-sm" onclick="window.resetUserActivities('${uid}')">Reset Grid</button>
+      <div class="user-dash-header">
+        <div>
+          <div class="sub">CHRONO USER VIEW</div>
+          <h2>${escapeHtml(identity)}</h2>
+          <div class="sub">Joined ${profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '—'} · ${uid}</div>
+        </div>
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);">
+          <button class="btn btn-danger" onclick="window.resetUserActivities('${uid}')">Reset Grid</button>
+          <div style="font-size: 11.5px; color: var(--ink-faint); margin-top: 6px;">This clears all activities and cannot be undone.</div>
         </div>
       </div>
 
-      <div id="userDashFrame" style="flex:1; position:relative; background:var(--paper); border-radius:var(--radius-sm); border:1px solid var(--border); overflow:hidden; min-height:400px;">
-        <div id="iframeLoading" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--ink-soft); background:var(--surface); z-index:1;">Loading dashboard...</div>
-        <iframe 
-          src="index.html?viewAsUid=${encodeURIComponent(uid)}" 
-          style="width:100%; height:100%; border:none; display:block;"
-          onload="document.getElementById('iframeLoading').style.display='none'">
-        </iframe>
+      <div class="tl-card">
+        <div class="tl-head">
+          <div class="tl-title">Today</div>
+          <div class="tl-sub">${new Date().toLocaleDateString(undefined, {weekday:'long', month:'short', day:'numeric'})}</div>
+        </div>
+        <div class="tl-scroll">
+          <div class="tl-inner">
+            <div class="tl-ruler">
+              ${[0,4,8,12,16,20,24].map(h => `<div class="tl-tick" data-h="${h}:00"></div>`).join('')}
+            </div>
+            <div class="tl-track">
+              ${segmentsHtml}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="section-label" style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">Admin: AI Instructions</div>
-      <div class="field" style="margin-top:8px; margin-bottom:0;">
-        <label>User-Specific Prompt</label>
-        <textarea id="customAiPromptInput" rows="3" placeholder="Instructions specific only to this user...">${escapeHtml(profile.customPrompt || '')}</textarea>
-        <button class="btn btn-primary btn-sm" onclick="window.saveUserPrompt('${uid}')" style="margin-top:8px;">Save Instruction</button>
+      <div class="status-card">
+        ${activeEvent ? `
+          <div class="status-main">
+            <div class="status-dot" style="color:${activeEvent.color}"></div>
+            <div>
+              <div class="status-name">${escapeHtml(activeEvent.activity_name)}</div>
+              <div class="status-since">Started ${fmt12(new Date(activeEvent.start_time))}</div>
+            </div>
+          </div>
+        ` : `<div class="status-empty">No active activity</div>`}
+      </div>
+
+      <div class="section-label">User Grid</div>
+      <div class="qa-grid">
+        ${actsHtml || '<div class="empty-note" style="grid-column:span 3">No activities.</div>'}
+      </div>
+
+      <div class="section-label">Today's Log</div>
+      <div class="log-section">
+        ${logHtml || '<div class="empty-note">No logs today.</div>'}
+      </div>
+
+      <div class="section-label">Admin: AI Instructions</div>
+      <div class="card" style="padding:14px; margin-top:0;">
+        <div class="field">
+          <label>User-Specific Prompt</label>
+          <textarea id="customAiPromptInput" rows="4" placeholder="Instructions specific only to this user...">${escapeHtml(profile.customPrompt || '')}</textarea>
+          <button class="btn btn-primary btn-sm" onclick="window.saveUserPrompt('${uid}')" style="margin-top:8px;">Save Instruction</button>
+        </div>
       </div>
     `;
+
+    // Auto-scroll timeline to current time
+    setTimeout(() => {
+      const scrollEl = body.querySelector('.tl-scroll');
+      if(scrollEl){
+        const curX = ((now.getHours() + now.getMinutes()/60) * 42) - (scrollEl.clientWidth/2);
+        scrollEl.scrollLeft = curX;
+      }
+    }, 100);
+
   } catch(err) {
     body.innerHTML = '<div class="empty-note">Error loading user dashboard.</div>';
     console.error(err);
