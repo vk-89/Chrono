@@ -196,7 +196,7 @@
   .user-dash-header { margin-bottom: 20px; }
   .user-dash-header h2 { font-size: 18px; }
   .user-dash-header .sub { font-size: 12px; color: var(--ink-soft); }
-  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin-bottom: 12px; margin-top: 24px; }
+  .section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin-bottom: 12px; margin-top: 36px; border-top: 1px solid var(--border); padding-top: 20px; }
   
   .color-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:7px;margin-top:2px;}
   .color-swatch{width:100%;aspect-ratio:1;border-radius:50%;border:2px solid transparent;padding:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08);}
@@ -745,13 +745,14 @@ window.viewUser = async function(uid){
 
     body.innerHTML = `
       <div class="user-dash-header">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-          <div>
-            <div class="sub">CHRONO USER VIEW</div>
-            <h2>${escapeHtml(identity)}</h2>
-            <div class="sub">Joined ${profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '—'} · ${uid}</div>
-          </div>
-          <button class="btn btn-danger btn-sm" onclick="window.resetUserActivities('${uid}')" style="margin-top:10px;">Reset Grid</button>
+        <div>
+          <div class="sub">CHRONO USER VIEW</div>
+          <h2>${escapeHtml(identity)}</h2>
+          <div class="sub">Joined ${profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '—'} · ${uid}</div>
+        </div>
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);">
+          <button class="btn btn-danger" onclick="window.resetUserActivities('${uid}')">Reset Grid</button>
+          <div style="font-size: 11.5px; color: var(--ink-faint); margin-top: 6px;">This clears all activities and cannot be undone.</div>
         </div>
       </div>
 
