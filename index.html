@@ -1309,16 +1309,30 @@ function renderHistory(){
     const isOffgrid = !!state.offgridDays[dateStr];
     const segs = segmentsForDay(dateStr, ranges);
     const totalMins = segs.reduce((s,x)=> s + (x.end-x.start)/60000, 0);
+
+    const ds = dayBoundaryStart(dateStr);
+    const de = new Date(ds.getTime() + 24 * 3600000);
+    let lastEnd = ds;
     let stripHtml = '';
+
     if(!segs.length){
       stripHtml = '<div class="strip-empty">'+(isOffgrid?'Out of town / Vacation':'No data')+'</div>';
     } else {
-      stripHtml = segs.map(s=> '<div class="strip-seg" style="flex-grow:'+((s.end-s.start)/60000)+';background:'+s.color+'" title="'+escapeHtml(s.activity_name)+' '+fmt12(s.start)+'–'+fmt12(s.end)+'"></div>').join('');
-      const remainder = 1440 - totalMins;
+      segs.forEach(s => {
+        const gapMins = (s.start - lastEnd) / 60000;
+        if (gapMins > 0) {
+          stripHtml += '<div class="strip-seg" style="flex-grow:' + gapMins + ';background:transparent;"></div>';
+        }
+        const durMins = (s.end - s.start) / 60000;
+        stripHtml += '<div class="strip-seg" style="flex-grow:' + durMins + ';background:' + s.color + '" title="' + escapeHtml(s.activity_name) + ' ' + fmt12(s.start) + '–' + fmt12(s.end) + '"></div>';
+        lastEnd = s.end;
+      });
+      const remainder = (de - lastEnd) / 60000;
       if (remainder > 0) {
         stripHtml += '<div class="strip-seg" style="flex-grow:' + remainder + ';background:transparent;"></div>';
       }
     }
+
     const rangeRows = segs.map(s=> {
       if(state.editingId === s.id){
         const d = s.originalStart || s.start;
